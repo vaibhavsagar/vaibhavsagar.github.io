@@ -1,5 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Vaibhav Sagar's Site</title><link>/</link><description></description><atom:link href="/feeds/vaibhav-sagar.rss.xml" rel="self"></atom:link><lastBuildDate>Sun, 01 Feb 2015 00:00:00 +1100</lastBuildDate><item><title>How This Static Blog Uses Travis-CI</title><link>/blog/2015/02/01/how-this-static-blog-uses-travis-ci/</link><description>&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Vaibhav Sagar's Site</title><link>/</link><description></description><atom:link href="/feeds/vaibhav-sagar.rss.xml" rel="self"></atom:link><lastBuildDate>Thu, 26 Feb 2015 00:00:00 +1100</lastBuildDate><item><title>Generate A PDF From Your Resume With Travis-CI</title><link>/blog/2015/02/26/generate-a-pdf-from-your-resume-with-travis-ci/</link><description>&lt;p&gt;After &lt;a href="{filename}blog-setup.md"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
+higher and use Travis-CI to automate document generation from my resume. I use
+&lt;a href="http://johnmacfarlane.net/pandoc/"&gt;Pandoc&lt;/a&gt; to convert my source resume written
+in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
+PDF (via LaTeX) that I've spent a ludicrous amount of time styling. I do have
+all these packages configured on my home computer, but it was becoming tedious
+to make changes and commit three separate files instead of just one. I was also
+finding it difficult to keep the PDF version of my resume up to date with the
+rest of my changes, and I thought it would be an interesting challenge to get
+everything set up in a repeatable manner.&lt;/p&gt;
+&lt;p&gt;The versions of &lt;code&gt;pandoc&lt;/code&gt; and &lt;code&gt;LaTeX&lt;/code&gt; on Ubuntu 12.04 (which Travis-CI uses for
+its workers) are hopelessly out of date, so my first problem was getting the
+newest version of &lt;code&gt;pandoc&lt;/code&gt; installed. It is available as a &lt;code&gt;.deb&lt;/code&gt;
+&lt;a href="https://github.com/jgm/pandoc/releases"&gt;here&lt;/a&gt;, and Github being Github, this
+information is also provided as JSON. There's this really nifty tool called
+&lt;code&gt;jq&lt;/code&gt; which is like &lt;code&gt;sed&lt;/code&gt; for JSON so I found and used that. After having a play
+with it &lt;a href="https://jqplay.org/"&gt;here&lt;/a&gt; I was able to construct the filter I
+needed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;jq -r &amp;#39;.assets[] | .browser_download_url | select(endswith(&amp;quot;deb&amp;quot;))&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The '-r' is there so that &lt;code&gt;wget&lt;/code&gt; won't choke on the output which would
+otherwise be surrounded in double quotes. I was then able to install the
+downloaded package without any issues. This is what my pre-install script
+looked like:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/prepare.sh"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;I already had a &lt;code&gt;Makefile&lt;/code&gt;, so converting my source to Github-flavoured
+Markdown and HTML was as easy as &lt;code&gt;make readme&lt;/code&gt; and &lt;code&gt;make html&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/Makefile"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;I decided it would be best if the build process updated my &lt;code&gt;gh-pages&lt;/code&gt; branch
+instead of uploading to a different repository:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/update_pages.sh"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;The next challenge was actually generating my PDF and uploading it to Github
+Releases. Travis CI has excellent support for deploying binaries to Releases
+but using the &lt;code&gt;travis&lt;/code&gt; gem to configure support makes a completely new Github
+token which I thought was a bit redundant. The documentation for &lt;code&gt;travis
+encrypt&lt;/code&gt; is pretty comprehensive and I just encrypted my old token and used
+that instead. My completed &lt;code&gt;.travis.yml&lt;/code&gt; is as follows:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.travis.yml"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;And if you'd like to see the process I went through to arrive at this solution,
+have a look at &lt;a href="https://github.com/vaibhavsagar/resumate"&gt;the test repo&lt;/a&gt; I
+used. The commit log is a fairly accurate representation of my thought process.
+If you're trying something similar and you're getting stuck, feel free to reach
+out and I'll be more than happy to help.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Thu, 26 Feb 2015 00:00:00 +1100</pubDate><guid>tag:,2015-02-26:blog/2015/02/26/generate-a-pdf-from-your-resume-with-travis-ci/</guid></item><item><title>How This Static Blog Uses Travis-CI</title><link>/blog/2015/02/01/how-this-static-blog-uses-travis-ci/</link><description>&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
 system like Travis-CI in charge of deployment and I settled for the approach
 outlined
 &lt;a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html"&gt;here&lt;/a&gt; which
