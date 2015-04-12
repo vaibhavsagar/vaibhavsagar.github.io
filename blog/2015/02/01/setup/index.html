@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
         <meta charset="utf-8" />
-        <title>First Post</title>
+        <title>How This Static Blog Uses Travis-CI</title>
         <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
 
         <!--[if IE]>
@@ -27,14 +27,14 @@
   <article>
     <header>
       <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/blog/2014/05/20/first-post/" rel="bookmark"
-           title="Permalink to First Post">First Post</a></h1>
+        <a href="http://www.vaibhavsagar.com/blog/2015/02/01/setup/" rel="bookmark"
+           title="Permalink to How This Static Blog Uses Travis-CI">How This Static Blog Uses Travis-CI</a></h1>
     </header>
 
     <div class="entry-content">
 <footer class="post-info">
-        <abbr class="published" title="2014-05-20T00:00:00+10:00">
-                Published: Tue 20 May 2014
+        <abbr class="published" title="2015-02-01T00:00:00+11:00">
+                Published: Sun 01 February 2015
         </abbr>
 
         <address class="vcard author">
@@ -42,17 +42,51 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/uncategorised/">Uncategorised</a>. </p>
 
-</footer><!-- /.post-info -->      <p>This is my latest attempt to get a blog going. The advantages this has over my
-previous system are shiny Python goodness and my GitHub contributions graph
-egging me on.</p>
+</footer><!-- /.post-info -->      <p>When I started this blog, I was reluctant to put a continuous integration
+system like Travis-CI in charge of deployment and I settled for the approach
+outlined
+<a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html">here</a> which
+worked reasonably well. However, I recently realised that automating my
+deployment would allow me to theoretically create a post using the GitHub web
+interface which would automatically get turned into a new post on my blog.
+This would allow me to use this blog from any web browser! In other words, I
+wanted a convoluted reimplementation of half of a CMS's functionality.</p>
+<p>I found a very helpful <a href="http://zonca.github.io/2013/09/automatically-build-pelican-and-publish-to-github-pages.html">blog
+post</a>
+that covered most of the details I needed. Let me go through the changes I
+made.</p>
+<p>First off, I use Python 3 wherever possible so I simplified my
+<code>requirements.txt</code>:</p>
+<p><script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/requirements.txt"></script></p>
+<p>My <code>.travis.yml</code> is different too (I removed unnecessary nesting to make it
+shorter):</p>
+<p><script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/.travis.yml"></script></p>
+<p>I installed the <code>travis</code> gem, got a GitHub token, and tried to set the token
+with</p>
+<div class="highlight"><pre>travis encrypt GH_TOKEN=LONGTOKENFROMGITHUB --add env.global
+</pre></div>
+
+
+<p>but it didn't recognise my repository until I went to my <a href="https://travis-ci.org/profile/">Travis-CI
+profile</a>, enabled GitHub access, and enabled it
+to check my repository.</p>
+<p>The <code>deploy.sh</code> script was almost the same (change your username):</p>
+<p><script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/deploy.sh"></script></p>
+<p>and that was all the setup I had to do. I then pushed a commit and watched as
+Pelican and its dependencies were downloaded, my blog posts were regenerated,
+and my GitHub Pages repo was updated. Seems a bit wasteful, but it was
+surprisingly easy to get working.</p>
     </div><!-- /.entry-content -->
     <div class="comments">
       <h2>Comments !</h2>
       <div id="disqus_thread"></div>
       <script type="text/javascript">
         var disqus_shortname = 'vaibhavsagar';
-        var disqus_identifier = 'blog/2014/05/20/first-post/';
-        var disqus_url = 'http://www.vaibhavsagar.com/blog/2014/05/20/first-post/';
+        var disqus_identifier = 'blog/2015/02/01/setup/';
+        var disqus_url = 'http://www.vaibhavsagar.com/blog/2015/02/01/setup/';
         (function() {
         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
         dsq.src = '//vaibhavsagar.disqus.com/embed.js';
