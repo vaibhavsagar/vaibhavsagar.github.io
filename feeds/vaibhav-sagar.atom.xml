@@ -26,7 +26,7 @@ otherwise be surrounded in double quotes. I was then able to install the
 downloaded package without any issues. This is what my pre-install script
 looked like:&lt;/p&gt;
 &lt;p&gt;&lt;script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/prepare.sh"&gt;
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/prepare.sh"&gt;
 &lt;/script&gt;&lt;/p&gt;
 &lt;p&gt;I already had a &lt;code&gt;Makefile&lt;/code&gt;, so converting my source to Github-flavoured
 Markdown and HTML was as easy as &lt;code&gt;make readme&lt;/code&gt; and &lt;code&gt;make html&lt;/code&gt;:&lt;/p&gt;
