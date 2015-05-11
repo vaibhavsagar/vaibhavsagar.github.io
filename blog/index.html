@@ -26,7 +26,64 @@
 
             <aside id="featured" class="body">
                 <article>
-                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/">Generate A PDF From Your Resume With Travis-CI</a></h1>
+                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/">Git It Going - an Introduction to Git</a></h1>
+<footer class="post-info">
+        <abbr class="published" title="2015-05-10T00:00:00+10:00">
+                Published: Sun 10 May 2015
+        </abbr>
+
+        <address class="vcard author">
+                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
+        </address>
+<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">Programming</a>. </p>
+
+</footer><!-- /.post-info --><p>I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+was my first ever technical talk, and I think it went fairly well.</p>
+<p>When writing my presentation, I decided it would be most useful to demonstrate
+<code>git</code> to the audience assuming some Subversion experience but minimal Git or
+Mercurial experience. I ended up presenting my talk with my slides on one
+window to the left, my Github repository configured as the remote origin of my
+demonstration repository in another window to the right, and a command line
+window that I used to interact with my repository in the middle (which was the
+most important). My instructions to myself were in a separate window as
+speaker's notes. Although I spent some time window juggling, I think this was
+the right approach.</p>
+<p>The audience had all types: hardcore Mercurial users, Subversion loyalists,
+people using Git as a frontend to other version control systems, and people new
+to version control and diffs in general. I spent a fair chunk of the
+presentation answering questions or listening to the audience answering each
+other's questions, which was exactly how I wanted it.</p>
+<p>I really enjoyed giving this talk, and would happily do so again. My
+presentation contents are <a href="https://github.com/vaibhavsagar/git-it-going">here</a>,
+complete with a <code>.travis.yml</code> file which uses <code>pandoc</code> to regenerate the slides
+on each push. The slides themselves are
+<a href="http://www.vaibhavsagar.com/git-it-going">available</a> although I think they're
+pretty pointless on their own. If you would like to use these materials, you
+are more than welcome to do so.</p>
+<p>Suggestions for improvement and pull requests are very welcome. There are a
+couple of things I would have liked to cover that I didn't: <code>git commit
+--amend</code>, <code>git stash</code>, <code>git cherry-pick</code>, <code>git rebase</code>, and so on. The
+presentation is not very useful to people who want to know more about these
+topics, and it might be possible to add more slides and more instructions in
+case people are comfortable with basic <code>git</code> so I can safely skip the first
+couple of sections and instead spend more time talking about branching,
+rewriting history and different workflows.</p>
+<p>I would highly recommend giving a technical talk if you have the opportunity.
+If it is a topic I am familiar with, or if you'd like to run through the
+presentation with me then I'm more than happy to help.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/#disqus_thread">comments</a>.</p>                </article>
+            </aside><!-- /#featured -->
+                <section id="content" class="body">
+                    <h1>Other articles</h1>
+                    <hr />
+                    <ol id="posts-list" class="hfeed">
+
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="bookmark"
+                           title="Permalink to Generate A PDF From Your Resume With Travis-CI">Generate A PDF From Your Resume With Travis-CI</a></h1>
+                </header>
+
+                <div class="entry-content">
 <footer class="post-info">
         <abbr class="published" title="2015-02-26T00:00:00+11:00">
                 Published: Thu 26 February 2015
@@ -37,64 +94,14 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>. </p>
 
-</footer><!-- /.post-info --><p>After <a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/">automating my blog</a>, I decided to aim a little
+</footer><!-- /.post-info -->                <p>After <a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/">automating my blog</a>, I decided to aim a little
 higher and use Travis-CI to automate document generation from my resume. I use
 <a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written
 in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
-PDF (via LaTeX) that I've spent a ludicrous amount of time styling. I do have
-all these packages configured on my home computer, but it was becoming tedious
-to make changes and commit three separate files instead of just one. I was also
-finding it difficult to keep the PDF version of my resume up to date with the
-rest of my changes, and I thought it would be an interesting challenge to get
-everything set up in a repeatable manner.</p>
-<p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for
-its workers) are hopelessly out of date, so my first problem was getting the
-newest version of <code>pandoc</code> installed. It is available as a <code>.deb</code>
-<a href="https://github.com/jgm/pandoc/releases">here</a>, and Github being Github, this
-information is also provided as JSON. There's this really nifty tool called
-<code>jq</code> which is like <code>sed</code> for JSON so I found and used that. After having a play
-with it <a href="https://jqplay.org/">here</a> I was able to construct the filter I
-needed:</p>
-<div class="highlight"><pre>jq -r &#39;.assets[] | .browser_download_url | select(endswith(&quot;deb&quot;))&#39;
-</pre></div>
-
-
-<p>The '-r' is there so that <code>wget</code> won't choke on the output which would
-otherwise be surrounded in double quotes. I was then able to install the
-downloaded package without any issues. This is what my pre-install script
-looked like:</p>
-<p><script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/prepare.sh">
-</script></p>
-<p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured
-Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
-<p><script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/Makefile">
-</script></p>
-<p>I decided it would be best if the build process updated my <code>gh-pages</code> branch
-instead of uploading to a different repository:</p>
-<p><script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/update_pages.sh">
-</script></p>
-<p>The next challenge was actually generating my PDF and uploading it to Github
-Releases. Travis CI has excellent support for deploying binaries to Releases
-but using the <code>travis</code> gem to configure support makes a completely new Github
-token which I thought was a bit redundant. The documentation for <code>travis
-encrypt</code> is pretty comprehensive and I just encrypted my old token and used
-that instead. My completed <code>.travis.yml</code> is as follows:</p>
-<p><script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.travis.yml">
-</script></p>
-<p>And if you'd like to see the process I went through to arrive at this solution,
-have a look at <a href="https://github.com/vaibhavsagar/resumate">the test repo</a> I
-used. The commit log is a fairly accurate representation of my thought process.
-If you're trying something similar and you're getting stuck, feel free to reach
-out and I'll be more than happy to help.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/#disqus_thread">comments</a>.</p>                </article>
-            </aside><!-- /#featured -->
-                <section id="content" class="body">
-                    <h1>Other articles</h1>
-                    <hr />
-                    <ol id="posts-list" class="hfeed">
+PDF (via LaTeX) that I've spent ...</p>
+                <a class="readmore" href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/">read more</a>
+<p>There are <a href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/#disqus_thread">comments</a>.</p>                </div><!-- /.entry-content -->
+            </article></li>
 
             <li><article class="hentry">
                 <header>

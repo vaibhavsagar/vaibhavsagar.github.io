@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/feeds/vaibhav-sagar.atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2015-02-26T00:00:00+11:00</updated><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><updated>2015-02-26T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/feeds/vaibhav-sagar.atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2015-05-10T00:00:00+10:00</updated><entry><title>Git It Going - an Introduction to Git</title><link href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="alternate"></link><updated>2015-05-10T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-05-10:blog/2015/05/10/git-it-going/</id><summary type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+was my first ever technical talk, and I think it went fairly well.&lt;/p&gt;
+&lt;p&gt;When writing my presentation, I decided it would be most useful to demonstrate
+&lt;code&gt;git&lt;/code&gt; to the audience assuming some Subversion experience but minimal Git or
+Mercurial experience. I ended up presenting my talk with my slides on one
+window to the left, my Github repository configured as the remote origin of my
+demonstration repository in another window to the right, and a command line
+window that I used to interact with my repository in the middle (which was the
+most important). My instructions to myself were in a separate window as
+speaker's notes. Although I spent some time window juggling, I think this was
+the right approach.&lt;/p&gt;
+&lt;p&gt;The audience had all types: hardcore Mercurial users, Subversion loyalists,
+people using Git as a frontend to other version control systems, and people new
+to version control and diffs in general. I spent a fair chunk of the
+presentation answering questions or listening to the audience answering each
+other's questions, which was exactly how I wanted it.&lt;/p&gt;
+&lt;p&gt;I really enjoyed giving this talk, and would happily do so again. My
+presentation contents are &lt;a href="https://github.com/vaibhavsagar/git-it-going"&gt;here&lt;/a&gt;,
+complete with a &lt;code&gt;.travis.yml&lt;/code&gt; file which uses &lt;code&gt;pandoc&lt;/code&gt; to regenerate the slides
+on each push. The slides themselves are
+&lt;a href="http://www.vaibhavsagar.com/git-it-going"&gt;available&lt;/a&gt; although I think they're
+pretty pointless on their own. If you would like to use these materials, you
+are more than welcome to do so.&lt;/p&gt;
+&lt;p&gt;Suggestions for improvement and pull requests are very welcome. There are a
+couple of things I would have liked to cover that I didn't: &lt;code&gt;git commit
+--amend&lt;/code&gt;, &lt;code&gt;git stash&lt;/code&gt;, &lt;code&gt;git cherry-pick&lt;/code&gt;, &lt;code&gt;git rebase&lt;/code&gt;, and so on. The
+presentation is not very useful to people who want to know more about these
+topics, and it might be possible to add more slides and more instructions in
+case people are comfortable with basic &lt;code&gt;git&lt;/code&gt; so I can safely skip the first
+couple of sections and instead spend more time talking about branching,
+rewriting history and different workflows.&lt;/p&gt;
+&lt;p&gt;I would highly recommend giving a technical talk if you have the opportunity.
+If it is a topic I am familiar with, or if you'd like to run through the
+presentation with me then I'm more than happy to help.&lt;/p&gt;</summary></entry><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><updated>2015-02-26T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
 higher and use Travis-CI to automate document generation from my resume. I use
 &lt;a href="http://johnmacfarlane.net/pandoc/"&gt;Pandoc&lt;/a&gt; to convert my source resume written
 in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
