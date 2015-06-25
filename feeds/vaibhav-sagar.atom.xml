@@ -85,8 +85,8 @@ have a look at &lt;a href="https://github.com/vaibhavsagar/resumate"&gt;the test
 used. The commit log is a fairly accurate representation of my thought process.
 If you're trying something similar and you're getting stuck, feel free to reach
 out and I'll be more than happy to help.&lt;/p&gt;</summary></entry><entry><title>How This Static Blog Uses Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/" rel="alternate"></link><updated>2015-02-01T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-01:blog/2015/02/01/blog-setup/</id><summary type="html">&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
-system like Travis-CI in charge of deployment and I settled for the approach
-outlined
+system like Travis-CI in charge of deployment because it seemed like a
+frivolous use of resources and I settled for the approach outlined
 &lt;a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html"&gt;here&lt;/a&gt; which
 worked reasonably well. However, I recently realised that automating my
 deployment would allow me to theoretically create a post using the GitHub web
