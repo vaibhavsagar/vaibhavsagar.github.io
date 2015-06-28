@@ -41,7 +41,9 @@ all these packages configured on my home computer, but it was becoming tedious
 to make changes and commit three separate files instead of just one. I was also
 finding it difficult to keep the PDF version of my resume up to date with the
 rest of my changes, and I thought it would be an interesting challenge to get
-everything set up in a repeatable manner.&lt;/p&gt;
+everything set up in a repeatable manner. One good reference is &lt;a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/"&gt;this blog
+post&lt;/a&gt;
+by Steve Klabnik.&lt;/p&gt;
 &lt;p&gt;The versions of &lt;code&gt;pandoc&lt;/code&gt; and &lt;code&gt;LaTeX&lt;/code&gt; on Ubuntu 12.04 (which Travis-CI uses for
 its workers) are hopelessly out of date, so my first problem was getting the
 newest version of &lt;code&gt;pandoc&lt;/code&gt; installed. It is available as a &lt;code&gt;.deb&lt;/code&gt;
