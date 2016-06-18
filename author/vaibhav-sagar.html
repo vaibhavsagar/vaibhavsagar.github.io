@@ -26,7 +26,197 @@
 
             <aside id="featured" class="body">
                 <article>
-                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/">Git It Going - an Introduction to Git</a></h1>
+                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/">You Could Have Invented The State Monad</a></h1>
+<footer class="post-info">
+        <abbr class="published" title="2016-06-17T00:00:00+10:00">
+                Published: Fri 17 June 2016
+        </abbr>
+
+        <address class="vcard author">
+                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
+        </address>
+<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+
+</footer><!-- /.post-info --><p>I'm attempting <a href="https://github.com/NICTA/course">NICTA/course</a> a second time. I
+gave up the last time because none of the State exercises were making sense and
+I found myself leaning so heavily on the solutions that I wasn't actually
+learning anything. This time I was much better prepared after watching lots of
+CanFPG talks, reading lots of blog posts and writing a little Haskell, and I
+easily cleared the State hurdle. In fact, I'm now going to demonstrate how you
+(yes, <em>you</em>) could have come up with it (with a little help).</p>
+<p>The fundamental insight of State is that it is a function that takes a value of
+type <code>s</code> and returns a tuple of some value <code>a</code> and a new value of type <code>s</code>:</p>
+<div class="highlight"><pre><span></span><span class="kr">newtype</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">{</span> <span class="n">runState</span> <span class="ow">::</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">s</span><span class="p">)</span> <span class="p">}</span>
+</pre></div>
+
+
+<p>Given such a type, what would its <code>Functor</code> instance look like?</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
+  <span class="p">(</span><span class="o">&lt;$&gt;</span><span class="p">)</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
+</pre></div>
+
+
+<p>Our implementation should be another State that takes a value <code>s0</code>, passes it
+to the second argument <code>sa</code> (resulting in <code>(a, s1)</code>) and calls the function
+<code>fn</code> on <code>a</code>:</p>
+<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&lt;$&gt;</span><span class="p">)</span> <span class="n">fn</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span> <span class="kr">in</span> <span class="p">(</span><span class="n">fn</span> <span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">))</span>
+</pre></div>
+
+
+<p>This is a State that takes <code>s0</code> and returns <code>(b, s1)</code>, which is exactly what we
+wanted.</p>
+<p>Let's look at the <code>Applicative</code> instance next:</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
+  <span class="n">pure</span>  <span class="ow">::</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span>
+  <span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
+</pre></div>
+
+
+<p>The implementation for <code>pure</code> explains where the <code>a</code> in our State comes from.
+Given some <code>a</code>, return a State that, when fed a value <code>s</code>, results in <code>(a,s)</code>.
+It practically writes itself.</p>
+<div class="highlight"><pre><span></span>  <span class="n">pure</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">s</span><span class="p">))</span>
+</pre></div>
+
+
+<p><code>(&lt;*&gt;)</code> is a bit trickier, because we're dealing with both the State the
+function is in and the State its argument is in. The implementation should be a
+State that takes a value <code>s0</code>, feeds it to <code>sa</code> to get <code>(fn, s1)</code>, feeds <code>s1</code>
+to <code>sb</code> to get <code>(a, s2)</code>, and calls <code>fn</code> on <code>a</code>:</p>
+<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sb</span><span class="p">)</span> <span class="ow">=</span>
+    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
+                      <span class="p">(</span><span class="n">a</span> <span class="p">,</span> <span class="n">s2</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sb</span> <span class="n">s1</span>
+                  <span class="kr">in</span> <span class="p">(</span><span class="n">fn</span> <span class="n">a</span><span class="p">,</span> <span class="n">s2</span><span class="p">))</span>
+</pre></div>
+
+
+<p>The hardest thing is remembering to thread <code>s0</code> through <code>sa</code> and <code>sb</code>.</p>
+<p>Finally, let's look at the <code>Monad</code> instance:</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
+  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
+</pre></div>
+
+
+<p>As with all our previous implementions, it has the form:</p>
+<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="o">???</span> <span class="kr">in</span> <span class="o">???</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We know that we need to feed <code>s0</code> to <code>sa</code> to get an <code>a</code> to apply to <code>fn</code>:</p>
+<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span>
+    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
+                      <span class="o">???</span>     <span class="ow">=</span> <span class="n">fn</span> <span class="n">a</span>
+                  <span class="kr">in</span> <span class="o">???</span><span class="p">)</span>
+</pre></div>
+
+
+<p>The result of <code>fn a</code> is a <code>State sb</code> but we need to return a tuple of <code>(b, s)</code>.
+We can obtain one by feeding <code>s1</code> to <code>sb</code>:</p>
+<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span>
+    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>  <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
+                      <span class="kt">State</span> <span class="n">sb</span> <span class="ow">=</span> <span class="n">fn</span> <span class="n">a</span>
+                  <span class="kr">in</span> <span class="n">sb</span> <span class="n">s1</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Success!</p>
+<p>Let's define a few functions to make our lives easier. <code>get</code> returns a State
+that, when fed some <code>s</code>, returns <code>(s,s)</code>. This allows us to expose <code>s</code> for
+direct modification:</p>
+<div class="highlight"><pre><span></span><span class="nf">get</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">s</span>
+<span class="nf">get</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+</pre></div>
+
+
+<p><code>put</code> allows us to store a State that ignores the <code>s</code> passed to it later:</p>
+<div class="highlight"><pre><span></span><span class="nf">put</span> <span class="ow">::</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="nb">()</span>
+<span class="nf">put</span> <span class="n">s</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span><span class="n">s</span><span class="p">))</span>
+</pre></div>
+
+
+<p>Sometimes we want the <code>s</code> and not the <code>a</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">exec</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="n">s</span>
+<span class="nf">exec</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">s</span> <span class="ow">=</span> <span class="n">snd</span> <span class="o">$</span> <span class="n">sa</span> <span class="n">s</span>
+</pre></div>
+
+
+<p>At other times we want the <code>a</code> and not the <code>s</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">eval</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="n">a</span>
+<span class="nf">eval</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">s</span> <span class="ow">=</span> <span class="n">fst</span> <span class="o">$</span> <span class="n">sa</span> <span class="n">s</span>
+</pre></div>
+
+
+<p>With all this machinery in place, we can do this:</p>
+<div class="highlight"><pre><span></span><span class="kt">Prelude</span><span class="o">&gt;</span> <span class="n">exec</span> <span class="p">(</span><span class="kr">do</span> <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">get</span><span class="p">;</span> <span class="n">put</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span> <span class="n">return</span> <span class="nb">()</span><span class="p">)</span> <span class="mi">0</span>
+<span class="mi">1</span>
+</pre></div>
+
+
+<p>I still couldn't believe that this worked the first time I tried it, so let's
+desugar this:</p>
+<div class="highlight"><pre><span></span>    <span class="kr">do</span> <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">get</span><span class="p">;</span> <span class="n">put</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span> <span class="n">return</span> <span class="nb">()</span>
+ <span class="o">==</span> <span class="n">get</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="n">put</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="n">pure</span> <span class="nb">()</span>
+ <span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>    <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span>
+    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span>
+    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+</pre></div>
+
+
+<p>Let's simplify from the bottom up. By the definition of <code>(&gt;&gt;=)</code>:</p>
+<div class="highlight"><pre><span></span>    <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s</span><span class="p">))))</span> <span class="ow">=</span>
+      <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>  <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="n">s0</span>
+                     <span class="c1">-- (a, s1)  = ((), i+1)</span>
+                        <span class="kt">State</span> <span class="n">sb</span> <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s</span><span class="p">))))</span> <span class="n">a</span>
+                     <span class="c1">--       sb = (\s -&gt; ((), s))</span>
+                    <span class="kr">in</span> <span class="n">sb</span> <span class="n">s1</span><span class="p">)</span>
+                     <span class="c1">-- ((), i+1)</span>
+<span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+<span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span>  <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+
+
+<p>Plugging that back in, we have</p>
+<div class="highlight"><pre><span></span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">))</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+
+
+<p>Which we can simplify in the same way:</p>
+<div class="highlight"><pre><span></span>    <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">)))</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="ow">=</span>
+      <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>  <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">))</span> <span class="n">s0</span>
+                     <span class="c1">-- (a, s1)  = (s0, s0)</span>
+                        <span class="kt">State</span> <span class="n">sb</span> <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="n">a</span>
+                     <span class="c1">--       sb = (\_ -&gt; ((), s0+1))</span>
+                    <span class="kr">in</span> <span class="n">sb</span> <span class="n">s1</span><span class="p">)</span>
+                     <span class="c1">-- ((), s0+1)</span>
+ <span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s0</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+ <span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span>  <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+
+
+<p>Finally, we have</p>
+<div class="highlight"><pre><span></span>    <span class="n">exec</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="mi">0</span>
+ <span class="o">==</span> <span class="n">snd</span> <span class="o">$</span> <span class="n">runState</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="mi">0</span>
+ <span class="o">==</span> <span class="n">snd</span> <span class="o">$</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="mi">0</span>
+ <span class="o">==</span> <span class="n">snd</span> <span class="o">$</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+ <span class="o">==</span> <span class="mi">1</span>
+</pre></div>
+
+
+<p>This is my favourite thing about Haskell: the fact that it is built on
+abstractions that can be reasoned about in such a rigorous manner.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/#disqus_thread">comments</a>.</p>                </article>
+            </aside><!-- /#featured -->
+                <section id="content" class="body">
+                    <h1>Other articles</h1>
+                    <hr />
+                    <ol id="posts-list" class="hfeed">
+
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="bookmark"
+                           title="Permalink to Git It Going - an Introduction to Git">Git It Going - an Introduction to Git</a></h1>
+                </header>
+
+                <div class="entry-content">
 <footer class="post-info">
         <abbr class="published" title="2015-05-10T00:00:00+10:00">
                 Published: Sun 10 May 2015
@@ -37,45 +227,13 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
 
-</footer><!-- /.post-info --><p>I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+</footer><!-- /.post-info -->                <p>I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
 was my first ever technical talk, and I think it went fairly well.</p>
 <p>When writing my presentation, I decided it would be most useful to demonstrate
-<code>git</code> to the audience assuming some Subversion experience but minimal Git or
-Mercurial experience. I ended up presenting my talk with my slides on one
-window to the left, my Github repository configured as the remote origin of my
-demonstration repository in another window to the right, and a command line
-window that I used to interact with my repository in the middle (which was the
-most important). My instructions to myself were in a separate window as
-speaker's notes. Although I spent some time window juggling, I think this was
-the right approach.</p>
-<p>The audience had all types: hardcore Mercurial users, Subversion loyalists,
-people using Git as a frontend to other version control systems, and people new
-to version control and diffs in general. I spent a fair chunk of the
-presentation answering questions or listening to the audience answering each
-other's questions, which was exactly how I wanted it.</p>
-<p>I really enjoyed giving this talk, and would happily do so again. My
-presentation contents are <a href="https://github.com/vaibhavsagar/git-it-going">here</a>,
-complete with a <code>.travis.yml</code> file which uses <code>pandoc</code> to regenerate the slides
-on each push. The slides themselves are
-<a href="http://www.vaibhavsagar.com/git-it-going">available</a> although I think they're
-pretty pointless on their own. If you would like to use these materials, you
-are more than welcome to do so.</p>
-<p>Suggestions for improvement and pull requests are very welcome. There are a
-couple of things I would have liked to cover that I didn't: <code>git commit
---amend</code>, <code>git stash</code>, <code>git cherry-pick</code>, <code>git rebase</code>, and so on. The
-presentation is not very useful to people who want to know more about these
-topics, and it might be possible to add more slides and more instructions in
-case people are comfortable with basic <code>git</code> so I can safely skip the first
-couple of sections and instead spend more time talking about branching,
-rewriting history and different workflows.</p>
-<p>I would highly recommend giving a technical talk if you have the opportunity.
-If it is a topic I am familiar with, or if you'd like to run through the
-presentation with me then I'm more than happy to help.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/#disqus_thread">comments</a>.</p>                </article>
-            </aside><!-- /#featured -->
-                <section id="content" class="body">
-                    <h1>Other articles</h1>
-                    <hr />
-                    <ol id="posts-list" class="hfeed">
+<code>git</code> to the audience assuming some ...</p>
+                <a class="readmore" href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/">read more</a>
+<p>There are <a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/#disqus_thread">comments</a>.</p>                </div><!-- /.entry-content -->
+            </article></li>
 
             <li><article class="hentry">
                 <header>
