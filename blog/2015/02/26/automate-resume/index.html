@@ -63,7 +63,7 @@ information is also provided as JSON. There's this really nifty tool called
 <code>jq</code> which is like <code>sed</code> for JSON so I found and used that. After having a play
 with it <a href="https://jqplay.org/">here</a> I was able to construct the filter I
 needed:</p>
-<div class="highlight"><pre>jq -r &#39;.assets[] | .browser_download_url | select(endswith(&quot;deb&quot;))&#39;
+<div class="highlight"><pre><span></span>jq -r &#39;.assets[] | .browser_download_url | select(endswith(&quot;deb&quot;))&#39;
 </pre></div>
 
 
