@@ -3,11 +3,13 @@
 gave up the last time because none of the State exercises were making sense and
 I found myself leaning so heavily on the solutions that I wasn't actually
 learning anything. This time I was much better prepared after watching lots of
-CanFPG talks, reading lots of blog posts and writing a little Haskell, and I
-easily cleared the State hurdle. In fact, I'm now going to demonstrate how you
-(yes, &lt;em&gt;you&lt;/em&gt;) could have come up with it (with a little help).&lt;/p&gt;
-&lt;p&gt;The fundamental insight of State is that it is a function that takes a value of
-type &lt;code&gt;s&lt;/code&gt; and returns a tuple of some value &lt;code&gt;a&lt;/code&gt; and a new value of type &lt;code&gt;s&lt;/code&gt;:&lt;/p&gt;
+&lt;a href="http://www.meetup.com/CanFPG/"&gt;CanFPG&lt;/a&gt; talks, reading lots of blog posts and
+writing a little Haskell, and I easily cleared the State hurdle. In fact, I'm
+now going to demonstrate how you (yes, &lt;em&gt;you&lt;/em&gt;) could have come up with it (with
+a little help).&lt;/p&gt;
+&lt;p&gt;The fundamental insight of state is that it can be represented by a function
+that takes a value of type &lt;code&gt;s&lt;/code&gt; and returns a tuple of some value &lt;code&gt;a&lt;/code&gt; and a new
+value of type &lt;code&gt;s&lt;/code&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;newtype&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="n"&gt;runState&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
@@ -47,19 +49,21 @@ State that takes a value &lt;code&gt;s0&lt;/code&gt;, feeds it to &lt;code&gt;sa
 to &lt;code&gt;sb&lt;/code&gt; to get &lt;code&gt;(a, s2)&lt;/code&gt;, and calls &lt;code&gt;fn&lt;/code&gt; on &lt;code&gt;a&lt;/code&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;*&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt;
     &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fn&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;
-                      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;
+                      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="n"&gt;s2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;
                   &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s2&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;The hardest thing is remembering to thread &lt;code&gt;s0&lt;/code&gt; through &lt;code&gt;sa&lt;/code&gt; and &lt;code&gt;sb&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The hardest thing is remembering to thread &lt;code&gt;s0&lt;/code&gt; through &lt;code&gt;sa&lt;/code&gt; and &lt;code&gt;sb&lt;/code&gt; so that
+we don't lose any state on the way. We can usually follow the types but they
+don't help in this specific case.&lt;/p&gt;
 &lt;p&gt;Finally, let's look at the &lt;code&gt;Monad&lt;/code&gt; instance:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;instance&lt;/span&gt; &lt;span class="kt"&gt;Monad&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kr"&gt;where&lt;/span&gt;
   &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;As with all our previous implementions, it has the form:&lt;/p&gt;
+&lt;p&gt;As with all our previous implementations, it has the form:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="o"&gt;???&lt;/span&gt; &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="o"&gt;???&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 

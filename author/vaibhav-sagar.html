@@ -41,11 +41,13 @@
 gave up the last time because none of the State exercises were making sense and
 I found myself leaning so heavily on the solutions that I wasn't actually
 learning anything. This time I was much better prepared after watching lots of
-CanFPG talks, reading lots of blog posts and writing a little Haskell, and I
-easily cleared the State hurdle. In fact, I'm now going to demonstrate how you
-(yes, <em>you</em>) could have come up with it (with a little help).</p>
-<p>The fundamental insight of State is that it is a function that takes a value of
-type <code>s</code> and returns a tuple of some value <code>a</code> and a new value of type <code>s</code>:</p>
+<a href="http://www.meetup.com/CanFPG/">CanFPG</a> talks, reading lots of blog posts and
+writing a little Haskell, and I easily cleared the State hurdle. In fact, I'm
+now going to demonstrate how you (yes, <em>you</em>) could have come up with it (with
+a little help).</p>
+<p>The fundamental insight of state is that it can be represented by a function
+that takes a value of type <code>s</code> and returns a tuple of some value <code>a</code> and a new
+value of type <code>s</code>:</p>
 <div class="highlight"><pre><span></span><span class="kr">newtype</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">{</span> <span class="n">runState</span> <span class="ow">::</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">s</span><span class="p">)</span> <span class="p">}</span>
 </pre></div>
 
@@ -85,19 +87,21 @@ State that takes a value <code>s0</code>, feeds it to <code>sa</code> to get <co
 to <code>sb</code> to get <code>(a, s2)</code>, and calls <code>fn</code> on <code>a</code>:</p>
 <div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sb</span><span class="p">)</span> <span class="ow">=</span>
     <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
-                      <span class="p">(</span><span class="n">a</span> <span class="p">,</span> <span class="n">s2</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sb</span> <span class="n">s1</span>
+                      <span class="p">(</span><span class="n">a</span><span class="p">,</span>  <span class="n">s2</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sb</span> <span class="n">s1</span>
                   <span class="kr">in</span> <span class="p">(</span><span class="n">fn</span> <span class="n">a</span><span class="p">,</span> <span class="n">s2</span><span class="p">))</span>
 </pre></div>
 
 
-<p>The hardest thing is remembering to thread <code>s0</code> through <code>sa</code> and <code>sb</code>.</p>
+<p>The hardest thing is remembering to thread <code>s0</code> through <code>sa</code> and <code>sb</code> so that
+we don't lose any state on the way. We can usually follow the types but they
+don't help in this specific case.</p>
 <p>Finally, let's look at the <code>Monad</code> instance:</p>
 <div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
   <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
 </pre></div>
 
 
-<p>As with all our previous implementions, it has the form:</p>
+<p>As with all our previous implementations, it has the form:</p>
 <div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="o">???</span> <span class="kr">in</span> <span class="o">???</span><span class="p">)</span>
 </pre></div>
 
