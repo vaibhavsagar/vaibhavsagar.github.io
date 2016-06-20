@@ -169,7 +169,9 @@ desugar this:&lt;/p&gt;
 
 
 &lt;p&gt;This is my favourite thing about Haskell: the fact that it is built on
-abstractions that can be reasoned about in such a rigorous manner.&lt;/p&gt;</summary></entry><entry><title>Git It Going - an Introduction to Git</title><link href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="alternate"></link><published>2015-05-10T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-05-10:blog/2015/05/10/git-it-going/</id><summary type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+abstractions that can be reasoned about in such a rigorous manner.&lt;/p&gt;
+&lt;p&gt;In fact, with some inspired renaming, &lt;a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html"&gt;you too could have invented the
+continuation monad&lt;/a&gt;.&lt;/p&gt;</summary></entry><entry><title>Git It Going - an Introduction to Git</title><link href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="alternate"></link><published>2015-05-10T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-05-10:blog/2015/05/10/git-it-going/</id><summary type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
 was my first ever technical talk, and I think it went fairly well.&lt;/p&gt;
 &lt;p&gt;When writing my presentation, I decided it would be most useful to demonstrate
 &lt;code&gt;git&lt;/code&gt; to the audience assuming some Subversion experience but minimal Git or
