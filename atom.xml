@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-06-17T00:00:00+10:00</updated><entry><title>You Could Have Invented The State Monad</title><link href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/" rel="alternate"></link><published>2016-06-17T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-06-17:blog/2016/06/17/haskell-state/</id><summary type="html">&lt;p&gt;I'm attempting &lt;a href="https://github.com/NICTA/course"&gt;NICTA/course&lt;/a&gt; a second time. I
+gave up the last time because none of the State exercises were making sense and
+I found myself leaning so heavily on the solutions that I wasn't actually
+learning anything. This time I was much better prepared after watching lots of
+&lt;a href="http://www.meetup.com/CanFPG/"&gt;CanFPG&lt;/a&gt; talks, reading lots of blog posts and
+writing a little Haskell, and I easily cleared the State hurdle. In fact, I'm
+now going to demonstrate how you (yes, &lt;em&gt;you&lt;/em&gt;) could have come up with it (with
+a little help).&lt;/p&gt;
+&lt;p&gt;The fundamental insight of state is that it can be represented by a function
+that takes a value of type &lt;code&gt;s&lt;/code&gt; and returns a tuple of some value &lt;code&gt;a&lt;/code&gt; and a new
+value of type &lt;code&gt;s&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;newtype&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="n"&gt;runState&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Given such a type, what would its &lt;code&gt;Functor&lt;/code&gt; instance look like?&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;instance&lt;/span&gt; &lt;span class="kt"&gt;Functor&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kr"&gt;where&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;$&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Our implementation should be another State that takes a value &lt;code&gt;s0&lt;/code&gt;, passes it
+to the second argument &lt;code&gt;sa&lt;/code&gt; (resulting in &lt;code&gt;(a, s1)&lt;/code&gt;) and calls the function
+&lt;code&gt;fn&lt;/code&gt; on &lt;code&gt;a&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;$&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This is a State that takes &lt;code&gt;s0&lt;/code&gt; and returns &lt;code&gt;(b, s1)&lt;/code&gt;, which is exactly what we
+wanted.&lt;/p&gt;
+&lt;p&gt;Let's look at the &lt;code&gt;Applicative&lt;/code&gt; instance next:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;instance&lt;/span&gt; &lt;span class="kt"&gt;Applicative&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kr"&gt;where&lt;/span&gt;
+  &lt;span class="n"&gt;pure&lt;/span&gt;  &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;*&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The implementation for &lt;code&gt;pure&lt;/code&gt; explains where the &lt;code&gt;a&lt;/code&gt; in our State comes from.
+Given some &lt;code&gt;a&lt;/code&gt;, return a State that, when fed a value &lt;code&gt;s&lt;/code&gt;, results in &lt;code&gt;(a,s)&lt;/code&gt;.
+It practically writes itself.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="n"&gt;pure&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;(&amp;lt;*&amp;gt;)&lt;/code&gt; is a bit trickier, because we're dealing with both the State the
+function is in and the State its argument is in. The implementation should be a
+State that takes a value &lt;code&gt;s0&lt;/code&gt;, feeds it to &lt;code&gt;sa&lt;/code&gt; to get &lt;code&gt;(fn, s1)&lt;/code&gt;, feeds &lt;code&gt;s1&lt;/code&gt;
+to &lt;code&gt;sb&lt;/code&gt; to get &lt;code&gt;(a, s2)&lt;/code&gt;, and calls &lt;code&gt;fn&lt;/code&gt; on &lt;code&gt;a&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;*&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt;
+    &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fn&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;
+                      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="n"&gt;s2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;
+                  &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s2&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The hardest thing is remembering to thread &lt;code&gt;s0&lt;/code&gt; through &lt;code&gt;sa&lt;/code&gt; and &lt;code&gt;sb&lt;/code&gt; so that
+we don't lose any state on the way. We can usually follow the types but they
+don't help in this specific case.&lt;/p&gt;
+&lt;p&gt;Finally, let's look at the &lt;code&gt;Monad&lt;/code&gt; instance:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;instance&lt;/span&gt; &lt;span class="kt"&gt;Monad&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kr"&gt;where&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;As with all our previous implementations, it has the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="o"&gt;???&lt;/span&gt; &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="o"&gt;???&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We know that we need to feed &lt;code&gt;s0&lt;/code&gt; to &lt;code&gt;sa&lt;/code&gt; to get an &lt;code&gt;a&lt;/code&gt; to apply to &lt;code&gt;fn&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt;
+    &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;
+                      &lt;span class="o"&gt;???&lt;/span&gt;     &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+                  &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="o"&gt;???&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The result of &lt;code&gt;fn a&lt;/code&gt; is a &lt;code&gt;State sb&lt;/code&gt; but we need to return a tuple of &lt;code&gt;(b, s)&lt;/code&gt;.
+We can obtain one by feeding &lt;code&gt;s1&lt;/code&gt; to &lt;code&gt;sb&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt;
+    &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;  &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;
+                      &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fn&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+                  &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Success!&lt;/p&gt;
+&lt;p&gt;Let's define a few functions to make our lives easier. &lt;code&gt;get&lt;/code&gt; returns a State
+that, when fed some &lt;code&gt;s&lt;/code&gt;, returns &lt;code&gt;(s,s)&lt;/code&gt;. This allows us to expose &lt;code&gt;s&lt;/code&gt; for
+direct modification:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;get&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;
+&lt;span class="nf"&gt;get&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;put&lt;/code&gt; allows us to store a State that ignores the &lt;code&gt;s&lt;/code&gt; passed to it later:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;put&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="nb"&gt;()&lt;/span&gt;
+&lt;span class="nf"&gt;put&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Sometimes we want the &lt;code&gt;s&lt;/code&gt; and not the &lt;code&gt;a&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;exec&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;
+&lt;span class="nf"&gt;exec&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;snd&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;At other times we want the &lt;code&gt;a&lt;/code&gt; and not the &lt;code&gt;s&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;eval&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+&lt;span class="nf"&gt;eval&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fst&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;sa&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;With all this machinery in place, we can do this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kt"&gt;Prelude&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;exec&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kr"&gt;do&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;put&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;I still couldn't believe that this worked the first time I tried it, so let's
+desugar this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="kr"&gt;do&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;put&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="nb"&gt;()&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;put&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;pure&lt;/span&gt; &lt;span class="nb"&gt;()&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Let's simplify from the bottom up. By the definition of &lt;code&gt;(&amp;gt;&amp;gt;=)&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))))&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt;
+      &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;  &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;
+                     &lt;span class="c1"&gt;-- (a, s1)  = ((), i+1)&lt;/span&gt;
+                        &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))))&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+                     &lt;span class="c1"&gt;--       sb = (\s -&amp;gt; ((), s))&lt;/span&gt;
+                    &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                     &lt;span class="c1"&gt;-- ((), i+1)&lt;/span&gt;
+&lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt;  &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Plugging that back in, we have&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Which we can simplify in the same way:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt;
+      &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;  &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;
+                     &lt;span class="c1"&gt;-- (a, s1)  = (s0, s0)&lt;/span&gt;
+                        &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+                     &lt;span class="c1"&gt;--       sb = (\_ -&amp;gt; ((), s0+1))&lt;/span&gt;
+                    &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="n"&gt;sb&lt;/span&gt; &lt;span class="n"&gt;s1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                     &lt;span class="c1"&gt;-- ((), s0+1)&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;s0&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s0&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;  &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Finally, we have&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;exec&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;snd&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;runState&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;State&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;snd&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;snd&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+ &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This is my favourite thing about Haskell: the fact that it is built on
+abstractions that can be reasoned about in such a rigorous manner.&lt;/p&gt;
+&lt;p&gt;In fact, with some inspired renaming, &lt;a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html"&gt;you too could have invented the
+continuation monad&lt;/a&gt;.&lt;/p&gt;</summary></entry><entry><title>Git It Going - an Introduction to Git</title><link href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="alternate"></link><published>2015-05-10T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-05-10:blog/2015/05/10/git-it-going/</id><summary type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+was my first ever technical talk, and I think it went fairly well.&lt;/p&gt;
+&lt;p&gt;When writing my presentation, I decided it would be most useful to demonstrate
+&lt;code&gt;git&lt;/code&gt; to the audience assuming some Subversion experience but minimal Git or
+Mercurial experience. I ended up presenting my talk with my slides on one
+window to the left, my Github repository configured as the remote origin of my
+demonstration repository in another window to the right, and a command line
+window that I used to interact with my repository in the middle (which was the
+most important). My instructions to myself were in a separate window as
+speaker's notes. Although I spent some time window juggling, I think this was
+the right approach.&lt;/p&gt;
+&lt;p&gt;The audience had all types: hardcore Mercurial users, Subversion loyalists,
+people using Git as a frontend to other version control systems, and people new
+to version control and diffs in general. I spent a fair chunk of the
+presentation answering questions or listening to the audience answering each
+other's questions, which was exactly how I wanted it.&lt;/p&gt;
+&lt;p&gt;I really enjoyed giving this talk, and would happily do so again. My
+presentation contents are &lt;a href="https://github.com/vaibhavsagar/git-it-going"&gt;here&lt;/a&gt;,
+complete with a &lt;code&gt;.travis.yml&lt;/code&gt; file which uses &lt;code&gt;pandoc&lt;/code&gt; to regenerate the slides
+on each push. The slides themselves are
+&lt;a href="http://www.vaibhavsagar.com/git-it-going"&gt;available&lt;/a&gt; although I think they're
+pretty pointless on their own. If you would like to use these materials, you
+are more than welcome to do so.&lt;/p&gt;
+&lt;p&gt;Suggestions for improvement and pull requests are very welcome. There are a
+couple of things I would have liked to cover that I didn't: &lt;code&gt;git commit
+--amend&lt;/code&gt;, &lt;code&gt;git stash&lt;/code&gt;, &lt;code&gt;git cherry-pick&lt;/code&gt;, &lt;code&gt;git rebase&lt;/code&gt;, and so on. The
+presentation is not very useful to people who want to know more about these
+topics, and it might be possible to add more slides and more instructions in
+case people are comfortable with basic &lt;code&gt;git&lt;/code&gt; so I can safely skip the first
+couple of sections and instead spend more time talking about branching,
+rewriting history and different workflows.&lt;/p&gt;
+&lt;p&gt;I would highly recommend giving a technical talk if you have the opportunity.
+If it is a topic I am familiar with, or if you'd like to run through the
+presentation with me then I'm more than happy to help.&lt;/p&gt;</summary></entry><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><published>2015-02-26T00:00:00+11:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;&lt;em&gt;Edit: I've hardcoded the &lt;code&gt;pandoc.deb&lt;/code&gt; URL for now because the most recent release of Pandoc does not provide a .deb file.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
+higher and use Travis-CI to automate document generation from my resume. I use
+&lt;a href="http://johnmacfarlane.net/pandoc/"&gt;Pandoc&lt;/a&gt; to convert my source resume written
+in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
+PDF (via LaTeX) that I've spent a ludicrous amount of time styling. I do have
+all these packages configured on my home computer, but it was becoming tedious
+to make changes and commit three separate files instead of just one. I was also
+finding it difficult to keep the PDF version of my resume up to date with the
+rest of my changes, and I thought it would be an interesting challenge to get
+everything set up in a repeatable manner. One good reference is &lt;a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/"&gt;this blog
+post&lt;/a&gt;
+by Steve Klabnik.&lt;/p&gt;
+&lt;p&gt;The versions of &lt;code&gt;pandoc&lt;/code&gt; and &lt;code&gt;LaTeX&lt;/code&gt; on Ubuntu 12.04 (which Travis-CI uses for
+its workers) are hopelessly out of date, so my first problem was getting the
+newest version of &lt;code&gt;pandoc&lt;/code&gt; installed. It is available as a &lt;code&gt;.deb&lt;/code&gt;
+&lt;a href="https://github.com/jgm/pandoc/releases"&gt;here&lt;/a&gt;, and Github being Github, this
+information is also provided as JSON. There's this really nifty tool called
+&lt;code&gt;jq&lt;/code&gt; which is like &lt;code&gt;sed&lt;/code&gt; for JSON so I found and used that. After having a play
+with it &lt;a href="https://jqplay.org/"&gt;here&lt;/a&gt; I was able to construct the filter I
+needed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jq -r &amp;#39;.assets[] | .browser_download_url | select(endswith(&amp;quot;deb&amp;quot;))&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The '-r' is there so that &lt;code&gt;wget&lt;/code&gt; won't choke on the output which would
+otherwise be surrounded in double quotes. I was then able to install the
+downloaded package without any issues. This is what my pre-install script
+looked like:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/prepare.sh"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;I already had a &lt;code&gt;Makefile&lt;/code&gt;, so converting my source to Github-flavoured
+Markdown and HTML was as easy as &lt;code&gt;make readme&lt;/code&gt; and &lt;code&gt;make html&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/Makefile"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;I decided it would be best if the build process updated my &lt;code&gt;gh-pages&lt;/code&gt; branch
+instead of uploading to a different repository:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/update_pages.sh"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;The next challenge was actually generating my PDF and uploading it to Github
+Releases. Travis CI has excellent support for deploying binaries to Releases
+but using the &lt;code&gt;travis&lt;/code&gt; gem to configure support makes a completely new Github
+token which I thought was a bit redundant. The documentation for &lt;code&gt;travis
+encrypt&lt;/code&gt; is pretty comprehensive and I just encrypted my old token and used
+that instead. My completed &lt;code&gt;.travis.yml&lt;/code&gt; is as follows:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.travis.yml"&gt;
+&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;And if you'd like to see the process I went through to arrive at this solution,
+have a look at &lt;a href="https://github.com/vaibhavsagar/resumate"&gt;the test repo&lt;/a&gt; I
+used. The commit log is a fairly accurate representation of my thought process.
+If you're trying something similar and you're getting stuck, feel free to reach
+out and I'll be more than happy to help.&lt;/p&gt;</summary></entry><entry><title>How This Static Blog Uses Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/" rel="alternate"></link><published>2015-02-01T00:00:00+11:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-01:blog/2015/02/01/blog-setup/</id><summary type="html">&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
+system like Travis-CI in charge of deployment because it seemed like a
+frivolous use of resources and so I settled for the approach outlined
+&lt;a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html"&gt;here&lt;/a&gt; which
+worked reasonably well. As my understanding of continuous integration and the
+possibilities of Travis improved, I changed my mind and decided it would be a
+good idea to automate this process. I also realised that automating my
+deployment would allow me to theoretically create or update a post using the
+GitHub web interface which would automatically get turned into a new post on my
+blog.  This would allow me to use this blog from any web browser! In other
+words, I wanted a convoluted reimplementation of half of a CMS's functionality.&lt;/p&gt;
+&lt;p&gt;I found a very helpful &lt;a href="http://zonca.github.io/2013/09/automatically-build-pelican-and-publish-to-github-pages.html"&gt;blog
+post&lt;/a&gt;
+that covered most of the details I needed. Let me go through the changes I
+made.&lt;/p&gt;
+&lt;p&gt;First off, I use Python 3 wherever possible so I simplified my
+&lt;code&gt;requirements.txt&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/requirements.txt"&gt;&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;My &lt;code&gt;.travis.yml&lt;/code&gt; is different too (I removed unnecessary nesting to make it
+shorter):&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/.travis.yml"&gt;&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;I installed the &lt;code&gt;travis&lt;/code&gt; gem, got a GitHub token, and tried to set the token
+with&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;travis encrypt GH_TOKEN=LONGTOKENFROMGITHUB --add env.global
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;but it didn't recognise my repository until I went to my &lt;a href="https://travis-ci.org/profile/"&gt;Travis-CI
+profile&lt;/a&gt;, enabled GitHub access, and enabled it
+to check my repository.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;deploy.sh&lt;/code&gt; script was almost the same (change your username):&lt;/p&gt;
+&lt;p&gt;&lt;script
+src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/deploy.sh"&gt;&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;and that was all the setup I had to do. I then pushed a commit and watched as
+Pelican and its dependencies were downloaded, my blog posts were regenerated,
+and my GitHub Pages repo was updated. Seems a bit wasteful, but it was
+surprisingly easy to get working and it performs admirably.&lt;/p&gt;</summary></entry><entry><title>Walking</title><link href="http://www.vaibhavsagar.com/blog/2014/06/04/jakarta-walking/" rel="alternate"></link><published>2014-06-04T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2014-06-04:blog/2014/06/04/jakarta-walking/</id><summary type="html">&lt;p&gt;So yesterday I took a walk to buy some groceries, and today I took another to
+buy some clothes from Uniqlo (as good as everyone says) and watch a movie (Edge
+of Tomorrow). This is pretty unremarkable, except that I did this... in
+Jakarta! I didn't think it was possible. I could definitely get used to this.&lt;/p&gt;</summary></entry><entry><title>First Post</title><link href="http://www.vaibhavsagar.com/blog/2014/05/20/first-post/" rel="alternate"></link><published>2014-05-20T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2014-05-20:blog/2014/05/20/first-post/</id><summary type="html">&lt;p&gt;This is my latest attempt to get a blog going. The advantages this has over my
+previous system are shiny Python goodness and my GitHub contributions graph
+egging me on.&lt;/p&gt;</summary></entry></feed>
