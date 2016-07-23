@@ -1,5 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-06-17T00:00:00+10:00</updated><entry><title>You Could Have Invented The State Monad</title><link href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/" rel="alternate"></link><published>2016-06-17T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-06-17:blog/2016/06/17/haskell-state/</id><summary type="html">&lt;p&gt;I'm attempting &lt;a href="https://github.com/NICTA/course"&gt;NICTA/course&lt;/a&gt; a second time. I
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-07-24T00:00:00+10:00</updated><entry><title>Using The Writer Monad Outside Logging</title><link href="http://www.vaibhavsagar.com/blog/2016/07/24/writer-delta/" rel="alternate"></link><published>2016-07-24T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-07-24:blog/2016/07/24/writer-delta/</id><summary type="html">&lt;p&gt;I hadn't given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven't had to do much logging in Haskell so far and so I incorrectly assumed that I didn't need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The Writer monad's output can be any Monoid, such as strings, lists, sets, etc.&lt;/li&gt;
+&lt;li&gt;ByteString is a Monoid.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Git Packfiles store some entries as deltas against other entries. The delta format is a bit hairy to parse, but it consists of a sequence of either copy or insert instructions. Copy instructions specify an offset in the source and a length of bytes to copy, whereas insert instructions specify a series of bytes to be copied as is.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="k"&gt;qualified&lt;/span&gt; &lt;span class="nn"&gt;Data.ByteString&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;B&lt;/span&gt;
+
+&lt;span class="kr"&gt;data&lt;/span&gt; &lt;span class="kt"&gt;DeltaInstruction&lt;/span&gt;
+    &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;CopyInstruction&lt;/span&gt;   &lt;span class="kt"&gt;Int&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="kt"&gt;InsertInstruction&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+    &lt;span class="kr"&gt;deriving&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;Show&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;An instruction can be interpreted with reference to a source to result in a ByteString.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;substring&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+&lt;span class="nf"&gt;substring&lt;/span&gt; &lt;span class="n"&gt;offset&lt;/span&gt; &lt;span class="n"&gt;length&lt;/span&gt; &lt;span class="n"&gt;bytestring&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;take&lt;/span&gt; &lt;span class="n"&gt;length&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;drop&lt;/span&gt; &lt;span class="n"&gt;offset&lt;/span&gt; &lt;span class="n"&gt;bytestring&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="nf"&gt;interpretInstruction&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;DeltaInstruction&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+&lt;span class="nf"&gt;interpretInstruction&lt;/span&gt; &lt;span class="n"&gt;instruction&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kr"&gt;case&lt;/span&gt; &lt;span class="n"&gt;instruction&lt;/span&gt; &lt;span class="kr"&gt;of&lt;/span&gt;
+    &lt;span class="kt"&gt;InsertInstruction&lt;/span&gt; &lt;span class="n"&gt;string&lt;/span&gt;        &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;string&lt;/span&gt;
+    &lt;span class="kt"&gt;CopyInstruction&lt;/span&gt;   &lt;span class="n"&gt;offset&lt;/span&gt; &lt;span class="n"&gt;length&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;substring&lt;/span&gt; &lt;span class="n"&gt;offset&lt;/span&gt; &lt;span class="n"&gt;length&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The concatenation of a list of interpreted instructions is a resolved delta.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;applyInstructions&amp;#39;&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;DeltaInstruction&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+&lt;span class="nf"&gt;applyInstructions&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt; &lt;span class="kt"&gt;[]&lt;/span&gt;     &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt;
+&lt;span class="nf"&gt;applyInstructions&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="kt"&gt;:&lt;/span&gt;&lt;span class="n"&gt;is&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kr"&gt;let&lt;/span&gt;
+    &lt;span class="n"&gt;dest&amp;#39;&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;interpretInstruction&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt;
+    &lt;span class="kr"&gt;in&lt;/span&gt; &lt;span class="n"&gt;applyInstructions&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="n"&gt;dest&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;is&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;For example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kt"&gt;:&lt;/span&gt;&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="kt"&gt;XOverloadedStrings&lt;/span&gt;
+&lt;span class="nf"&gt;testSource&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;tree 9977d7726a568347a513a6b061b87fd687322650&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;parent e05bba28b796e7af7e5d981955327621a6c43a5f&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;author Vaibhav Sagar &amp;lt;vaibhavsagar@gmail.com&amp;gt; 1467760597 +0800&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;committer Vaibhav Sagar &amp;lt;vaibhavsagar@gmail.com&amp;gt; 1467781641 +0800&lt;/span&gt;&lt;span class="se"&gt;\n\n&lt;/span&gt;&lt;span class="s"&gt;Use record wildcards.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+&lt;span class="nf"&gt;testInstructions&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;InsertInstruction&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="kt"&gt;CopyInstruction&lt;/span&gt; &lt;span class="mi"&gt;44&lt;/span&gt; &lt;span class="mi"&gt;167&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="kt"&gt;InsertInstruction&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;60597&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="kt"&gt;CopyInstruction&lt;/span&gt; &lt;span class="mi"&gt;216&lt;/span&gt; &lt;span class="mi"&gt;30&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="nf"&gt;applyInstructions&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;testSource&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="n"&gt;testInstructions&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &amp;lt;vaibhavsagar@gmail.com&amp;gt; 1467760597 +0800\ncommitter Vaibhav Sagar &amp;lt;vaibhavsagar@gmail.com&amp;gt; 1467760597 +0800\n\nUse record wildcards.\n&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Although this works, it isn't particularly elegant and it would be nice to abstract away the details of the empty ByteString and the append. Luckily, these correspond to the &lt;code&gt;mempty&lt;/code&gt; and &lt;code&gt;mappend&lt;/code&gt; methods of a Monoid, and since the Writer monad works with monoids, we might be able to use it. Let's start by defining a monadic action that appends an interpreted instruction and returns the source we fed it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Control.Monad&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Control.Monad.Trans.Writer&lt;/span&gt;
+
+&lt;span class="nf"&gt;applyInstruction&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;DeltaInstruction&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Writer&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+&lt;span class="nf"&gt;applyInstruction&lt;/span&gt; &lt;span class="n"&gt;instruction&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tell&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;interpretInstruction&lt;/span&gt; &lt;span class="n"&gt;instruction&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Our action takes two parameters and so we &lt;code&gt;map&lt;/code&gt; it to our list of instructions. This gives us a list of actions expecting a source buffer to operate on.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kt"&gt;:&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;applyInstruction&lt;/span&gt; &lt;span class="n"&gt;testInstructions&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;map applyInstruction testInstructions :: [ByteString -&amp;gt; Writer ByteString ByteString]
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We need to reduce this list to a single value while executing each action in sequence, which implies a fold. &lt;code&gt;foldM&lt;/code&gt; looks like what we need; according to the documentation:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;foldM f a1 &lt;span class="p"&gt;[&lt;/span&gt;x1&lt;span class="p"&gt;,&lt;/span&gt; x2&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;...&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; xm&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt;
+do
+    a2 &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; f a1 x1
+    a3 &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; f a2 x2
+    &lt;span class="kc"&gt;...&lt;/span&gt;
+    f am xm
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The only wrinkle is that &lt;code&gt;f&lt;/code&gt; needs to take the argument first and the action second. We can accomplish this by defining&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;f a b = b a
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;or&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;f = flip ($)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Putting it all together, we have&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;applyInstructions&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;DeltaInstruction&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="kt"&gt;ByteString&lt;/span&gt;
+&lt;span class="nf"&gt;applyInstructions&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="n"&gt;instructions&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;execWriter&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;foldM&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;flip&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;$&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;applyInstruction&lt;/span&gt; &lt;span class="n"&gt;instructions&lt;/span&gt;
+&lt;span class="nf"&gt;applyInstructions&lt;/span&gt; &lt;span class="n"&gt;testSource&lt;/span&gt; &lt;span class="n"&gt;testInstructions&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;applyInstructions&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;testSource&lt;/span&gt; &lt;span class="kt"&gt;B&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="n"&gt;testInstructions&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;True
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And there you have it, a use of Writer that has absolutely nothing to do with logging!&lt;/p&gt;</summary></entry><entry><title>You Could Have Invented The State Monad</title><link href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/" rel="alternate"></link><published>2016-06-17T00:00:00+10:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-06-17:blog/2016/06/17/haskell-state/</id><summary type="html">&lt;p&gt;I'm attempting &lt;a href="https://github.com/NICTA/course"&gt;NICTA/course&lt;/a&gt; a second time. I
 gave up the last time because none of the State exercises were making sense and
 I found myself leaning so heavily on the solutions that I wasn't actually
 learning anything. This time I was much better prepared after watching lots of
