@@ -80,13 +80,13 @@
 
 <p>For example:</p>
 <div class="highlight"><pre><span></span><span class="kt">:</span><span class="n">set</span> <span class="o">-</span><span class="kt">XOverloadedStrings</span>
-<span class="nf">testSource</span> <span class="ow">=</span> <span class="s">&quot;tree 9977d7726a568347a513a6b061b87fd687322650</span><span class="se">\n</span><span class="s">parent e05bba28b796e7af7e5d981955327621a6c43a5f</span><span class="se">\n</span><span class="s">author Vaibhav Sagar &lt;vaibhavsagar@gmail.com&gt; 1467760597 +0800</span><span class="se">\n</span><span class="s">committer Vaibhav Sagar &lt;vaibhavsagar@gmail.com&gt; 1467781641 +0800</span><span class="se">\n\n</span><span class="s">Use record wildcards.</span><span class="se">\n</span><span class="s">&quot;</span> <span class="ow">::</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
+<span class="nf">testSource</span> <span class="ow">=</span> <span class="s">&quot;tree 9977d7726a568347a513a6b061b87fd687322650</span><span class="se">\n</span><span class="s">parent e05bba28b796e7af7e5d981955327621a6c43a5f</span><span class="se">\n</span><span class="s">author Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800</span><span class="se">\n</span><span class="s">committer Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467781641 +0800</span><span class="se">\n\n</span><span class="s">Use record wildcards.</span><span class="se">\n</span><span class="s">&quot;</span> <span class="ow">::</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
 <span class="nf">testInstructions</span> <span class="ow">=</span> <span class="p">[</span><span class="kt">InsertInstruction</span> <span class="s">&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&quot;</span><span class="p">,</span><span class="kt">CopyInstruction</span> <span class="mi">44</span> <span class="mi">167</span><span class="p">,</span><span class="kt">InsertInstruction</span> <span class="s">&quot;60597&quot;</span><span class="p">,</span><span class="kt">CopyInstruction</span> <span class="mi">216</span> <span class="mi">30</span><span class="p">]</span>
 <span class="nf">applyInstructions&#39;</span> <span class="n">testSource</span> <span class="kt">B</span><span class="o">.</span><span class="n">empty</span> <span class="n">testInstructions</span>
 </pre></div>
 
 
-<div class="highlight"><pre><span></span>&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;vaibhavsagar@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;vaibhavsagar@gmail.com&gt; 1467760597 +0800\n\nUse record wildcards.\n&quot;
+<div class="highlight"><pre><span></span>&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\n\nUse record wildcards.\n&quot;
 </pre></div>
 
 
