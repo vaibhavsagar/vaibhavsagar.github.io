@@ -90,7 +90,7 @@
 <span class="kr">import</span> <span class="nn">Control.Monad.Trans.Writer</span>
 
 <span class="nf">applyInstruction</span> <span class="ow">::</span> <span class="kt">DeltaInstruction</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">Writer</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">applyInstruction</span> <span class="n">instruction</span> <span class="n">source</span> <span class="ow">=</span> <span class="n">tell</span> <span class="p">(</span><span class="n">interpretInstruction</span> <span class="n">instruction</span> <span class="n">source</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">return</span> <span class="n">source</span>
+<span class="nf">applyInstruction</span> <span class="n">instruction</span> <span class="n">source</span> <span class="ow">=</span> <span class="n">writer</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">interpretInstruction</span> <span class="n">instruction</span> <span class="n">source</span><span class="p">)</span>
 </pre></div>
 
 
