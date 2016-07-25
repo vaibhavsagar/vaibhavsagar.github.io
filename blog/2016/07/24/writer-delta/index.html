@@ -109,22 +109,22 @@
 
 
 <p>We need to reduce this list to a single value while executing each action in sequence, which implies a fold. <code>foldM</code> looks like what we need; according to the documentation:</p>
-<div class="highlight"><pre><span></span>foldM f a1 <span class="p">[</span>x1<span class="p">,</span> x2<span class="p">,</span> <span class="kc">...</span><span class="p">,</span> xm<span class="p">]</span> <span class="o">==</span>
-do
-    a2 <span class="o">&lt;-</span> f a1 x1
-    a3 <span class="o">&lt;-</span> f a2 x2
-    <span class="kc">...</span>
-    f am xm
+<div class="highlight"><pre><span></span><span class="nf">foldM</span> <span class="n">f</span> <span class="n">a1</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">xm</span><span class="p">]</span> <span class="o">==</span>
+<span class="kr">do</span>
+    <span class="n">a2</span> <span class="ow">&lt;-</span> <span class="n">f</span> <span class="n">a1</span> <span class="n">x1</span>
+    <span class="n">a3</span> <span class="ow">&lt;-</span> <span class="n">f</span> <span class="n">a2</span> <span class="n">x2</span>
+    <span class="o">...</span>
+    <span class="n">f</span> <span class="n">am</span> <span class="n">xm</span>
 </pre></div>
 
 
 <p>The only wrinkle is that <code>f</code> needs to take the argument first and the action second. We can accomplish this by defining</p>
-<div class="highlight"><pre><span></span>f a b = b a
+<div class="highlight"><pre><span></span><span class="nf">f</span> <span class="n">a</span> <span class="n">b</span> <span class="ow">=</span> <span class="n">b</span> <span class="n">a</span>
 </pre></div>
 
 
 <p>or</p>
-<div class="highlight"><pre><span></span>f = flip ($)
+<div class="highlight"><pre><span></span><span class="nf">f</span> <span class="ow">=</span> <span class="n">flip</span> <span class="p">(</span><span class="o">$</span><span class="p">)</span>
 </pre></div>
 
 

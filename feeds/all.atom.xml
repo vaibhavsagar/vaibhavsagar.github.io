@@ -65,22 +65,22 @@
 
 
 &lt;p&gt;We need to reduce this list to a single value while executing each action in sequence, which implies a fold. &lt;code&gt;foldM&lt;/code&gt; looks like what we need; according to the documentation:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;foldM f a1 &lt;span class="p"&gt;[&lt;/span&gt;x1&lt;span class="p"&gt;,&lt;/span&gt; x2&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;...&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; xm&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt;
-do
-    a2 &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; f a1 x1
-    a3 &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; f a2 x2
-    &lt;span class="kc"&gt;...&lt;/span&gt;
-    f am xm
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;foldM&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;a1&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;x2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xm&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt;
+&lt;span class="kr"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;a2&lt;/span&gt; &lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;a1&lt;/span&gt; &lt;span class="n"&gt;x1&lt;/span&gt;
+    &lt;span class="n"&gt;a3&lt;/span&gt; &lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;a2&lt;/span&gt; &lt;span class="n"&gt;x2&lt;/span&gt;
+    &lt;span class="o"&gt;...&lt;/span&gt;
+    &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;am&lt;/span&gt; &lt;span class="n"&gt;xm&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The only wrinkle is that &lt;code&gt;f&lt;/code&gt; needs to take the argument first and the action second. We can accomplish this by defining&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;f a b = b a
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;f&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;or&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;f = flip ($)
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;f&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;flip&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;$&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
