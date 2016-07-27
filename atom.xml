@@ -300,8 +300,7 @@ couple of sections and instead spend more time talking about branching,
 rewriting history and different workflows.&lt;/p&gt;
 &lt;p&gt;I would highly recommend giving a technical talk if you have the opportunity.
 If it is a topic I am familiar with, or if you'd like to run through the
-presentation with me then I'm more than happy to help.&lt;/p&gt;</summary></entry><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><published>2015-02-26T00:00:00+11:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;&lt;em&gt;Edit: I've hardcoded the &lt;code&gt;pandoc.deb&lt;/code&gt; URL for now because the most recent release of Pandoc does not provide a .deb file.&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
+presentation with me then I'm more than happy to help.&lt;/p&gt;</summary></entry><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><published>2015-02-26T00:00:00+11:00</published><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
 higher and use Travis-CI to automate document generation from my resume. I use
 &lt;a href="http://johnmacfarlane.net/pandoc/"&gt;Pandoc&lt;/a&gt; to convert my source resume written
 in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
