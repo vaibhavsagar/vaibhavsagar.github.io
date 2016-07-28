@@ -62,6 +62,8 @@
 <div class="highlight"><pre><span></span><span class="nf">substring</span> <span class="ow">::</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
 <span class="nf">substring</span> <span class="n">offset</span> <span class="n">length</span> <span class="n">bytestring</span> <span class="ow">=</span> <span class="kt">B</span><span class="o">.</span><span class="n">take</span> <span class="n">length</span> <span class="p">(</span><span class="kt">B</span><span class="o">.</span><span class="n">drop</span> <span class="n">offset</span> <span class="n">bytestring</span><span class="p">)</span>
 
+<span class="c1">-- Under this interpretation, `InsertInstruction` corresponds to `const`</span>
+<span class="c1">-- and `CopyInstruction` corresponds to `substring`.</span>
 <span class="nf">interpretInstruction</span> <span class="ow">::</span> <span class="kt">DeltaInstruction</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
 <span class="nf">interpretInstruction</span> <span class="n">instruction</span> <span class="n">source</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">instruction</span> <span class="kr">of</span>
     <span class="kt">InsertInstruction</span> <span class="n">string</span>        <span class="ow">-&gt;</span> <span class="n">string</span>
