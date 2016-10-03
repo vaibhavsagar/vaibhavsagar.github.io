@@ -57,17 +57,17 @@ Python, we could construct and access cons cells as follows:</p>
 
 <h1>Lists</h1>
 <p>It turns out that cons cells are all you need to implement singly linked lists.
-For example, lists in Lisp are implemented as a series of cons cells chained
-together. Using our above definitions in Python, the list <code>[0, 1, 2, 3]</code> would
-be represented as (0, (1, (2, (3, ())))). In code, this would be:</p>
+For example, lists in Lisp are implemented as a series of nested cons cells. A
+list is either empty (represented above by <code>()</code>) or a cons cell where the first
+element of the pair is the head of the list and the second element of the pair
+is the rest of the list. Using our above definitions in Python, the list <code>[0,
+1, 2, 3]</code> would be represented as (0, (1, (2, (3, ())))).  In code, this would
+be:</p>
 <div class="highlight"><pre><span></span><span class="n">cons</span><span class="p">(</span><span class="mi">0</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">3</span><span class="p">)(()))))</span>
 </pre></div>
 
 
-<p>A list is either empty (represented above by <code>()</code>) or a cons cell where the
-first element of the pair is the head of the list and the second element of the
-pair is the rest of the list. Another way of visualising the above list is as
-follows:</p>
+<p>One way of visualising the above list is as follows:</p>
 <div class="highlight"><pre><span></span>  cons
   / \
  0 cons
@@ -87,12 +87,11 @@ this as the <code>car</code> of the <code>cdr</code> of this list. In code:</p>
 </pre></div>
 
 
-<h1>Lambda calculus</h1>
+<h1>Lambda Calculus</h1>
 <p>You may have noticed that my definitions above were all functions of one
 argument. This was not entirely coincidental: cons cells as described above are
 very similar to Church pairs, which are a way of representing pairs in the
-lambda calculus. A minor change to the above definitions and we have Church
-pairs:</p>
+lambda calculus. Let's make a minor change to the above definitions:</p>
 <div class="highlight"><pre><span></span><span class="n">pair</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">)(</span><span class="n">b</span><span class="p">)</span>
 <span class="n">fst</span>  <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span><span class="p">)</span>
 <span class="n">snd</span>  <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="p">)</span>
@@ -122,6 +121,10 @@ represented as functions i.e. code. You might say that bits and bytes are the
 lowest level representation and therefore somehow more fundamental than code,
 but even our data is just an interesting pattern of 1s and 0s without some code
 to make sense of it. It really is turtles all the way down.</p>
+<h1>Further Reading</h1>
+<p>There are much more comprehensive treatments of this material available online.
+I'm aware of <a href="http://matt.might.net/articles/js-church/">Matt Might's</a> and
+<a href="http://jtauber.com/blog/2008/11/26/church_encoding_in_python/">James Tauber's</a>.</p>
     </div><!-- /.entry-content -->
 
   </article>
