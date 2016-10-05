@@ -45,7 +45,6 @@
 
 </footer><!-- /.post-info -->      <p>This is an attempt to recreate a blog post I read a few years ago that I can't
 seem to find again. If you know the one I'm referring to, please link me!</p>
-<h1>Cons Cells</h1>
 <p>A cons cell is a way of representing a pair, and it has two operations, <code>car</code>
 and <code>cdr</code>, to access the first and second elements of the pair respectively. In
 Python, we could construct and access cons cells as follows:</p>
@@ -55,7 +54,6 @@ Python, we could construct and access cons cells as follows:</p>
 </pre></div>
 
 
-<h1>Lists</h1>
 <p>It turns out that cons cells are all you need to implement singly linked lists.
 For example, lists in Lisp are implemented as a series of nested cons cells. A
 list is either empty (represented above by <code>()</code>) or a cons cell where the first
@@ -87,7 +85,6 @@ this as the <code>car</code> of the <code>cdr</code> of this list. In code:</p>
 </pre></div>
 
 
-<h1>Lambda Calculus</h1>
 <p>You may have noticed that my definitions above were all functions of one
 argument. This was not entirely coincidental: cons cells as described above are
 very similar to Church pairs, which are a way of representing pairs in the
@@ -115,13 +112,11 @@ operations as before to get the second element of our list:</p>
 </pre></div>
 
 
-<h1>Data Is Code</h1>
 <p>Our code is represented as bits in memory i.e. data, but our data can be
 represented as functions i.e. code. You might say that bits and bytes are the
 lowest level representation and therefore somehow more fundamental than code,
 but even our data is just an undistinguished pattern of 1s and 0s without some
 code to make sense of it. It really is turtles all the way down.</p>
-<h1>Further Reading</h1>
 <p>There are much more comprehensive treatments of this material available online.
 I'm aware of <a href="http://matt.might.net/articles/js-church/">Matt Might's</a> and
 <a href="http://jtauber.com/blog/2008/11/26/church_encoding_in_python/">James Tauber's</a>.</p>
