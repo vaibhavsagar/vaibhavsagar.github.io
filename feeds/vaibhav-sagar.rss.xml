@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0"><channel><title>Vaibhav Sagar's Site</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Thu, 29 Sep 2016 00:00:00 +1000</lastBuildDate><item><title>Data Is Code</title><link>http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/</link><description>&lt;blockquote&gt;
-&lt;p&gt;Code is just smart data, and data is just dumb code.
-- &lt;em&gt;Structure and Interpretation of Computer Programs&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Code is just smart data, and data is just dumb code.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Structure and Interpretation of Computer Programs&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;A cons cell is a way of representing a pair, and it has two operations, &lt;code&gt;car&lt;/code&gt;
 and &lt;code&gt;cdr&lt;/code&gt;, to access the first and second elements of the pair respectively. In

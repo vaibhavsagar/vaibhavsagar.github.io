@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-09-29T00:00:00+10:00</updated><entry><title>Data Is Code</title><link href="http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/" rel="alternate"></link><published>2016-09-29T00:00:00+10:00</published><updated>2016-09-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-09-29:blog/2016/09/29/data-is-code/</id><summary type="html">&lt;blockquote&gt;
-&lt;p&gt;Code is just smart data, and data is just dumb code.
-- &lt;em&gt;Structure and Interpretation of Computer Programs&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Code is just smart data, and data is just dumb code.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Structure and Interpretation of Computer Programs&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;A cons cell is a way of representing a pair, and it has two operations, &lt;code&gt;car&lt;/code&gt;
 and &lt;code&gt;cdr&lt;/code&gt;, to access the first and second elements of the pair respectively. In
