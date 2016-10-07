@@ -6,8 +6,9 @@
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;I'm going to try to convince you that data is code. Strap yourselves in!&lt;/p&gt;
-&lt;p&gt;A cons cell is a way of representing a pair, and it has two operations, &lt;a href="https://en.wikipedia.org/wiki/CAR_and_CDR"&gt;&lt;code&gt;car&lt;/code&gt;
-and &lt;code&gt;cdr&lt;/code&gt;&lt;/a&gt;, to access the first and
+&lt;p&gt;A &lt;a href="https://en.wikipedia.org/wiki/Cons"&gt;cons cell&lt;/a&gt; is a way of representing a
+pair, and it has two operations, &lt;a href="https://en.wikipedia.org/wiki/CAR_and_CDR"&gt;&lt;code&gt;car&lt;/code&gt; and
+&lt;code&gt;cdr&lt;/code&gt;&lt;/a&gt;, to access the first and
 second elements of the pair respectively. In Python, we could construct and
 access cons cells as follows:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;cons&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
