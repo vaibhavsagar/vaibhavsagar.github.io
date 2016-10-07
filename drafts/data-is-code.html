@@ -43,14 +43,23 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
 
-</footer><!-- /.post-info -->      <p>This is an attempt to recreate a blog post I read a few years ago that I can't
-seem to find again. If you know the one I'm referring to, please link me!</p>
+</footer><!-- /.post-info -->      <blockquote>
+<p>Code is just smart data, and data is just dumb code.
+<em>Structure and Interpretation of Computer Programs</em></p>
+</blockquote>
 <p>A cons cell is a way of representing a pair, and it has two operations, <code>car</code>
 and <code>cdr</code>, to access the first and second elements of the pair respectively. In
 Python, we could construct and access cons cells as follows:</p>
 <div class="highlight"><pre><span></span><span class="n">cons</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
 <span class="n">car</span>  <span class="o">=</span> <span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">cdr</span>  <span class="o">=</span> <span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+
+<p>Let's create a pair and get the second element:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">p</span> <span class="o">=</span> <span class="n">cons</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">2</span><span class="p">)(()))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">car</span><span class="p">(</span><span class="n">cdr</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+<span class="mi">2</span>
 </pre></div>
 
 
@@ -80,8 +89,9 @@ be:</p>
 
 <p>Suppose we wanted to access the second element of this list. We could express
 this as the <code>car</code> of the <code>cdr</code> of this list. In code:</p>
-<div class="highlight"><pre><span></span><span class="n">example</span> <span class="o">=</span> <span class="n">cons</span><span class="p">(</span><span class="mi">0</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">3</span><span class="p">)(()))))</span>
-<span class="k">print</span><span class="p">(</span><span class="n">car</span><span class="p">(</span><span class="n">cdr</span><span class="p">(</span><span class="n">example</span><span class="p">)))</span> <span class="c1">#=&gt; 1</span>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">example</span> <span class="o">=</span> <span class="n">cons</span><span class="p">(</span><span class="mi">0</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">cons</span><span class="p">(</span><span class="mi">3</span><span class="p">)(()))))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">car</span><span class="p">(</span><span class="n">cdr</span><span class="p">(</span><span class="n">example</span><span class="p">))</span>
+<span class="mi">1</span>
 </pre></div>
 
 
@@ -95,6 +105,14 @@ lambda calculus. Let's make a minor change to the above definitions:</p>
 </pre></div>
 
 
+<p>Let's recreate the pair above:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">p</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">2</span><span class="p">)(()))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">fst</span><span class="p">(</span><span class="n">snd</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+<span class="mi">2</span>
+</pre></div>
+
+
+<p>Although <code>p</code> is a function, it is representing the same data as above.</p>
 <p>As an aside, the functions we use in <code>fst</code> and <code>snd</code> are Church booleans that
 encode true and false in the lambda calculus. We can rewrite our definitions
 with this new knowledge:</p>
@@ -107,8 +125,9 @@ with this new knowledge:</p>
 
 <p>Although our representation has changed, we can still perform the same
 operations as before to get the second element of our list:</p>
-<div class="highlight"><pre><span></span><span class="n">example</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(</span><span class="mi">0</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">3</span><span class="p">)(()))))</span>
-<span class="k">print</span><span class="p">(</span><span class="n">fst</span><span class="p">(</span><span class="n">snd</span><span class="p">(</span><span class="n">example</span><span class="p">)))</span> <span class="c1">#=&gt; 1</span>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">example</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(</span><span class="mi">0</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">3</span><span class="p">)(()))))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">fst</span><span class="p">(</span><span class="n">snd</span><span class="p">(</span><span class="n">example</span><span class="p">))</span>
+<span class="mi">1</span>
 </pre></div>
 
 
