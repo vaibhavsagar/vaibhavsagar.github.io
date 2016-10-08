@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/feeds/programming.atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-09-29T00:00:00+10:00</updated><entry><title>Data Is Code</title><link href="http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/" rel="alternate"></link><published>2016-09-29T00:00:00+10:00</published><updated>2016-09-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-09-29:blog/2016/09/29/data-is-code/</id><summary type="html">&lt;blockquote&gt;
 &lt;p&gt;Code is just smart data, and data is just dumb code.&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;em&gt;Structure and Interpretation of Computer Programs&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Structure and Interpretation of Computer Programs&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;I'm going to try to convince you that data is code. Strap yourselves in!&lt;/p&gt;
@@ -78,7 +78,7 @@ the above definitions:&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;Although &lt;code&gt;p&lt;/code&gt; is a function, it is representing the same data as above.&lt;/p&gt;
+&lt;p&gt;Our pair &lt;code&gt;p&lt;/code&gt; is now a function, but it is representing the same data as above.&lt;/p&gt;
 &lt;p&gt;As an aside, the functions we use in &lt;code&gt;fst&lt;/code&gt; and &lt;code&gt;snd&lt;/code&gt; are &lt;a href="https://en.wikipedia.org/wiki/Church_encoding#Church_Booleans"&gt;Church
 booleans&lt;/a&gt; that
 encode &lt;code&gt;true&lt;/code&gt; and &lt;code&gt;false&lt;/code&gt; in the lambda calculus. We can rewrite our definitions
@@ -90,8 +90,8 @@ with this new knowledge:&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;Although our representation has changed, we can still perform the same
-operations as before to get the second element of our list:&lt;/p&gt;
+&lt;p&gt;We can perform the same operations as before to get the second element of our
+list:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;example&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)(&lt;/span&gt;&lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)(&lt;/span&gt;&lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)(&lt;/span&gt;&lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)(&lt;/span&gt;&lt;span class="n"&gt;nil&lt;/span&gt;&lt;span class="p"&gt;))))&lt;/span&gt;
 &lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;fst&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;snd&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
 &lt;span class="mi"&gt;1&lt;/span&gt;

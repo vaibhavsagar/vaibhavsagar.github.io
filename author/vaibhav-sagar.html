@@ -41,7 +41,7 @@
 </footer><!-- /.post-info --><blockquote>
 <p>Code is just smart data, and data is just dumb code.</p>
 <ul>
-<li><em>Structure and Interpretation of Computer Programs</em></li>
+<li>Structure and Interpretation of Computer Programs</li>
 </ul>
 </blockquote>
 <p>I'm going to try to convince you that data is code. Strap yourselves in!</p>
@@ -117,7 +117,7 @@ the above definitions:</p>
 </pre></div>
 
 
-<p>Although <code>p</code> is a function, it is representing the same data as above.</p>
+<p>Our pair <code>p</code> is now a function, but it is representing the same data as above.</p>
 <p>As an aside, the functions we use in <code>fst</code> and <code>snd</code> are <a href="https://en.wikipedia.org/wiki/Church_encoding#Church_Booleans">Church
 booleans</a> that
 encode <code>true</code> and <code>false</code> in the lambda calculus. We can rewrite our definitions
@@ -129,8 +129,8 @@ with this new knowledge:</p>
 </pre></div>
 
 
-<p>Although our representation has changed, we can still perform the same
-operations as before to get the second element of our list:</p>
+<p>We can perform the same operations as before to get the second element of our
+list:</p>
 <div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">example</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(</span><span class="mi">0</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">pair</span><span class="p">(</span><span class="mi">3</span><span class="p">)(</span><span class="n">nil</span><span class="p">))))</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">fst</span><span class="p">(</span><span class="n">snd</span><span class="p">(</span><span class="n">example</span><span class="p">))</span>
 <span class="mi">1</span>
