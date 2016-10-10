@@ -43,24 +43,28 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
 
-</footer><!-- /.post-info -->      <p>Like so many before me, I feel the primal urge to inflict yet another (Haskell)
-monad tutorial on an innocent and unsuspecting universe. For a host of reasons,
-this is a bad idea. One reason is that I'm not going to do a better job of
-explaining monads than everyone else. However, I probably am better at not
-explaining monads, which is why you get an anti-tutorial where I don't even
-try. I might try to explain some other stuff, but I make no promises.</p>
-<p>What is a monad (in Haskell)? <code>Monad</code> is a typeclass , which is very much like
-an interface in many other languages. Because Haskell is not object-oriented,
-it has types conform to interfaces instead of objects (which it doesn't have),
-and each type can declare that it implements a particular typeclass. This
-involves supplying definitions for each function that the typeclass specifies.
-<code>Monad</code> looks very much like this:</p>
+</footer><!-- /.post-info -->      <p>I don't think the answer to the question "what is a monad?" is as useful as
+becoming familiar with the mechanics of working with them. For this reason,
+I think monad tutorials solve the wrong problem and I'm giving you a monad
+anti-tutorial instead, where I don't try to explain what a monad is but I do
+try to show you how to use them.</p>
+<p>I'm hoping you're familiar with Haskell's syntax, but even if you're not I hope
+you'll still be able to follow this.</p>
+<p>Let's start with a definition. <code>Monad</code> in Haskell is a typeclass, which is very
+much like an interface in many other languages.  Because Haskell is not
+object-oriented, it has types conform to typeclasses instead of objects
+conforming to interfaces, and each type can declare that it implements a
+particular typeclass by supplying definitions for each function that the
+typeclass specifies. <code>Monad</code> looks very much like this:</p>
 <div class="highlight"><pre><span></span><span class="kr">class</span> <span class="kt">Monad</span> <span class="n">m</span> <span class="kr">where</span>
     <span class="n">return</span> <span class="ow">::</span> <span class="n">a</span>   <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">a</span>
     <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span>  <span class="ow">::</span> <span class="n">m</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">b</span>
 </pre></div>
 
 
+<p>This means that for any type <code>m</code>, if you provide two function definitions
+called <code>return</code> and <code>(&gt;&gt;=)</code> (pronounced 'bind') with the correct type
+signatures, you've made a <code>Monad</code> instance!</p>
 <p>There are two things I think are confusing about this definition:</p>
 <ol>
 <li>
@@ -69,7 +73,8 @@ involves supplying definitions for each function that the typeclass specifies.
 </li>
 <li>
 <p>Haskell allows you to define infix operators by surrounding them in
-   parentheses, and this one looks a bit odd and vaguely threatening.</p>
+   parentheses, and this one looks a bit odd and vaguely threatening with its
+   spiky edges.</p>
 </li>
 </ol>
 <p>There are some laws that well-behaved implementations are supposed to observe:</p>
@@ -79,12 +84,14 @@ involves supplying definitions for each function that the typeclass specifies.
 </pre></div>
 
 
-<p>I won't explain these, but I will point them out.</p>
+<p>I include these because they're an important part of what a <code>Monad</code> is. These
+laws aren't enforced by the typeclass definition so it is possible to define
+unlawful instances. That's a very bad idea though.</p>
 <p>And that's all. Really.</p>
 <p>So what's all the hype about?</p>
-<p>Haskell has syntax sugar for this particular typeclass, which is probably one
-reason. This syntax sugar is known as <code>do</code>-notation. It allows you to write
-code that looks like</p>
+<p>One reason might be that Haskell has syntax sugar for this particular
+typeclass. This syntax sugar is known as <code>do</code>-notation, and it allows you to
+write code that looks like</p>
 <div class="highlight"><pre><span></span><span class="nf">foo</span> <span class="n">a</span> <span class="n">b</span> <span class="ow">=</span> <span class="kr">do</span>
     <span class="n">a&#39;</span> <span class="ow">&lt;-</span> <span class="n">a</span>
     <span class="n">b&#39;</span> <span class="ow">&lt;-</span> <span class="n">b</span>
@@ -118,8 +125,8 @@ code that looks like</p>
 </pre></div>
 
 
-<p>and if you don't care about the variable on the left hand side of the <code>&lt;-</code>, you
-can omit it like</p>
+<p>Sometimes you don't care about the variable on the left hand side of the <code>&lt;-</code>,
+and you can omit it like</p>
 <div class="highlight"><pre><span></span><span class="nf">baz</span> <span class="n">a</span> <span class="n">b</span> <span class="ow">=</span> <span class="kr">do</span>
     <span class="n">a</span>
     <span class="n">b&#39;</span> <span class="ow">&lt;-</span> <span class="n">b</span>
@@ -135,6 +142,8 @@ can omit it like</p>
 </pre></div>
 
 
+<p>I'll be using the above definitions in my examples, so if you find yourself
+wondering where <code>bar</code> came from a bit later, check back here.</p>
 <p>I think it's worth spending time on understanding <code>do</code> notation and converting
 between the sugared and desugared representations because:</p>
 <ol>
@@ -147,7 +156,8 @@ between the sugared and desugared representations because:</p>
 </li>
 </ol>
 <p>But enough about that. Let's walk through some contrived examples to see how
-this works in practice!</p>
+we can use the same typeclass (and the same functions) to do a bunch of very
+different things!</p>
 <p>I'd like to start with the <code>Maybe</code> type, which allows us to work with possibly
 <code>null</code> values in a way I think is better than most other approaches. The
 implementation (or <code>instance</code>) of <code>Monad</code> looks like</p>
@@ -172,8 +182,21 @@ implementation (or <code>instance</code>) of <code>Monad</code> looks like</p>
 
 <p>This captures the idea that if any of the parameters is <code>Nothing</code>, the overall
 result should also be <code>Nothing</code>. The cool part is that we don't need to worry
-about this when defining <code>f</code>, because the underlying implementation takes care
-of it for us.</p>
+about this when defining <code>foo</code>, because the underlying implementation takes
+care of it for us.</p>
+<p>In a language like Python, we don't really have a way to abstract away the
+fact that an input can be possibly null, and we have to specifically account
+for this possibility. Similar code in Python would look like</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+   <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">b</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+   <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span> <span class="bp">None</span>
+</pre></div>
+
+
+<p>and this code would not work without modification for any of the following
+examples.</p>
 <p>A second example is the <code>List</code> type. A valid instance looks like</p>
 <div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="kt">[]</span> <span class="kr">where</span>
     <span class="n">return</span> <span class="n">v</span>   <span class="ow">=</span> <span class="p">[</span><span class="n">v</span><span class="p">]</span>
@@ -193,9 +216,19 @@ of it for us.</p>
 
 <p>Where a <code>Maybe</code> can be one of two possible values, a <code>List</code> is an arbitrary
 number of values.</p>
-<p>So far both examples have been a bit box-like, but monads are more general than
-that. Let's look at the <code>Reader</code> type, which allows us to <code>ask</code> for some value
-that can be passed in later (very much like a function):</p>
+<p>In Python this would be a list comprehension:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+   <span class="k">return</span> <span class="p">[</span><span class="n">a_</span><span class="o">+</span><span class="n">b_</span> <span class="k">for</span> <span class="n">a_</span> <span class="ow">in</span> <span class="n">a</span> <span class="k">for</span> <span class="n">b_</span> <span class="ow">in</span> <span class="n">b</span><span class="p">]</span>
+</pre></div>
+
+
+<p>which, again, is too specific to work with any of the other examples.</p>
+<p>The <code>Maybe</code> type could be thought of as a box containing either one or no
+elements, and similarly <code>List</code> may be thought of as a box containing an
+arbitrary number of elements. It may be tempting to think of all monads as
+boxes of some kind, but monads are more general than that. Let's look at the
+<code>Reader</code> type, which allows us to <code>ask</code> for some value that can be passed in
+later (in some circles this is called dependency injection):</p>
 <div class="highlight"><pre><span></span><span class="kr">data</span> <span class="kt">Reader</span> <span class="n">e</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Reader</span> <span class="p">{</span><span class="n">runReader</span> <span class="ow">::</span> <span class="n">e</span> <span class="ow">-&gt;</span> <span class="n">a</span><span class="p">}</span>
 
 <span class="nf">ask</span> <span class="ow">=</span> <span class="kt">Reader</span> <span class="p">(</span><span class="nf">\</span><span class="n">e</span> <span class="ow">-&gt;</span> <span class="n">e</span><span class="p">)</span>
@@ -224,9 +257,12 @@ that can be passed in later (very much like a function):</p>
 </pre></div>
 
 
+<p>I have no idea how you'd implement this in Python, but I can guarantee it's not
+general either.</p>
 <p>Finally, let's look at the <code>IO</code> type, which I find a bit scary. I don't really
 understand how it's implemented. so I'll be skipping that section. Fortunately,
-we know how to use it, because we know the interface, so let's do that.</p>
+we know how to use it, because we are familiar with the interface, so let's go
+straight to that.</p>
 <div class="highlight"><pre><span></span>getInt <span class="o">=</span> do
    input <span class="o">&lt;-</span> baz <span class="p">(</span>putStr <span class="s">&quot;Enter integer: &quot;</span><span class="p">)</span> getLine
    let int <span class="o">=</span> read input <span class="o">::</span> Int
@@ -243,16 +279,16 @@ Enter <span class="kt">integer</span><span class="o">:</span> <span class="m">2<
 </pre></div>
 
 
-<p>Okay, enough examples. As you can see, we've used the same interface to work
-deal with failure, an arbitrary number of values, an extra parameter, and
+<p>Okay, enough examples. As you can see, we've used the same interface to deal
+with failure, an arbitrary number of values, an extra parameter, and
 input/output. There are many useful monad instances in Haskell, from container
 types such as Set and Map to abstractions such as Writer and State, through to
 control flow as implemented by the Cont monad.</p>
-<p>I don't think the answer to the question "what is a monad?" is as useful as
-learning the mechanics of working with them, even ones you don't fully
-understand. If you can make your type conform to the typeclass, Haskell will
-give you a pretty general and flexible API to work with it. As far as I'm
-concerned, this is the point of monads in Haskell.</p>
+<p>If you can make your type conform to the typeclass, Haskell will give you a
+pretty general and flexible API to work with it. Even if you don't completely
+understand what's going on with a certain type, you know enough to use it based
+on your knowledge of the interface. As far as I'm concerned, this is the point
+of monads in Haskell.</p>
     </div><!-- /.entry-content -->
 
   </article>
