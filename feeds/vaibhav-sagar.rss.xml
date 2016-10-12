@@ -246,7 +246,10 @@ control flow as implemented by the Cont monad.&lt;/p&gt;
 pretty general and flexible API to work with it. Even if you don't completely
 understand what's going on with a certain type, you know enough to use it based
 on your knowledge of the interface. As far as I'm concerned, this is the point
-of monads in Haskell.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Wed, 12 Oct 2016 00:00:00 +1100</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2016-10-12:blog/2016/10/12/monad-anti-tutorial/</guid></item><item><title>Data Is Code</title><link>http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/</link><description>&lt;blockquote&gt;
+of monads in Haskell.&lt;/p&gt;
+&lt;p&gt;Thanks to &lt;a href="http://jamesporter.me/"&gt;James Porter&lt;/a&gt;, &lt;a href="https://nick-platt.com/"&gt;Nick
+Platt&lt;/a&gt;, and &lt;a href="http://composition.al/"&gt;Lindsey Kuper&lt;/a&gt;
+for their feedback on this post.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Wed, 12 Oct 2016 00:00:00 +1100</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2016-10-12:blog/2016/10/12/monad-anti-tutorial/</guid></item><item><title>Data Is Code</title><link>http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/</link><description>&lt;blockquote&gt;
 &lt;p&gt;Code is just smart data, and data is just dumb code.&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Structure and Interpretation of Computer Programs&lt;/li&gt;
