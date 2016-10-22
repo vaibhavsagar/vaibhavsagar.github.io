@@ -680,23 +680,8 @@ post&lt;/a&gt;
 by Steve Klabnik.&lt;/p&gt;
 &lt;p&gt;The versions of &lt;code&gt;pandoc&lt;/code&gt; and &lt;code&gt;LaTeX&lt;/code&gt; on Ubuntu 12.04 (which Travis-CI uses for
 its workers) are hopelessly out of date, so my first problem was getting the
-newest version of &lt;code&gt;pandoc&lt;/code&gt; installed. It is available as a &lt;code&gt;.deb&lt;/code&gt;
-&lt;a href="https://github.com/jgm/pandoc/releases"&gt;here&lt;/a&gt;, and Github being Github, this
-information is also provided as JSON. There's this really nifty tool called
-&lt;code&gt;jq&lt;/code&gt; which is like &lt;code&gt;sed&lt;/code&gt; for JSON so I found and used that. After having a play
-with it &lt;a href="https://jqplay.org/"&gt;here&lt;/a&gt; I was able to construct the filter I
-needed:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jq -r &amp;#39;.assets[] | .browser_download_url | select(endswith(&amp;quot;deb&amp;quot;))&amp;#39;
-&lt;/pre&gt;&lt;/div&gt;
-
-
-&lt;p&gt;The '-r' is there so that &lt;code&gt;wget&lt;/code&gt; won't choke on the output which would
-otherwise be surrounded in double quotes. I was then able to install the
-downloaded package without any issues. This is what my pre-install script
-looked like:&lt;/p&gt;
-&lt;p&gt;&lt;script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/prepare.sh"&gt;
-&lt;/script&gt;&lt;/p&gt;
+newest version of &lt;code&gt;pandoc&lt;/code&gt; installed. I used &lt;code&gt;stack&lt;/code&gt; to download and install
+this.&lt;/p&gt;
 &lt;p&gt;I already had a &lt;code&gt;Makefile&lt;/code&gt;, so converting my source to Github-flavoured
 Markdown and HTML was as easy as &lt;code&gt;make readme&lt;/code&gt; and &lt;code&gt;make html&lt;/code&gt;:&lt;/p&gt;
 &lt;p&gt;&lt;script

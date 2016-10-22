@@ -57,23 +57,8 @@ post</a>
 by Steve Klabnik.</p>
 <p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for
 its workers) are hopelessly out of date, so my first problem was getting the
-newest version of <code>pandoc</code> installed. It is available as a <code>.deb</code>
-<a href="https://github.com/jgm/pandoc/releases">here</a>, and Github being Github, this
-information is also provided as JSON. There's this really nifty tool called
-<code>jq</code> which is like <code>sed</code> for JSON so I found and used that. After having a play
-with it <a href="https://jqplay.org/">here</a> I was able to construct the filter I
-needed:</p>
-<div class="highlight"><pre><span></span>jq -r &#39;.assets[] | .browser_download_url | select(endswith(&quot;deb&quot;))&#39;
-</pre></div>
-
-
-<p>The '-r' is there so that <code>wget</code> won't choke on the output which would
-otherwise be surrounded in double quotes. I was then able to install the
-downloaded package without any issues. This is what my pre-install script
-looked like:</p>
-<p><script
-src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/prepare.sh">
-</script></p>
+newest version of <code>pandoc</code> installed. I used <code>stack</code> to download and install
+this.</p>
 <p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured
 Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
 <p><script
