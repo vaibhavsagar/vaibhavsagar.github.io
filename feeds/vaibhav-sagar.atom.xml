@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/feeds/vaibhav-sagar.atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-10-12T00:00:00+11:00</updated><entry><title>Monad Anti-tutorial</title><link href="http://www.vaibhavsagar.com/blog/2016/10/12/monad-anti-tutorial/" rel="alternate"></link><published>2016-10-12T00:00:00+11:00</published><updated>2016-10-12T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-10-12:blog/2016/10/12/monad-anti-tutorial/</id><summary type="html">&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/feeds/vaibhav-sagar.atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-10-12T00:00:00+11:00</updated><entry><title>Monad Anti-tutorial</title><link href="http://www.vaibhavsagar.com/blog/2016/10/12/monad-anti-tutorial/" rel="alternate"></link><published>2016-10-12T00:00:00+11:00</published><updated>2016-10-12T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-10-12:/blog/2016/10/12/monad-anti-tutorial/</id><summary type="html">&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
+important than the question of what a monad is. For this reason, I think monad
+tutorials solve the wrong problem. I'm giving you a monad anti-tutorial
+instead, where I don't try to explain what a monad is …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
 important than the question of what a monad is. For this reason, I think monad
 tutorials solve the wrong problem. I'm giving you a monad anti-tutorial
 instead, where I don't try to explain what a monad is but I do try to show you
@@ -249,7 +252,16 @@ on your knowledge of the interface. As far as I'm concerned, this is the point
 of monads in Haskell.&lt;/p&gt;
 &lt;p&gt;Thanks to &lt;a href="http://jamesporter.me/"&gt;James Porter&lt;/a&gt;, &lt;a href="https://nick-platt.com/"&gt;Nick
 Platt&lt;/a&gt;, and &lt;a href="http://composition.al/"&gt;Lindsey Kuper&lt;/a&gt;
-for their feedback on this post.&lt;/p&gt;</summary></entry><entry><title>Data Is Code</title><link href="http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/" rel="alternate"></link><published>2016-09-29T00:00:00+10:00</published><updated>2016-09-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-09-29:blog/2016/09/29/data-is-code/</id><summary type="html">&lt;blockquote&gt;
+for their feedback on this post.&lt;/p&gt;</content></entry><entry><title>Data Is Code</title><link href="http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/" rel="alternate"></link><published>2016-09-29T00:00:00+10:00</published><updated>2016-09-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-09-29:/blog/2016/09/29/data-is-code/</id><summary type="html">&lt;blockquote&gt;
+&lt;p&gt;Code is just smart data, and data is just dumb code.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Structure and Interpretation of Computer Programs&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;I'm going to try to convince you that data is code. Strap yourselves in!&lt;/p&gt;
+&lt;p&gt;A &lt;a href="https://en.wikipedia.org/wiki/Cons"&gt;cons cell&lt;/a&gt; is a way of representing a
+pair, and it has two operations, &lt;a href="https://en.wikipedia.org/wiki/CAR_and_CDR"&gt;&lt;code&gt;car&lt;/code&gt; and
+&lt;code&gt;cdr&lt;/code&gt;&lt;/a&gt;, to …&lt;/p&gt;</summary><content type="html">&lt;blockquote&gt;
 &lt;p&gt;Code is just smart data, and data is just dumb code.&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Structure and Interpretation of Computer Programs&lt;/li&gt;
@@ -363,7 +375,7 @@ I'm aware of &lt;a href="http://matt.might.net/articles/js-church/"&gt;Matt Migh
 &lt;a href="http://jtauber.com/blog/2008/11/26/church_encoding_in_python/"&gt;James Tauber's&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Many thanks to &lt;a href="http://www.notesfromandy.com/"&gt;Andy Lee&lt;/a&gt;, &lt;a href="http://juansoto.me/"&gt;Juan
 Soto&lt;/a&gt;, and &lt;a href="http://sranso.com/"&gt;Sarah Ransohoff&lt;/a&gt; for
-their excellent feedback on on this post.&lt;/p&gt;</summary></entry><entry><title>Using The Writer Monad Outside Logging</title><link href="http://www.vaibhavsagar.com/blog/2016/07/24/writer-delta/" rel="alternate"></link><published>2016-07-24T00:00:00+10:00</published><updated>2016-07-24T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-07-24:blog/2016/07/24/writer-delta/</id><summary type="html">&lt;p&gt;I hadn't given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven't had to do much logging in Haskell so far and so I incorrectly assumed that I didn't need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:&lt;/p&gt;
+their excellent feedback on on this post.&lt;/p&gt;</content></entry><entry><title>Using The Writer Monad Outside Logging</title><link href="http://www.vaibhavsagar.com/blog/2016/07/24/writer-delta/" rel="alternate"></link><published>2016-07-24T00:00:00+10:00</published><updated>2016-07-24T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-07-24:/blog/2016/07/24/writer-delta/</id><summary type="html">&lt;p&gt;I hadn't given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven't had to do much logging …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I hadn't given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven't had to do much logging in Haskell so far and so I incorrectly assumed that I didn't need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;The Writer monad's output can be any Monoid, such as strings, lists, sets, etc.&lt;/li&gt;
 &lt;li&gt;ByteString is a Monoid.&lt;/li&gt;
@@ -461,7 +473,11 @@ their excellent feedback on on this post.&lt;/p&gt;</summary></entry><entry><tit
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;And there you have it, a use of Writer that has absolutely nothing to do with logging!&lt;/p&gt;</summary></entry><entry><title>You Could Have Invented The State Monad</title><link href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/" rel="alternate"></link><published>2016-06-17T00:00:00+10:00</published><updated>2016-06-17T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-06-17:blog/2016/06/17/haskell-state/</id><summary type="html">&lt;p&gt;I'm attempting &lt;a href="https://github.com/NICTA/course"&gt;NICTA/course&lt;/a&gt; a second time. I
+&lt;p&gt;And there you have it, a use of Writer that has absolutely nothing to do with logging!&lt;/p&gt;</content></entry><entry><title>You Could Have Invented The State Monad</title><link href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/" rel="alternate"></link><published>2016-06-17T00:00:00+10:00</published><updated>2016-06-17T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-06-17:/blog/2016/06/17/haskell-state/</id><summary type="html">&lt;p&gt;I'm attempting &lt;a href="https://github.com/NICTA/course"&gt;NICTA/course&lt;/a&gt; a second time. I
+gave up the last time because none of the State exercises were making sense and
+I found myself leaning so heavily on the solutions that I wasn't actually
+learning anything. This time I was much better prepared after watching lots of
+&lt;a href="http://www.meetup.com/CanFPG/"&gt;CanFPG …&lt;/a&gt;&lt;/p&gt;</summary><content type="html">&lt;p&gt;I'm attempting &lt;a href="https://github.com/NICTA/course"&gt;NICTA/course&lt;/a&gt; a second time. I
 gave up the last time because none of the State exercises were making sense and
 I found myself leaning so heavily on the solutions that I wasn't actually
 learning anything. This time I was much better prepared after watching lots of
@@ -633,7 +649,10 @@ desugar this:&lt;/p&gt;
 &lt;p&gt;This is my favourite thing about Haskell: the fact that it is built on
 abstractions that can be reasoned about in such a rigorous manner.&lt;/p&gt;
 &lt;p&gt;In fact, with some inspired renaming, &lt;a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html"&gt;you too could have invented the
-continuation monad&lt;/a&gt;.&lt;/p&gt;</summary></entry><entry><title>Git It Going - an Introduction to Git</title><link href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="alternate"></link><published>2015-05-10T00:00:00+10:00</published><updated>2015-05-10T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-05-10:blog/2015/05/10/git-it-going/</id><summary type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+continuation monad&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>Git It Going - an Introduction to Git</title><link href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="alternate"></link><published>2015-05-10T00:00:00+10:00</published><updated>2015-05-10T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-05-10:/blog/2015/05/10/git-it-going/</id><summary type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
+was my first ever technical talk, and I think it went fairly well.&lt;/p&gt;
+&lt;p&gt;When writing my presentation, I decided it would be most useful to demonstrate
+&lt;code&gt;git&lt;/code&gt; to the audience assuming some …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
 was my first ever technical talk, and I think it went fairly well.&lt;/p&gt;
 &lt;p&gt;When writing my presentation, I decided it would be most useful to demonstrate
 &lt;code&gt;git&lt;/code&gt; to the audience assuming some Subversion experience but minimal Git or
@@ -666,7 +685,11 @@ couple of sections and instead spend more time talking about branching,
 rewriting history and different workflows.&lt;/p&gt;
 &lt;p&gt;I would highly recommend giving a technical talk if you have the opportunity.
 If it is a topic I am familiar with, or if you'd like to run through the
-presentation with me then I'm more than happy to help.&lt;/p&gt;</summary></entry><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><published>2015-02-26T00:00:00+11:00</published><updated>2015-02-26T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
+presentation with me then I'm more than happy to help.&lt;/p&gt;</content></entry><entry><title>Generate A PDF From Your Resume With Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="alternate"></link><published>2015-02-26T00:00:00+11:00</published><updated>2015-02-26T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-26:/blog/2015/02/26/automate-resume/</id><summary type="html">&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
+higher and use Travis-CI to automate document generation from my resume. I use
+&lt;a href="http://johnmacfarlane.net/pandoc/"&gt;Pandoc&lt;/a&gt; to convert my source resume written
+in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
+PDF (via LaTeX) that I've spent a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;After &lt;a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/"&gt;automating my blog&lt;/a&gt;, I decided to aim a little
 higher and use Travis-CI to automate document generation from my resume. I use
 &lt;a href="http://johnmacfarlane.net/pandoc/"&gt;Pandoc&lt;/a&gt; to convert my source resume written
 in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
@@ -705,7 +728,11 @@ src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.trav
 have a look at &lt;a href="https://github.com/vaibhavsagar/resumate"&gt;the test repo&lt;/a&gt; I
 used. The commit log is a fairly accurate representation of my thought process.
 If you're trying something similar and you're getting stuck, feel free to reach
-out and I'll be more than happy to help.&lt;/p&gt;</summary></entry><entry><title>How This Static Blog Uses Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/" rel="alternate"></link><published>2015-02-01T00:00:00+11:00</published><updated>2015-02-01T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-01:blog/2015/02/01/blog-setup/</id><summary type="html">&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
+out and I'll be more than happy to help.&lt;/p&gt;</content></entry><entry><title>How This Static Blog Uses Travis-CI</title><link href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/" rel="alternate"></link><published>2015-02-01T00:00:00+11:00</published><updated>2015-02-01T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2015-02-01:/blog/2015/02/01/blog-setup/</id><summary type="html">&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
+system like Travis-CI in charge of deployment because it seemed like a
+frivolous use of resources and so I settled for the approach outlined
+&lt;a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html"&gt;here&lt;/a&gt; which
+worked reasonably well. As my understanding of continuous integration and the …&lt;/p&gt;</summary><content type="html">&lt;p&gt;When I started this blog, I was reluctant to put a continuous integration
 system like Travis-CI in charge of deployment because it seemed like a
 frivolous use of resources and so I settled for the approach outlined
 &lt;a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html"&gt;here&lt;/a&gt; which
@@ -743,9 +770,14 @@ src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/depl
 &lt;p&gt;and that was all the setup I had to do. I then pushed a commit and watched as
 Pelican and its dependencies were downloaded, my blog posts were regenerated,
 and my GitHub Pages repo was updated. Seems a bit wasteful, but it was
-surprisingly easy to get working and it performs admirably.&lt;/p&gt;</summary></entry><entry><title>Walking</title><link href="http://www.vaibhavsagar.com/blog/2014/06/04/jakarta-walking/" rel="alternate"></link><published>2014-06-04T00:00:00+10:00</published><updated>2014-06-04T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2014-06-04:blog/2014/06/04/jakarta-walking/</id><summary type="html">&lt;p&gt;So yesterday I took a walk to buy some groceries, and today I took another to
+surprisingly easy to get working and it performs admirably.&lt;/p&gt;</content></entry><entry><title>Walking</title><link href="http://www.vaibhavsagar.com/blog/2014/06/04/jakarta-walking/" rel="alternate"></link><published>2014-06-04T00:00:00+10:00</published><updated>2014-06-04T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2014-06-04:/blog/2014/06/04/jakarta-walking/</id><summary type="html">&lt;p&gt;So yesterday I took a walk to buy some groceries, and today I took another to
 buy some clothes from Uniqlo (as good as everyone says) and watch a movie (Edge
 of Tomorrow). This is pretty unremarkable, except that I did this... in
-Jakarta! I didn't think it was possible. I could definitely get used to this.&lt;/p&gt;</summary></entry><entry><title>First Post</title><link href="http://www.vaibhavsagar.com/blog/2014/05/20/first-post/" rel="alternate"></link><published>2014-05-20T00:00:00+10:00</published><updated>2014-05-20T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2014-05-20:blog/2014/05/20/first-post/</id><summary type="html">&lt;p&gt;This is my latest attempt to get a blog going. The advantages this has over my
+Jakarta! I didn't think it was possible …&lt;/p&gt;</summary><content type="html">&lt;p&gt;So yesterday I took a walk to buy some groceries, and today I took another to
+buy some clothes from Uniqlo (as good as everyone says) and watch a movie (Edge
+of Tomorrow). This is pretty unremarkable, except that I did this... in
+Jakarta! I didn't think it was possible. I could definitely get used to this.&lt;/p&gt;</content></entry><entry><title>First Post</title><link href="http://www.vaibhavsagar.com/blog/2014/05/20/first-post/" rel="alternate"></link><published>2014-05-20T00:00:00+10:00</published><updated>2014-05-20T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2014-05-20:/blog/2014/05/20/first-post/</id><summary type="html">&lt;p&gt;This is my latest attempt to get a blog going. The advantages this has over my
 previous system are shiny Python goodness and my GitHub contributions graph
-egging me on.&lt;/p&gt;</summary></entry></feed>
+egging me on.&lt;/p&gt;</summary><content type="html">&lt;p&gt;This is my latest attempt to get a blog going. The advantages this has over my
+previous system are shiny Python goodness and my GitHub contributions graph
+egging me on.&lt;/p&gt;</content></entry></feed>
