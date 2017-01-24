@@ -1,5 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2016-10-12T00:00:00+11:00</updated><entry><title>Monad Anti-tutorial</title><link href="http://www.vaibhavsagar.com/blog/2016/10/12/monad-anti-tutorial/" rel="alternate"></link><published>2016-10-12T00:00:00+11:00</published><updated>2016-10-12T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-10-12:/blog/2016/10/12/monad-anti-tutorial/</id><summary type="html">&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2017-01-24T00:00:00+11:00</updated><entry><title>A Simple Key-Value Store with Servant</title><link href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/" rel="alternate"></link><published>2017-01-24T00:00:00+11:00</published><updated>2017-01-24T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-01-24:/blog/2017/01/24/simple-kv-store/</id><summary type="html">&lt;p&gt;The &lt;a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis"&gt;meat of the Servant
+tutorial&lt;/a&gt;
+starts with an imposing list of language extensions and imports and only gets
+more confusing from there. I don't think this gives newbies (i.e. me) the best
+first impression of Servant. Let's build the simplest possible key-value store
+with it instead.&lt;/p&gt;
+&lt;p&gt;We're going …&lt;/p&gt;</summary><content type="html">&lt;p&gt;The &lt;a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis"&gt;meat of the Servant
+tutorial&lt;/a&gt;
+starts with an imposing list of language extensions and imports and only gets
+more confusing from there. I don't think this gives newbies (i.e. me) the best
+first impression of Servant. Let's build the simplest possible key-value store
+with it instead.&lt;/p&gt;
+&lt;p&gt;We're going to write this as a &lt;code&gt;stack&lt;/code&gt; script so everything is in one file.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/usr/bin/env stack&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Let's import the modules we need.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="cm"&gt;{- stack --resolver lts-7 --install-ghc runghc&lt;/span&gt;
+&lt;span class="cm"&gt;    --package aeson&lt;/span&gt;
+&lt;span class="cm"&gt;    --package servant-server&lt;/span&gt;
+&lt;span class="cm"&gt;    --package text&lt;/span&gt;
+&lt;span class="cm"&gt;    --package transformers&lt;/span&gt;
+&lt;span class="cm"&gt;    --package unordered-containers&lt;/span&gt;
+&lt;span class="cm"&gt;    --package warp&lt;/span&gt;
+&lt;span class="cm"&gt;    -}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;At minimum we need &lt;code&gt;servant-server&lt;/code&gt; for Servant goodness and &lt;code&gt;warp&lt;/code&gt; to actually
+run our web service. The plan is to create an &lt;code&gt;IORef&lt;/code&gt; holding a &lt;code&gt;HashMap&lt;/code&gt; and
+use that as our store, which is why we need &lt;code&gt;unordered-containers&lt;/code&gt;. I'd like to
+store arbitrary JSON, therefore &lt;code&gt;aeson&lt;/code&gt;, and I think our keys should be &lt;code&gt;Text&lt;/code&gt;,
+because &lt;code&gt;aeson&lt;/code&gt; and &lt;code&gt;Text&lt;/code&gt; are great together. That leaves &lt;code&gt;transformers&lt;/code&gt;,
+which we need because of &lt;code&gt;liftIO&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;It turns out that we only need two language extensions for this example.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="cm"&gt;{-# LANGUAGE DataKinds #-}&lt;/span&gt;
+&lt;span class="cm"&gt;{-# LANGUAGE TypeOperators #-}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;As far as I can tell, both these extensions are needed for Servant's cute API
+specification EDSL. We'll let you have this one, Servant.&lt;/p&gt;
+&lt;p&gt;Time for a (hopefully manageable) list of imports!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;module&lt;/span&gt; &lt;span class="nn"&gt;Main&lt;/span&gt; &lt;span class="kr"&gt;where&lt;/span&gt;
+
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Control.Monad.IO.Class&lt;/span&gt;   &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;liftIO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Data.Aeson&lt;/span&gt;               &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Data.IORef&lt;/span&gt;               &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;IORef&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;newIORef&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;readIORef&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;atomicModifyIORef&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Data.HashMap.Strict&lt;/span&gt;      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;HashMap&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;lookup&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;insert&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;empty&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Data.Text&lt;/span&gt;                &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Network.Wai.Handler.Warp&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;run&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;System.Environment&lt;/span&gt;       &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;getArgs&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Prelude&lt;/span&gt; &lt;span class="k"&gt;hiding&lt;/span&gt;           &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;lookup&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;Servant&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;All imports are explicit except &lt;code&gt;Servant&lt;/code&gt;'s.&lt;/p&gt;
+&lt;p&gt;Speaking of the EDSL:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;type&lt;/span&gt; &lt;span class="kt"&gt;API&lt;/span&gt;
+    &lt;span class="ow"&gt;=&lt;/span&gt;    &lt;span class="s"&gt;&amp;quot;get&amp;quot;&lt;/span&gt; &lt;span class="kt"&gt;:&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Capture&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;key&amp;quot;&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt; &lt;span class="kt"&gt;:&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Get&lt;/span&gt; &lt;span class="kt"&gt;&amp;#39;[JSON]&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;Maybe&lt;/span&gt; &lt;span class="kt"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="kt"&gt;:&amp;lt;|&amp;gt;&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;put&amp;quot;&lt;/span&gt; &lt;span class="kt"&gt;:&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Capture&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;key&amp;quot;&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt;
+        &lt;span class="kt"&gt;:&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;ReqBody&lt;/span&gt; &lt;span class="kt"&gt;&amp;#39;[JSON]&lt;/span&gt; &lt;span class="kt"&gt;Value&lt;/span&gt;     &lt;span class="kt"&gt;:&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Put&lt;/span&gt; &lt;span class="kt"&gt;&amp;#39;[JSON]&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This API has two endpoints: a "/get/:key" endpoint that provides the value
+associated with a key if the key exists in our store, or a "put/:key" endpoint
+that allows us to associate some JSON with a key, returning the key used. How
+this fits together is still a bit magical to me, but &lt;a href="http://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html"&gt;this blog
+post&lt;/a&gt;
+provides the best explanation I've read so far. The section of the Servant
+tutorial &lt;a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/ApiType.html"&gt;on the API specification
+EDSL&lt;/a&gt; is
+also quite good.&lt;/p&gt;
+&lt;p&gt;Let's define a type synonym so we don't have to keep writing &lt;code&gt;IORef (HashMap
+Text Value)&lt;/code&gt; over and over again:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;type&lt;/span&gt; &lt;span class="kt"&gt;Store&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;IORef&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;HashMap&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt; &lt;span class="kt"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Servant uses the same operator to define the type and the serving action:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;server&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;Store&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Server&lt;/span&gt; &lt;span class="kt"&gt;API&lt;/span&gt;
+&lt;span class="nf"&gt;server&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;getValue&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="kt"&gt;:&amp;lt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;putValue&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The order in which these actions are composed needs to match the order used in
+the API definition.&lt;/p&gt;
+&lt;p&gt;Next we define &lt;code&gt;getValue&lt;/code&gt; and &lt;code&gt;putValue&lt;/code&gt;. We need actions of type &lt;code&gt;Handler&lt;/code&gt;,
+which is &lt;code&gt;ExceptT ServantErr IO&lt;/code&gt;, so we &lt;code&gt;liftIO&lt;/code&gt; as necessary:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;getValue&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;Store&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Handler&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;Maybe&lt;/span&gt; &lt;span class="kt"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="nf"&gt;getValue&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;liftIO&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;lookup&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;$&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;readIORef&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt;
+
+&lt;span class="nf"&gt;putValue&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;Store&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Value&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Handler&lt;/span&gt; &lt;span class="kt"&gt;Text&lt;/span&gt;
+&lt;span class="nf"&gt;putValue&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="n"&gt;liftIO&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;atomicModifyIORef&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="n"&gt;modify&lt;/span&gt;
+    &lt;span class="kr"&gt;where&lt;/span&gt; &lt;span class="n"&gt;modify&lt;/span&gt; &lt;span class="n"&gt;kv&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;insert&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt; &lt;span class="n"&gt;kv&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Almost there. We declare the API we want to serve:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;kvAPI&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;Proxy&lt;/span&gt; &lt;span class="kt"&gt;API&lt;/span&gt;
+&lt;span class="nf"&gt;kvAPI&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;Proxy&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Once again, Kwang Yul Seo has &lt;a href="http://kseo.github.io/posts/2017-01-15-data-proxy.html"&gt;a great blog
+post&lt;/a&gt; on this.&lt;/p&gt;
+&lt;p&gt;Finally, we define our entry point:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;main&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;IO&lt;/span&gt; &lt;span class="nb"&gt;()&lt;/span&gt;
+&lt;span class="nf"&gt;main&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kr"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;port&lt;/span&gt; &lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt; &lt;span class="n"&gt;read&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="n"&gt;head&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;$&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;getArgs&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;IO&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt;
+    &lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="n"&gt;port&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="n"&gt;serve&lt;/span&gt; &lt;span class="n"&gt;kvAPI&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="n"&gt;server&lt;/span&gt; &lt;span class="o"&gt;=&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;newIORef&lt;/span&gt; &lt;span class="n"&gt;empty&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;To recap: we define our API as a type, our handlers, and the type we want to
+serve, and then we plug it all together.&lt;/p&gt;
+&lt;p&gt;And we're done! We can now &lt;code&gt;chmod +x KVStore.hs&lt;/code&gt; (or whatever you called the
+file) and run it: &lt;code&gt;./KVStore.hs 8081&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;I hope this provides a better starting point for learning Servant. If desired,
+the full script is available
+&lt;a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d"&gt;here&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>Monad Anti-tutorial</title><link href="http://www.vaibhavsagar.com/blog/2016/10/12/monad-anti-tutorial/" rel="alternate"></link><published>2016-10-12T00:00:00+11:00</published><updated>2016-10-12T00:00:00+11:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2016-10-12:/blog/2016/10/12/monad-anti-tutorial/</id><summary type="html">&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
 important than the question of what a monad is. For this reason, I think monad
 tutorials solve the wrong problem. I'm giving you a monad anti-tutorial
 instead, where I don't try to explain what a monad is …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more

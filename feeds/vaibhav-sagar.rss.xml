@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0"><channel><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Wed, 12 Oct 2016 00:00:00 +1100</lastBuildDate><item><title>Monad Anti-tutorial</title><link>http://www.vaibhavsagar.com/blog/2016/10/12/monad-anti-tutorial/</link><description>&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
+<rss version="2.0"><channel><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Tue, 24 Jan 2017 00:00:00 +1100</lastBuildDate><item><title>A Simple Key-Value Store with Servant</title><link>http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/</link><description>&lt;p&gt;The &lt;a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis"&gt;meat of the Servant
+tutorial&lt;/a&gt;
+starts with an imposing list of language extensions and imports and only gets
+more confusing from there. I don't think this gives newbies (i.e. me) the best
+first impression of Servant. Let's build the simplest possible key-value store
+with it instead.&lt;/p&gt;
+&lt;p&gt;We're going …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Tue, 24 Jan 2017 00:00:00 +1100</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2017-01-24:/blog/2017/01/24/simple-kv-store/</guid></item><item><title>Monad Anti-tutorial</title><link>http://www.vaibhavsagar.com/blog/2016/10/12/monad-anti-tutorial/</link><description>&lt;p&gt;I think becoming familiar with the mechanics of working with monads is more
 important than the question of what a monad is. For this reason, I think monad
 tutorials solve the wrong problem. I'm giving you a monad anti-tutorial
 instead, where I don't try to explain what a monad is …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Wed, 12 Oct 2016 00:00:00 +1100</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2016-10-12:/blog/2016/10/12/monad-anti-tutorial/</guid></item><item><title>Data Is Code</title><link>http://www.vaibhavsagar.com/blog/2016/09/29/data-is-code/</link><description>&lt;blockquote&gt;
