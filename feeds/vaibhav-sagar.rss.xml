@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0"><channel><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Tue, 24 Jan 2017 00:00:00 +1100</lastBuildDate><item><title>A Simple Key-Value Store with Servant</title><link>http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/</link><description>&lt;p&gt;The &lt;a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis"&gt;meat of the Servant
+<rss version="2.0"><channel><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Sun, 26 Feb 2017 00:00:00 +1100</lastBuildDate><item><title>Getting to RC</title><link>http://www.vaibhavsagar.com/blog/2017/02/26/getting-to-rc/</link><description>&lt;p&gt;You wouldn't know it from looking at my blog, but I attended a batch at the
+Recurse Center from August to early November last year, and it was the best
+experience of my life. Many Recursers write a return statement afterwards
+reflecting on their time there, and in the process …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Sun, 26 Feb 2017 00:00:00 +1100</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2017-02-26:/blog/2017/02/26/getting-to-rc/</guid></item><item><title>A Simple Key-Value Store with Servant</title><link>http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/</link><description>&lt;p&gt;The &lt;a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis"&gt;meat of the Servant
 tutorial&lt;/a&gt;
 starts with an imposing list of language extensions and imports and only gets
 more confusing from there. I don't think this gives newbies (i.e. me) the best
