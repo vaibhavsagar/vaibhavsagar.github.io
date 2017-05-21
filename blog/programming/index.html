@@ -27,7 +27,1081 @@
 
             <aside id="featured" class="body">
                 <article>
-                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/">A Simple Key-Value Store with Servant</a></h1>
+                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2017/05/22/discovering-continuations/">Discovering Continuations with Typed Holes</a></h1>
+<footer class="post-info">
+        <abbr class="published" title="2017-05-22T00:00:00+10:00">
+                Published: Mon 22 May 2017
+        </abbr>
+
+        <address class="vcard author">
+                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
+        </address>
+<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+
+</footer><!-- /.post-info --><p>I've been trying to wrap my head around continuations for a while. I was reading <a href="https://github.com/quchen/articles/blob/master/cont_monad.md">David Luposchainsky's excellent article</a> on them and playing with his definitions in an IHaskell notebook when I found that typed holes are an excellent hammer to attack this particular nail with.</p>
+<p>If you haven't encountered them before, <a href="https://wiki.haskell.org/GHC/Typed_holes">typed holes</a> are a feature where you put one or more variables starting with <code>_</code> on the right hand side of a definition to get GHC to tell you the type of the value that fits in that hole, and you can narrow the hole as necessary to get the type of a subexpression until you have enough information to complete the definition. I like to think of this as a way of collaboratively filling in a definition with the compiler, instead of my usual approach which is to write a definition, listen carefully to GHC's complaints, and amend my definition accordingly. Typed holes are fully supported by GHCi and the full suite of editor integrations, but I personally find the edit/reload/squint cycle more tedious than coming up with the definition in IHaskell and then moving it to a module and adding type signatures after I'm satisfied that it works.</p>
+<p>I think his type definition makes an excellent starting point:</p>
+<div class="highlight"><pre><span></span><span class="kr">newtype</span> <span class="kt">Cont</span> <span class="n">r</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="p">{</span> <span class="p">(</span><span class="o">&gt;&gt;-</span><span class="p">)</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">r</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">r</span> <span class="p">}</span>
+</pre></div>
+
+
+<p>This defines a type <code>Cont</code> with an infix constructor <code>&gt;&gt;-</code> (that looks suspiciously similar to <code>&gt;&gt;=</code>) that takes a function from <code>a</code> to <code>r</code> and provides an <code>r</code>. One intuition for what this means is that a value of this type knows about an <code>a</code> but for whatever reason refuses to be upfront about it and demands to know what you're going to do with it and then does it for you, providing you with a final result <code>r</code>. Another intuition is that this is a generalisation of callbacks: a value of this type expects a callback to utilise the <code>a</code>. Anyway, on to my favourite part of working with mysterious data types: defining <code>Functor</code>, <code>Applicative</code>, and <code>Monad</code> instances for them! If you've done this before, you'll know that these typeclasses have certain laws that their instances are meant to obey, and it turns out that this type is polymorphic enough that we can just follow the typed holes and the resulting definitions will be lawful. You don't have to take my word for it and should verify this for yourself, but I won't be discussing the laws here. Let's begin!</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">fmap</span> <span class="n">f</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:19: error:<br/>    • Found hole: _ :: Cont r b<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>             ‘b’ is a rigid type variable bound by<br/>               the type signature for:<br/>                 fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br/>               at &lt;interactive&gt;:2:5<br/>    • In the expression: <em><br/>      In an equation for ‘fmap’: fmap f cont = </em><br/>      In the instance declaration for ‘Functor (Cont r)’<br/>    • Relevant bindings include<br/>        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br/>        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br/>        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>We didn't really need a typed hole to tell us this, but at least we know what we have to work with. We know we have to provide a <code>Cont</code> value, so let's narrow our typed hole that way.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">fmap</span> <span class="n">f</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:26: error:<br/>    • Found hole: _ :: (b -&gt; r) -&gt; r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>             ‘b’ is a rigid type variable bound by<br/>               the type signature for:<br/>                 fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br/>               at &lt;interactive&gt;:2:5<br/>    • In the second argument of ‘(<span>&dollar;</span>)’, namely ‘<em>’<br/>      In the expression: Cont <span>&dollar;</span> </em><br/>      In an equation for ‘fmap’: fmap f cont = Cont <span>&dollar;</span> _<br/>    • Relevant bindings include<br/>        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br/>        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br/>        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>The type of our hole is more helpful here. Now we know (if we were previously uncertain) that we somehow need to use <code>f</code> to turn the <code>a</code> into a <code>b</code>. We also know that <code>Cont</code> takes a parameter, let's add that in and see if it helps.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">fmap</span> <span class="n">f</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:32: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; </em>’<br/>      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br/>    • Relevant bindings include<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:2:27)<br/>        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br/>        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br/>        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>In general, we know all of our definitions will be of the form <code>Cont $ \k -&gt; _</code> and that's a safe starting point. We now know that we need to use <code>k</code> on the result of applying <code>f</code> to some <code>a</code> to finally result in an <code>r</code>, but where does the <code>a</code> come from? The only thing we can do at this point is 'unwrap' the <code>cont</code> using <code>&gt;&gt;-</code>. What happens when we do that?</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">fmap</span> <span class="n">f</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">cont</span> <span class="o">&gt;&gt;-</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:41: error:<br/>    • Found hole: _ :: a -&gt; r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>             ‘a’ is a rigid type variable bound by<br/>               the type signature for:<br/>                 fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br/>               at &lt;interactive&gt;:2:5<br/>    • In the second argument of ‘&gt;&gt;-’, namely ‘<em>’<br/>      In the expression: cont &gt;&gt;- </em><br/>      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; cont &gt;&gt;- _’<br/>    • Relevant bindings include<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:2:27)<br/>        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br/>        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br/>        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>It looks like we might have everything we need to complete this definition! We can create a function of type <code>a -&gt; r</code> by composing <code>k</code> and <code>f</code>. </p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">fmap</span> <span class="n">f</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">cont</span> <span class="o">&gt;&gt;-</span> <span class="p">(</span><span class="n">k</span> <span class="o">.</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+
+
+<p>It worked! This definition states that <code>fmap</code> works by creating a continuation that expects a callback of the new type. This is pretty exciting! Let's continue to <code>Applicative</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:27: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; </em>’<br/>      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br/>    • Relevant bindings include<br/>        k :: a -&gt; r (bound at &lt;interactive&gt;:2:22)<br/>        a :: a (bound at &lt;interactive&gt;:2:10)<br/>        pure :: a -&gt; Cont r a (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>That was pretty easy. We need an <code>r</code> and we have an <code>a</code> and a <code>k</code> that takes an <code>a</code> to an <code>r</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">a</span>
+</pre></div>
+
+
+<p>This matches our intuition from above: creating a continuation involves hiding a value behind a function that can access it. On to <code>&lt;*&gt;</code>!</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span>  <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">a</span>
+    <span class="n">f</span> <span class="o">&lt;*&gt;</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:3:28: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; </em>’<br/>      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br/>    • Relevant bindings include<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br/>        a :: Cont r a (bound at &lt;interactive&gt;:3:11)<br/>        f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:3:5)<br/>        (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>From above, we know we can 'unwrap' <code>Cont</code> values using <code>&gt;&gt;-</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span>  <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">a</span>
+    <span class="n">f</span> <span class="o">&lt;*&gt;</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="o">&gt;&gt;-</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:3:34: error:<br/>    • Found hole: _ :: (a -&gt; b) -&gt; r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>             ‘b’ is a rigid type variable bound by<br/>               the type signature for:<br/>                 (&lt;<em>&gt;) :: forall a b. Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br/>               at &lt;interactive&gt;:3:7<br/>             ‘a’ is a rigid type variable bound by<br/>               the type signature for:<br/>                 (&lt;</em>&gt;) :: forall a b. Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br/>               at &lt;interactive&gt;:3:7<br/>    • In the second argument of ‘&gt;&gt;-’, namely ‘<em>’<br/>      In the expression: f &gt;&gt;- </em><br/>      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; f &gt;&gt;- _’<br/>    • Relevant bindings include<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br/>        a :: Cont r a (bound at &lt;interactive&gt;:3:11)<br/>        f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:3:5)<br/>        (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>Let's keep going.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span>  <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">a</span>
+    <span class="n">f</span> <span class="o">&lt;*&gt;</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">f&#39;</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:3:54: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘&gt;&gt;-’, namely ‘\ a' -&gt; </em>’<br/>      In the expression: a &gt;&gt;- \ a' -&gt; _<br/>    • Relevant bindings include<br/>        a' :: a (bound at &lt;interactive&gt;:3:48)<br/>        f' :: a -&gt; b (bound at &lt;interactive&gt;:3:35)<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br/>        a :: Cont r a (bound at &lt;interactive&gt;:3:11)<br/>        f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:3:5)<br/>        (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>Perfect, we want an <code>r</code> and we have</p>
+<ul>
+<li>an <code>a</code> (<code>a'</code>)</li>
+<li>a function from <code>a</code> to <code>b</code> (<code>f'</code>)</li>
+<li>a function from <code>b</code> to <code>r</code> (<code>k</code>)</li>
+</ul>
+<p>Let's put them together.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span>  <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">a</span>
+    <span class="n">f</span> <span class="o">&lt;*&gt;</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">f&#39;</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="p">(</span><span class="n">f&#39;</span> <span class="n">a&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Okay, we unwrap the function and the argument and rewrap them in a fresh continuation, not too differently from how we defined <code>fmap</code>. Sweet! On to the big M!</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">a</span> <span class="o">&gt;&gt;=</span> <span class="n">f</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:28: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; </em>’<br/>      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br/>    • Relevant bindings include<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:2:23)<br/>        f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:2:11)<br/>        a :: Cont r a (bound at &lt;interactive&gt;:2:5)<br/>        (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>As before, our first order of business is to unwrap the <code>a</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">a</span> <span class="o">&gt;&gt;=</span> <span class="n">f</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:41: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘&gt;&gt;-’, namely ‘\ a' -&gt; </em>’<br/>      In the expression: a &gt;&gt;- \ a' -&gt; _<br/>    • Relevant bindings include<br/>        a' :: a (bound at &lt;interactive&gt;:2:35)<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:2:23)<br/>        f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:2:11)<br/>        a :: Cont r a (bound at &lt;interactive&gt;:2:5)<br/>        (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>We can apply <code>f</code> to this unwrapped value to get a continuation that we can unwrap again.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">a</span> <span class="o">&gt;&gt;=</span> <span class="n">f</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">a&#39;</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">f&#39;</span> <span class="ow">-&gt;</span> <span class="kr">_</span>
+</pre></div>
+
+
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+
+<p><span class='err-msg'>&lt;interactive&gt;:2:57: error:<br/>    • Found hole: _ :: r<br/>      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br/>    • In the expression: <em><br/>      In the second argument of ‘&gt;&gt;-’, namely ‘\ f' -&gt; </em>’<br/>      In the expression: f a' &gt;&gt;- \ f' -&gt; _<br/>    • Relevant bindings include<br/>        f' :: b (bound at &lt;interactive&gt;:2:51)<br/>        a' :: a (bound at &lt;interactive&gt;:2:35)<br/>        k :: b -&gt; r (bound at &lt;interactive&gt;:2:23)<br/>        f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:2:11)<br/>        a :: Cont r a (bound at &lt;interactive&gt;:2:5)<br/>        (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</span></p>
+<p>We want an <code>r</code> and we have <code>k</code> and <code>f'</code>. Let's put them together!</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">Cont</span> <span class="n">r</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">a</span> <span class="o">&gt;&gt;=</span> <span class="n">f</span> <span class="ow">=</span> <span class="kt">Cont</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">a&#39;</span> <span class="o">&gt;&gt;-</span> <span class="nf">\</span><span class="n">f&#39;</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">f&#39;</span>
+</pre></div>
+
+
+<p>And that's it! The <a href="http://blog.sigfpe.com/2008/12/mother-of-all-monads.html">mother of all monads</a> boils down to some tedious and almost mechanical wrapping and unwrapping. I think it's cool how mundane it is.</p>
+<p>Still a bit wary? That's fair. I like to poke at the definitions, <a href="https://hackage.haskell.org/package/transformers-0.4.3.0/docs/src/Control-Monad-Trans-Cont.html">read the source</a>, look at how Gabriel Gonzales <a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html">explains it</a>, and have a cup of tea and think about life for a while. Whatever works for you!</p>
+<p>If you looked at the source, you might have noticed something interesting: The definition for the ContT monad transformer is identical! Here it is below.</p>
+<div class="highlight"><pre><span></span><span class="kr">newtype</span> <span class="kt">ContT</span> <span class="n">r</span> <span class="n">m</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">ContT</span> <span class="p">{</span> <span class="p">(</span><span class="o">&gt;&gt;&gt;-</span><span class="p">)</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">r</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">r</span> <span class="p">}</span>
+
+<span class="kr">instance</span> <span class="kt">Monad</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">ContT</span> <span class="n">r</span> <span class="n">m</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">fmap</span> <span class="n">f</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kt">ContT</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">cont</span> <span class="o">&gt;&gt;&gt;-</span> <span class="p">(</span><span class="n">k</span> <span class="o">.</span> <span class="n">f</span><span class="p">)</span>
+
+<span class="kr">instance</span> <span class="kt">Monad</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">ContT</span> <span class="n">r</span> <span class="n">m</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">pure</span> <span class="n">a</span>  <span class="ow">=</span> <span class="kt">ContT</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">a</span>
+    <span class="n">f</span> <span class="o">&lt;*&gt;</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">ContT</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="o">&gt;&gt;&gt;-</span> <span class="nf">\</span><span class="n">f&#39;</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="p">(</span><span class="n">f&#39;</span> <span class="n">a&#39;</span><span class="p">)</span>
+
+<span class="kr">instance</span> <span class="kt">Monad</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">ContT</span> <span class="n">r</span> <span class="n">m</span><span class="p">)</span> <span class="kr">where</span>
+    <span class="n">a</span> <span class="o">&gt;&gt;=</span> <span class="n">f</span> <span class="ow">=</span> <span class="kt">ContT</span> <span class="o">$</span> <span class="nf">\</span><span class="n">k</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="o">&gt;&gt;&gt;-</span> <span class="nf">\</span><span class="n">a&#39;</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">a&#39;</span> <span class="o">&gt;&gt;&gt;-</span> <span class="nf">\</span><span class="n">f&#39;</span> <span class="ow">-&gt;</span> <span class="n">k</span> <span class="n">f&#39;</span>
+</pre></div>
+
+
+<p>I love being able to interact with these definitions like this. This is really how I want to program, and I'd encourage you to try it! The notebook is <a href="https://github.com/vaibhavsagar/notebooks/blob/master/notebooks/Continuation.ipynb">here</a> for you to play with if you have IHaskell set up. As of this writing, I'm using <a href="https://github.com/abarbu/IHaskell">this fork</a> but I'm hopeful that changes will be integrated back into <a href="https://github.com/gibiansky/IHaskell">the original</a> soon.</p>
+<p>I feel like I should end with something profound about continuations, but I'll instead link you to <a href="http://teh.id.au/posts/2017/05/10/lambdajam-slides/index.html">this presentation by Tim Humphries</a> and once again nudge you to try typed holes the next time you're in a Haskell bind (pun very much intended).</p>
+<p>Thanks to Iain McCoy, Julia Evans, and Carl Factora for their feedback and suggestions on this post.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2017/05/22/discovering-continuations/#disqus_thread">comments</a>.</p>                </article>
+            </aside><!-- /#featured -->
+                <section id="content" class="body">
+                    <h1>Other articles</h1>
+                    <hr />
+                    <ol id="posts-list" class="hfeed">
+
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/" rel="bookmark"
+                           title="Permalink to A Simple Key-Value Store with Servant">A Simple Key-Value Store with Servant</a></h1>
+                </header>
+
+                <div class="entry-content">
 <footer class="post-info">
         <abbr class="published" title="2017-01-24T00:00:00+11:00">
                 Published: Tue 24 January 2017
@@ -38,129 +1112,16 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
 
-</footer><!-- /.post-info --><p>The <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis">meat of the Servant
+</footer><!-- /.post-info -->                <p>The <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis">meat of the Servant
 tutorial</a>
 starts with an imposing list of language extensions and imports and only gets
 more confusing from there. I don't think this gives newbies (i.e. me) the best
 first impression of Servant. Let's build the simplest possible key-value store
 with it instead.</p>
-<p>We're going to write this as a <code>stack</code> script so everything is in one file.</p>
-<div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env stack</span>
-</pre></div>
-
-
-<p>Let's import the modules we need.</p>
-<div class="highlight"><pre><span></span><span class="cm">{- stack --resolver lts-7 --install-ghc runghc</span>
-<span class="cm">    --package aeson</span>
-<span class="cm">    --package servant-server</span>
-<span class="cm">    --package text</span>
-<span class="cm">    --package transformers</span>
-<span class="cm">    --package unordered-containers</span>
-<span class="cm">    --package warp</span>
-<span class="cm">    -}</span>
-</pre></div>
-
-
-<p>At minimum we need <code>servant-server</code> for Servant goodness and <code>warp</code> to actually
-run our web service. The plan is to create an <code>IORef</code> holding a <code>HashMap</code> and
-use that as our store, which is why we need <code>unordered-containers</code>. I'd like to
-store arbitrary JSON, therefore <code>aeson</code>, and I think our keys should be <code>Text</code>,
-because <code>aeson</code> and <code>Text</code> are great together. That leaves <code>transformers</code>,
-which we need because of <code>liftIO</code>.</p>
-<p>It turns out that we only need two language extensions for this example.</p>
-<div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE DataKinds #-}</span>
-<span class="cm">{-# LANGUAGE TypeOperators #-}</span>
-</pre></div>
-
-
-<p>As far as I can tell, both these extensions are needed for Servant's cute API
-specification EDSL. We'll let you have this one, Servant.</p>
-<p>Time for a (hopefully manageable) list of imports!</p>
-<div class="highlight"><pre><span></span><span class="kr">module</span> <span class="nn">Main</span> <span class="kr">where</span>
-
-<span class="kr">import</span> <span class="nn">Control.Monad.IO.Class</span>   <span class="p">(</span><span class="nf">liftIO</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.Aeson</span>               <span class="p">(</span><span class="kt">Value</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.IORef</span>               <span class="p">(</span><span class="kt">IORef</span><span class="p">,</span> <span class="nf">newIORef</span><span class="p">,</span> <span class="nf">readIORef</span><span class="p">,</span> <span class="nf">atomicModifyIORef&#39;</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.HashMap.Strict</span>      <span class="p">(</span><span class="kt">HashMap</span><span class="p">,</span> <span class="nf">lookup</span><span class="p">,</span> <span class="nf">insert</span><span class="p">,</span> <span class="nf">empty</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.Text</span>                <span class="p">(</span><span class="kt">Text</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Network.Wai.Handler.Warp</span> <span class="p">(</span><span class="nf">run</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">System.Environment</span>       <span class="p">(</span><span class="nf">getArgs</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Prelude</span> <span class="k">hiding</span>           <span class="p">(</span><span class="nf">lookup</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Servant</span>
-</pre></div>
-
-
-<p>All imports are explicit except <code>Servant</code>'s.</p>
-<p>Speaking of the EDSL:</p>
-<div class="highlight"><pre><span></span><span class="kr">type</span> <span class="kt">API</span>
-    <span class="ow">=</span>    <span class="s">&quot;get&quot;</span> <span class="kt">:&gt;</span> <span class="kt">Capture</span> <span class="s">&quot;key&quot;</span> <span class="kt">Text</span> <span class="kt">:&gt;</span> <span class="kt">Get</span> <span class="kt">&#39;[JSON]</span> <span class="p">(</span><span class="kt">Maybe</span> <span class="kt">Value</span><span class="p">)</span>
-    <span class="kt">:&lt;|&gt;</span> <span class="s">&quot;put&quot;</span> <span class="kt">:&gt;</span> <span class="kt">Capture</span> <span class="s">&quot;key&quot;</span> <span class="kt">Text</span>
-        <span class="kt">:&gt;</span> <span class="kt">ReqBody</span> <span class="kt">&#39;[JSON]</span> <span class="kt">Value</span>     <span class="kt">:&gt;</span> <span class="kt">Put</span> <span class="kt">&#39;[JSON]</span> <span class="kt">Text</span>
-</pre></div>
-
-
-<p>This API has two endpoints: a "/get/:key" endpoint that provides the value
-associated with a key if the key exists in our store, or a "put/:key" endpoint
-that allows us to associate some JSON with a key, returning the key used. How
-this fits together is still a bit magical to me, but <a href="http://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html">this blog
-post</a>
-provides the best explanation I've read so far. The section of the Servant
-tutorial <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/ApiType.html">on the API specification
-EDSL</a> is
-also quite good.</p>
-<p>Let's define a type synonym so we don't have to keep writing <code>IORef (HashMap
-Text Value)</code> over and over again:</p>
-<div class="highlight"><pre><span></span><span class="kr">type</span> <span class="kt">Store</span> <span class="ow">=</span> <span class="kt">IORef</span> <span class="p">(</span><span class="kt">HashMap</span> <span class="kt">Text</span> <span class="kt">Value</span><span class="p">)</span>
-</pre></div>
-
-
-<p>Servant uses the same operator to define the type and the serving action:</p>
-<div class="highlight"><pre><span></span><span class="nf">server</span> <span class="ow">::</span> <span class="kt">Store</span> <span class="ow">-&gt;</span> <span class="kt">Server</span> <span class="kt">API</span>
-<span class="nf">server</span> <span class="n">store</span> <span class="ow">=</span> <span class="n">getValue</span> <span class="n">store</span> <span class="kt">:&lt;|&gt;</span> <span class="n">putValue</span> <span class="n">store</span>
-</pre></div>
-
-
-<p>The order in which these actions are composed needs to match the order used in
-the API definition.</p>
-<p>Next we define <code>getValue</code> and <code>putValue</code>. We need actions of type <code>Handler</code>,
-which is <code>ExceptT ServantErr IO</code>, so we <code>liftIO</code> as necessary:</p>
-<div class="highlight"><pre><span></span><span class="nf">getValue</span> <span class="ow">::</span> <span class="kt">Store</span> <span class="ow">-&gt;</span> <span class="kt">Text</span> <span class="ow">-&gt;</span> <span class="kt">Handler</span> <span class="p">(</span><span class="kt">Maybe</span> <span class="kt">Value</span><span class="p">)</span>
-<span class="nf">getValue</span> <span class="n">store</span> <span class="n">key</span> <span class="ow">=</span> <span class="n">liftIO</span> <span class="o">$</span> <span class="n">lookup</span> <span class="n">key</span> <span class="o">&lt;$&gt;</span> <span class="n">readIORef</span> <span class="n">store</span>
-
-<span class="nf">putValue</span> <span class="ow">::</span> <span class="kt">Store</span> <span class="ow">-&gt;</span> <span class="kt">Text</span> <span class="ow">-&gt;</span> <span class="kt">Value</span> <span class="ow">-&gt;</span> <span class="kt">Handler</span> <span class="kt">Text</span>
-<span class="nf">putValue</span> <span class="n">store</span> <span class="n">key</span> <span class="n">value</span> <span class="ow">=</span> <span class="n">liftIO</span> <span class="o">$</span> <span class="n">atomicModifyIORef&#39;</span> <span class="n">store</span> <span class="n">modify</span>
-    <span class="kr">where</span> <span class="n">modify</span> <span class="n">kv</span> <span class="ow">=</span> <span class="p">(</span><span class="n">insert</span> <span class="n">key</span> <span class="n">value</span> <span class="n">kv</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
-</pre></div>
-
-
-<p>Almost there. We declare the API we want to serve:</p>
-<div class="highlight"><pre><span></span><span class="nf">kvAPI</span> <span class="ow">::</span> <span class="kt">Proxy</span> <span class="kt">API</span>
-<span class="nf">kvAPI</span> <span class="ow">=</span> <span class="kt">Proxy</span>
-</pre></div>
-
-
-<p>Once again, Kwang Yul Seo has <a href="http://kseo.github.io/posts/2017-01-15-data-proxy.html">a great blog
-post</a> on this.</p>
-<p>Finally, we define our entry point:</p>
-<div class="highlight"><pre><span></span><span class="nf">main</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
-<span class="nf">main</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">port</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="o">.</span> <span class="n">head</span> <span class="o">&lt;$&gt;</span> <span class="n">getArgs</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="kt">Int</span>
-    <span class="n">run</span> <span class="n">port</span> <span class="o">.</span> <span class="n">serve</span> <span class="n">kvAPI</span> <span class="o">.</span> <span class="n">server</span> <span class="o">=&lt;&lt;</span> <span class="n">newIORef</span> <span class="n">empty</span>
-</pre></div>
-
-
-<p>To recap: we define our API as a type, our handlers, and the type we want to
-serve, and then we plug it all together.</p>
-<p>And we're done! We can now <code>chmod +x KVStore.hs</code> (or whatever you called the
-file) and run it: <code>./KVStore.hs 8081</code>.</p>
-<p>I hope this provides a better starting point for learning Servant. If desired,
-the full script is available
-<a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d">here</a>.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/#disqus_thread">comments</a>.</p>                </article>
-            </aside><!-- /#featured -->
-                <section id="content" class="body">
-                    <h1>Other articles</h1>
-                    <hr />
-                    <ol id="posts-list" class="hfeed">
+<p>We're going …</p>
+                <a class="readmore" href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/">read more</a>
+<p>There are <a href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/#disqus_thread">comments</a>.</p>                </div><!-- /.entry-content -->
+            </article></li>
 
             <li><article class="hentry">
                 <header>
