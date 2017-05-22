@@ -1032,6 +1032,373 @@ font-weight: bold;
 
 
 &lt;p&gt;And that's it! The &lt;a href="http://blog.sigfpe.com/2008/12/mother-of-all-monads.html"&gt;mother of all monads&lt;/a&gt; boils down to some tedious and almost mechanical wrapping and unwrapping. I think it's cool how mundane it is.&lt;/p&gt;
+&lt;p&gt;Let's have a crack at something more involved. A lot of the magic in continuations is accessed via &lt;code&gt;callCC&lt;/code&gt;, which takes a function and calls it with the current continuation, hence the name. How would we define it?&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;_&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;style&gt;/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+&lt;/style&gt;
+
+&lt;p&gt;&lt;span class='err-msg'&gt;&amp;lt;interactive&amp;gt;:2:25: error:&lt;br/&gt;    • Found hole: _ :: r&lt;br/&gt;      Where: ‘r’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;    • In the expression: &lt;em&gt;&lt;br/&gt;      In the second argument of ‘(&lt;span&gt;&amp;dollar;&lt;/span&gt;)’, namely ‘\ k -&amp;gt; &lt;/em&gt;’&lt;br/&gt;      In the expression: Cont &lt;span&gt;&amp;dollar;&lt;/span&gt; \ k -&amp;gt; _&lt;br/&gt;    • Relevant bindings include&lt;br/&gt;        k :: b -&amp;gt; r (bound at &amp;lt;interactive&amp;gt;:2:20)&lt;br/&gt;        f :: (b -&amp;gt; Cont r a) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:8)&lt;br/&gt;        callCC :: ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:1)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;Our definition involves &lt;code&gt;b&lt;/code&gt;, but the only &lt;code&gt;b&lt;/code&gt; we have available is wrapped up in &lt;code&gt;f&lt;/code&gt;. We need to provide an argument of a certain type to &lt;code&gt;f&lt;/code&gt;, and then unwrap the result of that? Time to bring out the big guns: multiple typed holes!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;_1&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;-&lt;/span&gt; &lt;span class="n"&gt;_2&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;style&gt;/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+&lt;/style&gt;
+
+&lt;p&gt;&lt;span class='err-msg'&gt;&amp;lt;interactive&amp;gt;:2:27: error:&lt;br/&gt;    • Found hole: _1 :: b -&amp;gt; Cont r a&lt;br/&gt;      Where: ‘r’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;             ‘a’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;             ‘b’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;      Or perhaps ‘_1’ is mis-spelled, or not in scope&lt;br/&gt;    • In the first argument of ‘f’, namely ‘_1’&lt;br/&gt;      In the first argument of ‘&amp;gt;&amp;gt;-’, namely ‘f _1’&lt;br/&gt;      In the expression: f _1 &amp;gt;&amp;gt;- _2&lt;br/&gt;    • Relevant bindings include&lt;br/&gt;        k :: b -&amp;gt; r (bound at &amp;lt;interactive&amp;gt;:2:20)&lt;br/&gt;        f :: (b -&amp;gt; Cont r a) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:8)&lt;br/&gt;        callCC :: ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:1)&lt;br/&gt;&amp;lt;interactive&amp;gt;:2:34: error:&lt;br/&gt;    • Found hole: _2 :: b -&amp;gt; r&lt;br/&gt;      Where: ‘r’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;             ‘b’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;      Or perhaps ‘_2’ is mis-spelled, or not in scope&lt;br/&gt;    • In the second argument of ‘&amp;gt;&amp;gt;-’, namely ‘_2’&lt;br/&gt;      In the expression: f _1 &amp;gt;&amp;gt;- _2&lt;br/&gt;      In the second argument of ‘(&lt;span&gt;&amp;dollar;&lt;/span&gt;)’, namely ‘\ k -&amp;gt; f _1 &amp;gt;&amp;gt;- _2’&lt;br/&gt;    • Relevant bindings include&lt;br/&gt;        k :: b -&amp;gt; r (bound at &amp;lt;interactive&amp;gt;:2:20)&lt;br/&gt;        f :: (b -&amp;gt; Cont r a) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:8)&lt;br/&gt;        callCC :: ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:1)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;Great, &lt;code&gt;k&lt;/code&gt; fits perfectly into the second hole. That was easy.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="kr"&gt;_&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;-&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;style&gt;/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+&lt;/style&gt;
+
+&lt;p&gt;&lt;span class='err-msg'&gt;&amp;lt;interactive&amp;gt;:2:27: error:&lt;br/&gt;    • Found hole: _ :: b -&amp;gt; Cont r a&lt;br/&gt;      Where: ‘r’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;             ‘a’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;             ‘b’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;    • In the first argument of ‘f’, namely ‘&lt;em&gt;’&lt;br/&gt;      In the first argument of ‘&amp;gt;&amp;gt;-’, namely ‘f &lt;/em&gt;’&lt;br/&gt;      In the expression: f _ &amp;gt;&amp;gt;- k&lt;br/&gt;    • Relevant bindings include&lt;br/&gt;        k :: b -&amp;gt; r (bound at &amp;lt;interactive&amp;gt;:2:20)&lt;br/&gt;        f :: (b -&amp;gt; Cont r a) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:8)&lt;br/&gt;        callCC :: ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:1)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;We're being asked to provide a function that takes one argument and returns a continuation. Let's fill in the boilerplate and see where that takes us.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&amp;#39;&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kr"&gt;_&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;-&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;style&gt;/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+&lt;/style&gt;
+
+&lt;p&gt;&lt;span class='err-msg'&gt;&amp;lt;interactive&amp;gt;:2:48: error:&lt;br/&gt;    • Found hole: _ :: r&lt;br/&gt;      Where: ‘r’ is a rigid type variable bound by&lt;br/&gt;               the type signature for:&lt;br/&gt;                 callCC :: forall b r a. ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b&lt;br/&gt;               at &amp;lt;interactive&amp;gt;:1:11&lt;br/&gt;    • In the expression: &lt;em&gt;&lt;br/&gt;      In the second argument of ‘(&lt;span&gt;&amp;dollar;&lt;/span&gt;)’, namely ‘\ k' -&amp;gt; &lt;/em&gt;’&lt;br/&gt;      In the expression: Cont &lt;span&gt;&amp;dollar;&lt;/span&gt; \ k' -&amp;gt; _&lt;br/&gt;    • Relevant bindings include&lt;br/&gt;        k' :: a -&amp;gt; r (bound at &amp;lt;interactive&amp;gt;:2:42)&lt;br/&gt;        b :: b (bound at &amp;lt;interactive&amp;gt;:2:29)&lt;br/&gt;        k :: b -&amp;gt; r (bound at &amp;lt;interactive&amp;gt;:2:20)&lt;br/&gt;        f :: (b -&amp;gt; Cont r a) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:8)&lt;br/&gt;        callCC :: ((b -&amp;gt; Cont r a) -&amp;gt; Cont r b) -&amp;gt; Cont r b (bound at &amp;lt;interactive&amp;gt;:2:1)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;And we're done! We can get an &lt;code&gt;r&lt;/code&gt; by applying &lt;code&gt;k&lt;/code&gt; to &lt;code&gt;b&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;span class="nf"&gt;callCC&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Cont&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="nf"&gt;\&lt;/span&gt;&lt;span class="n"&gt;k&amp;#39;&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;-&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;A closer look at the definition reveals that &lt;code&gt;k'&lt;/code&gt; is unused, and this function provides &lt;code&gt;f&lt;/code&gt; with the option to exit early if desired, or continue as normal. There's a good explanation of why and how this works at &lt;a href="https://github.com/quchen/articles/blob/master/cont_monad.md#special-api-function-callcc"&gt;the aforementioned article&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Still a bit wary? That's fair. I like to poke at the definitions, &lt;a href="https://hackage.haskell.org/package/transformers-0.4.3.0/docs/src/Control-Monad-Trans-Cont.html"&gt;read the source&lt;/a&gt;, look at how Gabriel Gonzales &lt;a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html"&gt;explains it&lt;/a&gt;, and have a cup of tea and think about life for a while. Whatever works for you!&lt;/p&gt;
 &lt;p&gt;If you looked at the source, you might have noticed something interesting: The definition for the ContT monad transformer is identical! Here it is below.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kr"&gt;newtype&lt;/span&gt; &lt;span class="kt"&gt;ContT&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;ContT&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;-&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
