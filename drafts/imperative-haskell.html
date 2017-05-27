@@ -136,7 +136,7 @@ between iterations, which was fun to track down. But it works!</p>
 even if we could, the equivalent implementation would be so different as to be
 unrecognisable. At least this is what I thought until I took a closer look at
 <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Monad-ST.html">Control.Monad.ST</a> and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-STRef.html">Data.STRef</a>.</p>
-<p>One of my biggest gripes with Haskell is the quality of the documentation. <code>Control.Monad.ST</code> is introduced by the riveting</p>
+<p>One of my biggest gripes with Haskell is the quality of the documentation. <code>Control.Monad.ST</code> is introduced as</p>
 <blockquote>
 <p>This library provides support for strict state threads, as described in the PLDI '94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional State Threads</em>.</p>
 </blockquote>
@@ -146,13 +146,13 @@ unrecognisable. At least this is what I thought until I took a closer look at
 </blockquote>
 <p>I don't want to read a paper to figure out how to use these libraries, and in
 fact I don't have to! In recognition of this, I humbly present alternative
-descriptions:</p>
+descriptions for <code>Control.Monad.ST</code>:</p>
 <blockquote>
 <p>You asked for mutable state, here it is!</p>
 </blockquote>
-<p>and</p>
+<p>and <code>Data.STRef</code>:</p>
 <blockquote>
-<p>Variables that you can actually vary!!!1!1!one!1eleven</p>
+<p>Variables that you can actually vary!!!1!1!one!1eleventyone</p>
 </blockquote>
 <p>Code utilising these libraries can look very familiar to people used to
 imperative languages, e.g. past me. Here's the above quicksort rewritten in
