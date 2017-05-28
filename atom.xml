@@ -1,5 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2017-05-22T00:00:00+10:00</updated><entry><title>Discovering Continuations with Typed Holes</title><link href="http://www.vaibhavsagar.com/blog/2017/05/22/discovering-continuations/" rel="alternate"></link><published>2017-05-22T00:00:00+10:00</published><updated>2017-05-22T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-05-22:/blog/2017/05/22/discovering-continuations/</id><summary type="html">&lt;p&gt;I've been trying to wrap my head around continuations for a while. I was reading &lt;a href="https://github.com/quchen/articles/blob/master/cont_monad.md"&gt;David Luposchainsky's excellent article&lt;/a&gt; on them and playing with his definitions in an IHaskell notebook when I found that typed holes are an excellent hammer to attack this particular nail with.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2017-05-28T00:00:00+10:00</updated><entry><title>Pulls I Have Requested</title><link href="http://www.vaibhavsagar.com/blog/2017/05/28/pulls-requested/" rel="alternate"></link><published>2017-05-28T00:00:00+10:00</published><updated>2017-05-28T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-05-28:/blog/2017/05/28/pulls-requested/</id><summary type="html">&lt;p&gt;Why contribute to open source by making pull requests? For me it comes down to
+two things:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;I want this change made.&lt;/li&gt;
+&lt;li&gt;I want to be the one to make this change.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The first one is easier to talk about: I want the software to be better than it
+is …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Why contribute to open source by making pull requests? For me it comes down to
+two things:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;I want this change made.&lt;/li&gt;
+&lt;li&gt;I want to be the one to make this change.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The first one is easier to talk about: I want the software to be better than it
+is, for my own definition of 'better', and I think this change will make it so.
+The second motivation is baser and possibly less noble, but no less important.
+I get warm fuzzies and a sense of personal importance and fulfillment from
+seeing my name in a commit message. If I wanted a change made but wasn't
+especially interested in making that change myself, I might choose to do
+nothing and wait or complain on the issue tracker until someone else does
+something about it. This is irritating at best and actively harmful to a
+maintainer's mental health at worst. Your motivations may be completely
+different from mine, and I don't think it really matters, as long as the end
+result is better software.&lt;/p&gt;
+&lt;p&gt;So what does it mean to contribute? I've come up with a personal taxonomy of
+pull request types that I'd love to share with you.&lt;/p&gt;
+&lt;h1&gt;One Character&lt;/h1&gt;
+&lt;h1&gt;Typo fixes&lt;/h1&gt;
+&lt;h1&gt;Administrivia&lt;/h1&gt;
+&lt;h1&gt;Refactoring&lt;/h1&gt;
+&lt;h1&gt;Bugfixes&lt;/h1&gt;
+&lt;h1&gt;New Features&lt;/h1&gt;
+&lt;h1&gt;Drastic Overhaul&lt;/h1&gt;</content></entry><entry><title>Discovering Continuations with Typed Holes</title><link href="http://www.vaibhavsagar.com/blog/2017/05/22/discovering-continuations/" rel="alternate"></link><published>2017-05-22T00:00:00+10:00</published><updated>2017-05-22T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-05-22:/blog/2017/05/22/discovering-continuations/</id><summary type="html">&lt;p&gt;I've been trying to wrap my head around continuations for a while. I was reading &lt;a href="https://github.com/quchen/articles/blob/master/cont_monad.md"&gt;David Luposchainsky's excellent article&lt;/a&gt; on them and playing with his definitions in an IHaskell notebook when I found that typed holes are an excellent hammer to attack this particular nail with.&lt;/p&gt;
 &lt;p&gt;If you haven't encountered …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I've been trying to wrap my head around continuations for a while. I was reading &lt;a href="https://github.com/quchen/articles/blob/master/cont_monad.md"&gt;David Luposchainsky's excellent article&lt;/a&gt; on them and playing with his definitions in an IHaskell notebook when I found that typed holes are an excellent hammer to attack this particular nail with.&lt;/p&gt;
 &lt;p&gt;If you haven't encountered them before, &lt;a href="https://wiki.haskell.org/GHC/Typed_holes"&gt;typed holes&lt;/a&gt; are a feature where you put one or more variables starting with &lt;code&gt;_&lt;/code&gt; on the right hand side of a definition to get GHC to tell you the type of the value that fits in that hole, and you can narrow the hole as necessary to get the type of a subexpression until you have enough information to complete the definition. I like to think of this as a way of collaboratively filling in a definition with the compiler, instead of my usual approach which is to write a definition, listen carefully to GHC's complaints, and amend my definition accordingly. Typed holes are fully supported by GHCi and the full suite of editor integrations, but I personally find the edit/reload/squint cycle more tedious than coming up with the definition in IHaskell and then moving it to a module and adding type signatures after I'm satisfied that it works.&lt;/p&gt;
 &lt;p&gt;I think his type definition makes an excellent starting point:&lt;/p&gt;
@@ -1432,9 +1464,9 @@ posts in this vein are &lt;a href="http://blog.jfo.click/how-i-went-to-rc/"&gt;t
 Jeff Fowler and &lt;a href="http://haroldtreen.github.io/tech/recurse/2017/02/26/applying-twice-to-the-recurse-center/"&gt;this
 one&lt;/a&gt;
 by Harold Treen.&lt;/p&gt;
-&lt;p&gt;At the end of 2013, the CSIRO in Australia generously bent the rules for me by
-allowing me to do a student internship despite having just completed an
-undergraduate degree. I was taking a quick break and browsing Reddit when I
+&lt;p&gt;At the end of 2013, I'd just completed by undergraduate degree and the CSIRO in
+Australia generously bent the rules for me by allowing me to do a student
+internship anyway. I was taking a quick break and browsing Reddit when I
 encountered a blog post about Hacker School. The details are in a server log
 somewhere, but I'm reasonably certain it was a Julia Evans post, and they're
 tonally consistent on this subject so we'll pretend it was &lt;a href="https://jvns.ca/blog/2014/02/15/how-was-hacker-school/"&gt;this particular
