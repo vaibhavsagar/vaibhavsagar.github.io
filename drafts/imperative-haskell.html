@@ -58,10 +58,11 @@ Haskell when I bumped up against an uncomfortable truth. Haskell's 'quicksort':<
 </pre></div>
 
 
-<p>isn't a true quicksort! Specifically, it doesn't sort the elements in place.
-The assignment I was working on involved counting the number of comparisons, so
-I couldn't get away with my false quicksort. With my tail between my legs, I
-gave up on my pure Haskell approach and implemented a solution in Python:</p>
+<p>isn't a true quicksort! Specifically, it doesn't sort the elements in place,
+and the assignment I was working on involved counting the number of
+comparisons, so I couldn't get away with my fake quicksort. With my tail
+between my legs, I gave up on my pure Haskell approach and implemented a
+solution in Python:</p>
 <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
 
@@ -133,9 +134,12 @@ between iterations, which was fun to track down. But it works!</p>
 even if we could, the equivalent implementation would be so different as to be
 unrecognisable. At least this is what I thought until I took a closer look at
 <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Monad-ST.html">Control.Monad.ST</a> and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-STRef.html">Data.STRef</a>.</p>
-<p>One of my biggest gripes with Haskell is the quality of the documentation. <code>Control.Monad.ST</code> is introduced as</p>
+<p>One of my biggest gripes with Haskell is the quality of the documentation.
+<code>Control.Monad.ST</code> is introduced as</p>
 <blockquote>
-<p>This library provides support for strict state threads, as described in the PLDI '94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional State Threads</em>.</p>
+<p>This library provides support for strict state threads, as described in the
+PLDI '94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional
+State Threads</em>.</p>
 </blockquote>
 <p>and <code>Data.STRef</code> is introduced as</p>
 <blockquote>
@@ -221,9 +225,9 @@ Haskell:</p>
 
 <p>This is roughly the same length as the Python implementation, and even improves
 on it in some ways: no recursion limit fiddling and no global variables.</p>
-<p>Let's take a look at another problem. If we can write Haskell that resembles
-Python, and Python is executable pseudocode, can we cut out the middleman and
-translate pseudocode directly to Haskell?</p>
+<p>If we can write Haskell that resembles Python, and Python is executable
+pseudocode, can we cut out the middleman and translate pseudocode directly to
+Haskell? Let's take a look at another problem.</p>
 <p>I needed to calculate the size of the strongly connected components of a graph
 for another assignment, and I decided to use Tarjan's Strongly Connected
 Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
@@ -347,10 +351,10 @@ this looks pretty close.</p>
 transparency? That's the subject of <a href="http://research.microsoft.com/en-us/um/people/simonpj/Papers/state-lasc.pdf">the paper mentioned
 above</a>
 that you don't have to read (but totally can if you want)! They figured out a
-way to provide a pure interface to mutable state. We pass the variables into
-each function that makes use of them, and we leverage the type system to make
-sure any impurity is well contained. The correctness of this approach was <a href="http://iris-project.org/pdfs/2017-icfp-runST-submission.pdf">very
-recently
+way to provide a principled pure interface to mutable state. We pass the
+variables into each function that makes use of them, and we leverage the type
+system to make sure any impurity is well contained. The correctness of this
+approach was <a href="http://iris-project.org/pdfs/2017-icfp-runST-submission.pdf">very recently
 verified</a>. We can
 replace any of the functions with purer and more idiomatic definitions without
 changing the output, and that satisfies the definition of referential
