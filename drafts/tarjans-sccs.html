@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8" />
+        <title>Tarjan's Strongly Connected Components Algorithm Is Cool and Useful</title>
+        <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
+        <link href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Vaibhav Sagar's Site Atom Feed" />
+
+        <!--[if IE]>
+            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+<a href="https://github.com/vaibhavsagar">
+<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" />
+</a>
+        <header id="banner" class="body">
+                <h1><a href="http://www.vaibhavsagar.com/">Vaibhav Sagar's Site </a></h1>
+                <nav><ul>
+                    <li><a href="/blog/archives/">all</a></li>
+                    <li><a href="http://www.vaibhavsagar.com/about/">about</a></li>
+                    <li><a href="http://www.vaibhavsagar.com/blog/misc/">misc</a></li>
+                    <li class="active"><a href="http://www.vaibhavsagar.com/blog/programming/">programming</a></li>
+                </ul></nav>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="http://www.vaibhavsagar.com/drafts/tarjans-sccs.html" rel="bookmark"
+           title="Permalink to Tarjan's Strongly Connected Components Algorithm Is Cool and Useful">Tarjan's Strongly Connected Components Algorithm Is Cool and Useful</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <abbr class="published" title="2017-06-04T00:00:00+10:00">
+                Published: Sun 04 June 2017
+        </abbr>
+
+        <address class="vcard author">
+                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
+        </address>
+<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+
+</footer><!-- /.post-info -->      <p>I'd like to tell you about an algorithm that I'm frankly annoyed I didn't
+discover earlier, despite what I assumed was an adequate overview of
+algorithms (both formal and otherwise).</p>
+<p>The algorithm is <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan's Strongly Connected
+Components</a>
+(or SCCs) algorithm, and as the name suggests, it decomposes a directed graph
+into its strongly connected components. A <a href="https://en.wikipedia.org/wiki/Directed_graph">directed
+graph</a> is one where the edges
+have a direction associated with them, and a <a href="https://en.wikipedia.org/wiki/Strongly_connected_component">strongly connected
+component</a> of a
+graph is a subgraph where each node can be reached from every other node, i.e.
+there's a directed cycle somewhere in this subgraph.</p>
+<p>So why does this matter? I don't recall ever having the desire to deeply know
+the SCCs of a particular graph.</p>
+<p>Let's look at a different problem. Given a directed graph, how do we know if it
+is acyclic? The context here is that I was wondering how difficult it would be
+literally draw a Git commit history as a graph and render that to a repo. Git
+commits form a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic
+graph</a> (DAG), which is a
+directed graph without cycles, and I wanted to validate a user-drawn graph as
+well as process it.</p>
+<p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic">the
+oracle</a>
+yielded the concept of a <a href="https://en.wikipedia.org/wiki/Topological_sorting">topological
+sort</a>, which is where
+vertices are ordered such that for all vertices <em>u</em> and <em>v</em>, if there is an
+edge from <em>u</em> to <em>v</em>, <em>u</em> appears earlier than <em>v</em> in the sorted output.  The
+directed edges for a Git commit graph are in the opposite direction from what
+we want though, because they point from children to parents. What we really
+want is a reverse topological sort. It would also be nice if I could somehow
+highlight the subgraphs of an invalid graph that are responsible for it being
+invalid.</p>
+<p>This is where we come back to the SCCs of a graph. If there are any SCCs of
+more than one vertex, the graph is not a DAG and those SCCs are the cause of
+this.  Collapsing the SCCs of a directed graph to a single vertex always leads
+to a DAG and this is known as the condensation of a directed graph, which I
+think is a nice way to visualise the relationship between SCCs and DAGs.</p>
+<p>Alright, so we do actually want to know the SCCs of this graph, but first we
+want to try to sort it topologically and reverse that order if that is
+possible, otherwise we calculate the SCCs and identify the offending ones. This
+seems a bit messy for graph properties that seem somewhat related. How cool
+would it be if there were an algorithm that could calculate the SCCs and a
+reverse topological sort for us <em>at the same time</em>?</p>
+<p>It turns out that Tarjan's SCCs algorithm does exactly that! You'd think that
+its performance might not be great because it does two things at once, but it
+is linear in the number of edges and vertices, and has better constant factors
+than <a href="https://en.wikipedia.org/wiki/Kosaraju's_algorithm">Kosaraju's
+algorithm</a>, which only
+computes SCCs. Here it is as pseudocode:</p>
+<div class="highlight"><pre><span></span> algorithm tarjan is
+  input: graph G = (V, E)
+  output: set of strongly connected components (sets of vertices)
+
+  index := 0
+  S := empty array
+  for each v in V do
+    if (v.index is undefined) then
+      strongconnect(v)
+    end if
+  end for
+
+  function strongconnect(v)
+    // Set the depth index for v to the smallest unused index
+    v.index := index
+    v.lowlink := index
+    index := index + 1
+    S.push(v)
+    v.onStack := true
+
+    // Consider successors of v
+    for each (v, w) in E do
+      if (w.index is undefined) then
+        // Successor w has not yet been visited; recurse on it
+        strongconnect(w)
+        v.lowlink  := min(v.lowlink, w.lowlink)
+      else if (w.onStack) then
+        // Successor w is in stack S and hence in the current SCC
+        // Note: The next line may look odd - but is correct.
+        // It says w.index not w.lowlink; that is deliberate and from the original paper
+        v.lowlink  := min(v.lowlink, w.index)
+      end if
+    end for
+
+    // If v is a root node, pop the stack and generate an SCC
+    if (v.lowlink = v.index) then
+      start a new strongly connected component
+      repeat
+        w := S.pop()
+        w.onStack := false
+        add w to current strongly connected component
+      while (w != v)
+      output the current strongly connected component
+    end if
+  end function
+</pre></div>
+
+
+<p>As presented it is very imperative and I like Haskell, but fortunately
+<a href="http://vaibhavsagar.com/blog/2017/05/29/imperative-haskell/">imperative
+Haskell</a> is pretty
+straightforward and I have an implementation
+<a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms1/week4/SCC.ipynb">here</a>.</p>
+<p>This seems like an incredibly niche use case, but validating and processing
+DAGs in this way happens surprisingly frequently. Consider a build process
+where inputs and outputs are nodes and their relationships are directed edges.
+The presence of an SCC with more than one vertex indicates a cyclic dependency,
+and dependencies need to be build before the nodes that they depend on, which
+implies a reverse topological sort. This generalises to dataflow programming,
+where loops need to be identified (and possibly eliminated). I like to think of
+this algorithm as an all-in-one DAG toolkit.</p>
+<p>We can also use it to solve
+<a href="https://en.wikipedia.org/wiki/2-satisfiability">2SAT</a>, which is the problem of
+determining whether boolean variables in series of constraints of the form <code>a
+|| b</code> can be assigned T and F values such that all constraints hold. This is
+discussed <a href="">here</a> but boils down to encoding the constraints as nodes and
+edges, calculating the SCCs, and processing the output in reverse topologically
+sorted order. An advantage to doing it this way is that the process can stop at
+the first SCC that indicates unsatisfiability. I have an implementation of this
+<a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms2/week6/Week6.ipynb">here</a>.</p>
+<p>Most of the algorithms material I've encountered tends to focus on rote
+memorisation for whiteboarding during interviews, and for me this means that I
+only have the opportunity to demonstrate this knowledge in a hostile
+environment where I am experiencing severe existential dread and a whole host
+of other negative emotions. Discovering this algorithm got me excited about
+theoretical computer science and reminded me that algorithms can be fun,
+interesting, and an opportunity to marvel at the music of the spheres. I'm
+curious to know what other equally awesome algorithms are out there. Which
+one's your favourite?</p>
+    </div><!-- /.entry-content -->
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+
+                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
+        </footer><!-- /#contentinfo -->
+
+    <script type="text/javascript">
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-79891461-1', 'auto');
+    ga('send', 'pageview');
+    </script>
+<script type="text/javascript">
+    var disqus_shortname = 'vaibhavsagar';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'https://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+</body>
+</html>
