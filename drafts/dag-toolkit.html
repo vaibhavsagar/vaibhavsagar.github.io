@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
         <meta charset="utf-8" />
-        <title>Tarjan's Strongly Connected Components Algorithm Is Cool and Useful</title>
+        <title>An All-in-one DAG Toolkit</title>
         <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
         <link href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Vaibhav Sagar's Site Atom Feed" />
 
@@ -28,8 +28,8 @@
   <article>
     <header>
       <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/drafts/tarjans-sccs.html" rel="bookmark"
-           title="Permalink to Tarjan's Strongly Connected Components Algorithm Is Cool and Useful">Tarjan's Strongly Connected Components Algorithm Is Cool and Useful</a></h1>
+        <a href="http://www.vaibhavsagar.com/drafts/dag-toolkit.html" rel="bookmark"
+           title="Permalink to An All-in-one DAG Toolkit">An All-in-one DAG Toolkit</a></h1>
     </header>
 
     <div class="entry-content">
@@ -150,7 +150,7 @@ where inputs and outputs are nodes and their relationships are directed edges.
 The presence of an SCC with more than one vertex indicates a cyclic dependency,
 and dependencies need to be built before the nodes that they depend on, which
 implies a reverse topological sort. This generalises to dataflow programming,
-where loops need to be identified (and possibly eliminated). I like to think of
+where loops need to be identified (and usually eliminated). I like to think of
 this algorithm as an all-in-one DAG toolkit.</p>
 <p>We can also use it to solve
 <a href="https://en.wikipedia.org/wiki/2-satisfiability">2SAT</a>, which is the problem of
