@@ -54,6 +54,14 @@ have a direction associated with them, and a <a href="https://en.wikipedia.org/w
 component</a> of a
 graph is a subgraph where each node can be reached from every other node, i.e.
 there's a directed cycle somewhere in this subgraph.</p>
+<style>
+img[src*='#center'] { 
+    display: block;
+    margin: auto;
+}
+</style>
+
+<p><img alt="Strongly Connected Components" src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Scc.png#center"></p>
 <p>So why does this matter? I don't recall ever having the desire to deeply know
 the SCCs of a particular graph.</p>
 <p>Let's look at a different problem. Given a directed graph, how do we know if it
@@ -63,7 +71,8 @@ commits form a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">di
 graph</a> (DAG), which is a
 directed graph without cycles, and I wanted to validate a user-drawn graph as
 well as process it.</p>
-<p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic">the
+<p><img alt="Directed Acyclic Graph" src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Tred-G.svg#center"></p>
+<p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic#center">the
 oracle</a>
 yielded the concept of a <a href="https://en.wikipedia.org/wiki/Topological_sorting">topological
 sort</a>, which is where
@@ -74,11 +83,13 @@ we want though, because they point from children to parents. What we really
 want is a reverse topological sort. It would also be nice if I could somehow
 highlight the subgraphs of an invalid graph that are responsible for it being
 invalid.</p>
+<p><img alt="Topological Sort" src="https://upload.wikimedia.org/wikipedia/commons/c/c6/Topological_Ordering.svg#center"></p>
 <p>This is where we come back to the SCCs of a graph. If there are any SCCs of
 more than one vertex, the graph is not a DAG and those SCCs are the cause of
 this.  Collapsing the SCCs of a directed graph to a single vertex always leads
 to a DAG and this is known as the condensation of a directed graph, which I
 think is a nice way to visualise the relationship between SCCs and DAGs.</p>
+<p><img alt="Condensation" src="https://upload.wikimedia.org/wikipedia/commons/2/20/Graph_Condensation.svg#center"></p>
 <p>Alright, so we do actually want to know the SCCs of this graph, but first we
 want to try to sort it topologically and reverse that order if that is
 possible, otherwise we calculate the SCCs and identify the offending ones. This
@@ -170,6 +181,8 @@ theoretical computer science and reminded me that algorithms can be fun,
 interesting, and an opportunity to marvel at the music of the spheres. I'm
 curious to know what other equally awesome algorithms are out there. Which
 one's your favourite?</p>
+<p>Thanks to <a href="http://anniecherkaev.com/">Annie Cherkaev</a> for the title and
+excellent feedback.</p>
     </div><!-- /.entry-content -->
 
   </article>
