@@ -28,14 +28,14 @@
   <article>
     <header>
       <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/drafts/dag-toolkit.html" rel="bookmark"
+        <a href="http://www.vaibhavsagar.com/blog/2017/06/10/dag-toolkit/" rel="bookmark"
            title="Permalink to An All-in-One DAG Toolkit">An All-in-One DAG Toolkit</a></h1>
     </header>
 
     <div class="entry-content">
 <footer class="post-info">
-        <abbr class="published" title="2017-06-04T00:00:00+10:00">
-                Published: Sun 04 June 2017
+        <abbr class="published" title="2017-06-10T00:00:00+10:00">
+                Published: Sat 10 June 2017
         </abbr>
 
         <address class="vcard author">
@@ -55,7 +55,7 @@ component</a> of a
 graph is a subgraph where each node can be reached from every other node, i.e.
 there's a directed cycle somewhere in this subgraph.</p>
 <style>
-img[src*='#center'] { 
+img[src*='#center'] {
     display: block;
     margin: auto;
 }
@@ -72,7 +72,7 @@ graph</a> (DAG), which is a
 directed graph without cycles, and I wanted to validate a user-drawn graph as
 well as process it.</p>
 <p><img alt="Directed Acyclic Graph" src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Tred-G.svg#center"></p>
-<p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic#center">the
+<p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic">the
 oracle</a>
 yielded the concept of a <a href="https://en.wikipedia.org/wiki/Topological_sorting">topological
 sort</a>, which is where
@@ -150,6 +150,11 @@ computes SCCs. Here it is as pseudocode:</p>
 </pre></div>
 
 
+<p>The algorithm does a depth-first search, keeping track of two properties for
+each vertex: when it was encountered (the <em>index</em>) and the lowest index of any
+vertex reachable from this vertex (the <em>lowlink</em>). It pushes vertices on to a
+stack as it goes and outputs a strongly connected component when it cannot find
+any vertices it has not seen before.</p>
 <p>As presented it is very imperative and I like Haskell, but fortunately
 <a href="http://vaibhavsagar.com/blog/2017/05/29/imperative-haskell/">imperative
 Haskell</a> is pretty
@@ -172,18 +177,30 @@ edges, calculating the SCCs, and processing the output in reverse topologically
 sorted order. An advantage to doing it this way is that the process can stop at
 the first SCC that indicates unsatisfiability. I have an implementation of this
 <a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms2/week6/Week6.ipynb">here</a>.</p>
-<p>Most of the algorithms material I've encountered tends to focus on rote
-memorisation for whiteboarding during interviews, and for me this means that I
-only have the opportunity to demonstrate this knowledge in a hostile
-environment where I am experiencing severe existential dread and a whole host
-of other negative emotions. Discovering this algorithm got me excited about
-theoretical computer science and reminded me that algorithms can be fun,
-interesting, and an opportunity to marvel at the music of the spheres. I'm
-curious to know what other equally awesome algorithms are out there. Which
-one's your favourite?</p>
-<p>Thanks to <a href="http://anniecherkaev.com/">Annie Cherkaev</a> for the title and
-excellent feedback.</p>
+<p>Discovering this algorithm got me excited about theoretical computer science
+and reminded me that algorithms can be fun, interesting, and an opportunity to
+marvel at the music of the spheres. I'm curious to know what other equally
+awesome algorithms are out there. Which one's your favourite?</p>
+<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> for the title and
+feedback, and <a href="https://twitter.com/imccoy">Iain McCoy</a> for suggesting <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.3876">a more
+functional
+approach</a>.</p>
     </div><!-- /.entry-content -->
+    <div class="comments">
+      <h2>Comments !</h2>
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+        var disqus_shortname = 'vaibhavsagar';
+        var disqus_identifier = 'blog/2017/06/10/dag-toolkit/';
+        var disqus_url = 'http://www.vaibhavsagar.com/blog/2017/06/10/dag-toolkit/';
+        (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//vaibhavsagar.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+      </script>
+      <noscript>Please enable JavaScript to view the comments.</noscript>
+    </div>
 
   </article>
 </section>

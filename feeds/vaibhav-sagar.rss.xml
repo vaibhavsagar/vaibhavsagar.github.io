@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0"><channel><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Mon, 29 May 2017 00:00:00 +1000</lastBuildDate><item><title>Imperative Haskell</title><link>http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/</link><description>&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
+<rss version="2.0"><channel><title>Vaibhav Sagar's Site - Vaibhav Sagar</title><link>http://www.vaibhavsagar.com/</link><description></description><lastBuildDate>Sat, 10 Jun 2017 00:00:00 +1000</lastBuildDate><item><title>An All-in-One DAG Toolkit</title><link>http://www.vaibhavsagar.com/blog/2017/06/10/dag-toolkit/</link><description>&lt;p&gt;I'd like to tell you about an algorithm that I'm frankly annoyed I didn't
+discover earlier.&lt;/p&gt;
+&lt;p&gt;The algorithm is &lt;a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm"&gt;Tarjan's Strongly Connected
+Components&lt;/a&gt;
+(or SCCs) algorithm, and as the name suggests, it decomposes a directed graph
+into its strongly connected components. A &lt;a href="https://en.wikipedia.org/wiki/Directed_graph"&gt;directed
+graph&lt;/a&gt; is one where the edges
+have …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Sat, 10 Jun 2017 00:00:00 +1000</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2017-06-10:/blog/2017/06/10/dag-toolkit/</guid></item><item><title>Imperative Haskell</title><link>http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/</link><description>&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
 gave at RC, because giving that talk over and over again doesn't scale and
 there are things I would like to cover that are difficult within that time
 limit.&lt;/em&gt;&lt;/p&gt;

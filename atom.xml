@@ -1,5 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2017-05-29T00:00:00+10:00</updated><entry><title>Imperative Haskell</title><link href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/" rel="alternate"></link><published>2017-05-29T00:00:00+10:00</published><updated>2017-05-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-05-29:/blog/2017/05/29/imperative-haskell/</id><summary type="html">&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Vaibhav Sagar's Site</title><link href="http://www.vaibhavsagar.com/" rel="alternate"></link><link href="http://www.vaibhavsagar.com/atom.xml" rel="self"></link><id>http://www.vaibhavsagar.com/</id><updated>2017-06-10T00:00:00+10:00</updated><entry><title>An All-in-One DAG Toolkit</title><link href="http://www.vaibhavsagar.com/blog/2017/06/10/dag-toolkit/" rel="alternate"></link><published>2017-06-10T00:00:00+10:00</published><updated>2017-06-10T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-06-10:/blog/2017/06/10/dag-toolkit/</id><summary type="html">&lt;p&gt;I'd like to tell you about an algorithm that I'm frankly annoyed I didn't
+discover earlier.&lt;/p&gt;
+&lt;p&gt;The algorithm is &lt;a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm"&gt;Tarjan's Strongly Connected
+Components&lt;/a&gt;
+(or SCCs) algorithm, and as the name suggests, it decomposes a directed graph
+into its strongly connected components. A &lt;a href="https://en.wikipedia.org/wiki/Directed_graph"&gt;directed
+graph&lt;/a&gt; is one where the edges
+have …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I'd like to tell you about an algorithm that I'm frankly annoyed I didn't
+discover earlier.&lt;/p&gt;
+&lt;p&gt;The algorithm is &lt;a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm"&gt;Tarjan's Strongly Connected
+Components&lt;/a&gt;
+(or SCCs) algorithm, and as the name suggests, it decomposes a directed graph
+into its strongly connected components. A &lt;a href="https://en.wikipedia.org/wiki/Directed_graph"&gt;directed
+graph&lt;/a&gt; is one where the edges
+have a direction associated with them, and a &lt;a href="https://en.wikipedia.org/wiki/Strongly_connected_component"&gt;strongly connected
+component&lt;/a&gt; of a
+graph is a subgraph where each node can be reached from every other node, i.e.
+there's a directed cycle somewhere in this subgraph.&lt;/p&gt;
+&lt;style&gt;
+img[src*='#center'] {
+    display: block;
+    margin: auto;
+}
+&lt;/style&gt;
+
+&lt;p&gt;&lt;img alt="Strongly Connected Components" src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Scc.png#center"&gt;&lt;/p&gt;
+&lt;p&gt;So why does this matter? I don't recall ever having the desire to deeply know
+the SCCs of a particular graph.&lt;/p&gt;
+&lt;p&gt;Let's look at a different problem. Given a directed graph, how do we know if it
+is acyclic? The context here is that I was wondering how difficult it would be
+literally draw a Git commit history as a graph and render that to a repo. Git
+commits form a &lt;a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph"&gt;directed acyclic
+graph&lt;/a&gt; (DAG), which is a
+directed graph without cycles, and I wanted to validate a user-drawn graph as
+well as process it.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Directed Acyclic Graph" src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Tred-G.svg#center"&gt;&lt;/p&gt;
+&lt;p&gt;Consulting &lt;a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic"&gt;the
+oracle&lt;/a&gt;
+yielded the concept of a &lt;a href="https://en.wikipedia.org/wiki/Topological_sorting"&gt;topological
+sort&lt;/a&gt;, which is where
+vertices are ordered such that for all vertices &lt;em&gt;u&lt;/em&gt; and &lt;em&gt;v&lt;/em&gt;, if there is an
+edge from &lt;em&gt;u&lt;/em&gt; to &lt;em&gt;v&lt;/em&gt;, &lt;em&gt;u&lt;/em&gt; appears earlier than &lt;em&gt;v&lt;/em&gt; in the sorted output.  The
+directed edges for a Git commit graph are in the opposite direction from what
+we want though, because they point from children to parents. What we really
+want is a reverse topological sort. It would also be nice if I could somehow
+highlight the subgraphs of an invalid graph that are responsible for it being
+invalid.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Topological Sort" src="https://upload.wikimedia.org/wikipedia/commons/c/c6/Topological_Ordering.svg#center"&gt;&lt;/p&gt;
+&lt;p&gt;This is where we come back to the SCCs of a graph. If there are any SCCs of
+more than one vertex, the graph is not a DAG and those SCCs are the cause of
+this.  Collapsing the SCCs of a directed graph to a single vertex always leads
+to a DAG and this is known as the condensation of a directed graph, which I
+think is a nice way to visualise the relationship between SCCs and DAGs.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Condensation" src="https://upload.wikimedia.org/wikipedia/commons/2/20/Graph_Condensation.svg#center"&gt;&lt;/p&gt;
+&lt;p&gt;Alright, so we do actually want to know the SCCs of this graph, but first we
+want to try to sort it topologically and reverse that order if that is
+possible, otherwise we calculate the SCCs and identify the offending ones. This
+seems a bit messy for graph properties that seem somewhat related. How cool
+would it be if there were an algorithm that could calculate the SCCs and a
+reverse topological sort for us &lt;em&gt;at the same time&lt;/em&gt;?&lt;/p&gt;
+&lt;p&gt;It turns out that Tarjan's SCCs algorithm does exactly that! You'd think that
+its performance might not be great because it does two things at once, but it
+is linear in the number of edges and vertices, and has better constant factors
+than &lt;a href="https://en.wikipedia.org/wiki/Kosaraju's_algorithm"&gt;Kosaraju's
+algorithm&lt;/a&gt;, which only
+computes SCCs. Here it is as pseudocode:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt; algorithm tarjan is
+  input: graph G = (V, E)
+  output: set of strongly connected components (sets of vertices)
+
+  index := 0
+  S := empty array
+  for each v in V do
+    if (v.index is undefined) then
+      strongconnect(v)
+    end if
+  end for
+
+  function strongconnect(v)
+    // Set the depth index for v to the smallest unused index
+    v.index := index
+    v.lowlink := index
+    index := index + 1
+    S.push(v)
+    v.onStack := true
+
+    // Consider successors of v
+    for each (v, w) in E do
+      if (w.index is undefined) then
+        // Successor w has not yet been visited; recurse on it
+        strongconnect(w)
+        v.lowlink  := min(v.lowlink, w.lowlink)
+      else if (w.onStack) then
+        // Successor w is in stack S and hence in the current SCC
+        // Note: The next line may look odd - but is correct.
+        // It says w.index not w.lowlink; that is deliberate and from the original paper
+        v.lowlink  := min(v.lowlink, w.index)
+      end if
+    end for
+
+    // If v is a root node, pop the stack and generate an SCC
+    if (v.lowlink = v.index) then
+      start a new strongly connected component
+      repeat
+        w := S.pop()
+        w.onStack := false
+        add w to current strongly connected component
+      while (w != v)
+      output the current strongly connected component
+    end if
+  end function
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The algorithm does a depth-first search, keeping track of two properties for
+each vertex: when it was encountered (the &lt;em&gt;index&lt;/em&gt;) and the lowest index of any
+vertex reachable from this vertex (the &lt;em&gt;lowlink&lt;/em&gt;). It pushes vertices on to a
+stack as it goes and outputs a strongly connected component when it cannot find
+any vertices it has not seen before.&lt;/p&gt;
+&lt;p&gt;As presented it is very imperative and I like Haskell, but fortunately
+&lt;a href="http://vaibhavsagar.com/blog/2017/05/29/imperative-haskell/"&gt;imperative
+Haskell&lt;/a&gt; is pretty
+straightforward and I have an implementation
+&lt;a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms1/week4/SCC.ipynb"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This seems like an incredibly niche use case, but validating and processing
+DAGs in this way happens surprisingly frequently. Consider a build process
+where inputs and outputs are nodes and their relationships are directed edges.
+The presence of an SCC with more than one vertex indicates a cyclic dependency,
+and dependencies need to be built before the nodes that they depend on, which
+implies a reverse topological sort. This generalises to dataflow programming,
+where loops need to be identified (and usually eliminated). I like to think of
+this algorithm as an all-in-one DAG toolkit.&lt;/p&gt;
+&lt;p&gt;We can also use it to solve
+&lt;a href="https://en.wikipedia.org/wiki/2-satisfiability"&gt;2SAT&lt;/a&gt;, which is the problem of
+determining whether boolean variables in series of constraints of the form &lt;code&gt;a
+|| b&lt;/code&gt; can be assigned T and F values such that all constraints hold. This is
+discussed &lt;a href=""&gt;here&lt;/a&gt; but boils down to encoding the constraints as nodes and
+edges, calculating the SCCs, and processing the output in reverse topologically
+sorted order. An advantage to doing it this way is that the process can stop at
+the first SCC that indicates unsatisfiability. I have an implementation of this
+&lt;a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms2/week6/Week6.ipynb"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Discovering this algorithm got me excited about theoretical computer science
+and reminded me that algorithms can be fun, interesting, and an opportunity to
+marvel at the music of the spheres. I'm curious to know what other equally
+awesome algorithms are out there. Which one's your favourite?&lt;/p&gt;
+&lt;p&gt;Thanks to &lt;a href="https://anniecherkaev.com/"&gt;Annie Cherkaev&lt;/a&gt; for the title and
+feedback, and &lt;a href="https://twitter.com/imccoy"&gt;Iain McCoy&lt;/a&gt; for suggesting &lt;a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.3876"&gt;a more
+functional
+approach&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>Imperative Haskell</title><link href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/" rel="alternate"></link><published>2017-05-29T00:00:00+10:00</published><updated>2017-05-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-05-29:/blog/2017/05/29/imperative-haskell/</id><summary type="html">&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
 gave at RC, because giving that talk over and over again doesn't scale and
 there are things I would like to cover that are difficult within that time
 limit.&lt;/em&gt;&lt;/p&gt;

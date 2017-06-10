@@ -27,10 +27,10 @@
 
             <aside id="featured" class="body">
                 <article>
-                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/">Imperative Haskell</a></h1>
+                    <h1 class="entry-title"><a href="http://www.vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">An All-in-One DAG Toolkit</a></h1>
 <footer class="post-info">
-        <abbr class="published" title="2017-05-29T00:00:00+10:00">
-                Published: Mon 29 May 2017
+        <abbr class="published" title="2017-06-10T00:00:00+10:00">
+                Published: Sat 10 June 2017
         </abbr>
 
         <address class="vcard author">
@@ -38,193 +38,65 @@
         </address>
 <p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
 
-</footer><!-- /.post-info --><p><em>This post covers essentially the same material as a 5-minute presentation I
-gave at RC, because giving that talk over and over again doesn't scale and
-there are things I would like to cover that are difficult within that time
-limit.</em></p>
-<p>I was working through Tim Roughgarden's <a href="https://www.coursera.org/learn/algorithm-design-analysis/">Algorithms
-1</a> (which has now
-been replaced by two smaller courses) and attempting to do all the exercises in
-Haskell when I bumped up against an uncomfortable truth. Haskell's 'quicksort':</p>
-<div class="highlight"><pre><span></span><span class="nf">qsort</span> <span class="kt">[]</span>     <span class="ow">=</span> <span class="kt">[]</span>
-<span class="nf">qsort</span> <span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="n">xs</span><span class="p">)</span> <span class="ow">=</span> <span class="n">lt</span> <span class="o">++</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">++</span> <span class="n">gt</span>
-    <span class="kr">where</span> <span class="n">lt</span> <span class="ow">=</span> <span class="n">qsort</span> <span class="p">[</span><span class="n">e</span> <span class="o">|</span> <span class="n">e</span> <span class="ow">&lt;-</span> <span class="n">xs</span><span class="p">,</span> <span class="n">e</span> <span class="o">&lt;</span>  <span class="n">x</span><span class="p">]</span>
-          <span class="n">gt</span> <span class="ow">=</span> <span class="n">qsort</span> <span class="p">[</span><span class="n">e</span> <span class="o">|</span> <span class="n">e</span> <span class="ow">&lt;-</span> <span class="n">xs</span><span class="p">,</span> <span class="n">e</span> <span class="o">&gt;=</span> <span class="n">x</span><span class="p">]</span>
-</pre></div>
+</footer><!-- /.post-info --><p>I'd like to tell you about an algorithm that I'm frankly annoyed I didn't
+discover earlier.</p>
+<p>The algorithm is <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan's Strongly Connected
+Components</a>
+(or SCCs) algorithm, and as the name suggests, it decomposes a directed graph
+into its strongly connected components. A <a href="https://en.wikipedia.org/wiki/Directed_graph">directed
+graph</a> is one where the edges
+have a direction associated with them, and a <a href="https://en.wikipedia.org/wiki/Strongly_connected_component">strongly connected
+component</a> of a
+graph is a subgraph where each node can be reached from every other node, i.e.
+there's a directed cycle somewhere in this subgraph.</p>
+<style>
+img[src*='#center'] {
+    display: block;
+    margin: auto;
+}
+</style>
 
-
-<p>isn't a true quicksort! Specifically, it doesn't sort the elements in place,
-and the assignment I was working on involved counting the number of
-comparisons, so I couldn't get away with my fake quicksort. With my tail
-between my legs, I gave up on my pure Haskell approach and implemented a
-solution in Python:</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">partition_first</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
-    <span class="n">i</span> <span class="o">=</span> <span class="n">l</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">array</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">p</span><span class="p">:</span>
-            <span class="n">array</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">partition_last</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
-    <span class="n">array</span><span class="p">[</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">partition_first</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">partition_median</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
-    <span class="n">p_idx</span> <span class="o">=</span> <span class="n">choose_median</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
-    <span class="n">array</span><span class="p">[</span><span class="n">p_idx</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="n">array</span><span class="p">[</span><span class="n">p_idx</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">partition_first</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">choose_median</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
-    <span class="n">head</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
-    <span class="n">last</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">length</span> <span class="o">=</span> <span class="n">r</span><span class="o">-</span><span class="n">l</span>
-    <span class="k">if</span> <span class="n">length</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">mid_idx</span> <span class="o">=</span> <span class="n">l</span> <span class="o">+</span> <span class="p">(</span><span class="n">length</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">mid_idx</span> <span class="o">=</span> <span class="n">l</span> <span class="o">+</span> <span class="p">(</span><span class="n">length</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">mid</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">mid_idx</span><span class="p">]</span>
-    <span class="n">options</span> <span class="o">=</span> <span class="p">[(</span><span class="n">l</span><span class="p">,</span> <span class="n">head</span><span class="p">),</span> <span class="p">(</span><span class="n">mid_idx</span><span class="p">,</span> <span class="n">mid</span><span class="p">),</span> <span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">last</span><span class="p">)]</span>
-    <span class="n">options</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-    <span class="n">options</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-    <span class="k">return</span> <span class="n">options</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-
-<span class="k">def</span> <span class="nf">quicksort</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">partition</span><span class="p">):</span>
-    <span class="k">global</span> <span class="n">comparisons</span>
-    <span class="k">if</span> <span class="n">end</span><span class="o">&lt;=</span><span class="n">start</span><span class="p">:</span> <span class="k">return</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">p_idx</span> <span class="o">=</span> <span class="n">partition</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
-        <span class="n">comparisons</span> <span class="o">+=</span> <span class="p">(</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">quicksort</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">partition</span><span class="p">)</span>
-        <span class="n">quicksort</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">p_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">partition</span><span class="p">)</span>
-
-
-<span class="n">comparisons</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">inp1</span> <span class="o">=</span> <span class="n">contents</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">quicksort</span><span class="p">(</span><span class="n">inp1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp1</span><span class="p">),</span> <span class="n">partition_first</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">comparisons</span><span class="p">)</span>
-
-<span class="n">comparisons</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">inp2</span> <span class="o">=</span> <span class="n">contents</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">quicksort</span><span class="p">(</span><span class="n">inp2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp2</span><span class="p">),</span> <span class="n">partition_last</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">comparisons</span><span class="p">)</span>
-
-<span class="n">comparisons</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">inp3</span> <span class="o">=</span> <span class="n">contents</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">quicksort</span><span class="p">(</span><span class="n">inp3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp3</span><span class="p">),</span> <span class="n">partition_median</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">comparisons</span><span class="p">)</span>
-</pre></div>
-
-
-<p>This implementation is not particularly Pythonic: note the recursion limit and
-the use of a global variable. I actually forgot to reset the variable to 0
-between iterations, which was fun to track down. But it works!</p>
-<p>So far, so good. This isn't something we'd be able to do in Haskell, right? And
-even if we could, the equivalent implementation would be so different as to be
-unrecognisable. At least this is what I thought until I took a closer look at
-<a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Monad-ST.html">Control.Monad.ST</a> and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-STRef.html">Data.STRef</a>.</p>
-<p>One of my biggest gripes with Haskell is the quality of the documentation.
-<code>Control.Monad.ST</code> is introduced as</p>
-<blockquote>
-<p>This library provides support for strict state threads, as described in the
-PLDI '94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional
-State Threads</em>.</p>
-</blockquote>
-<p>and <code>Data.STRef</code> is introduced as</p>
-<blockquote>
-<p>Mutable references in the (strict) ST monad.</p>
-</blockquote>
-<p>I don't want to read a paper to figure out how to use these libraries, and in
-fact I don't have to! In recognition of this, I humbly present alternative
-descriptions for <code>Control.Monad.ST</code>:</p>
-<blockquote>
-<p>You asked for mutable state, here it is!</p>
-</blockquote>
-<p>and <code>Data.STRef</code>:</p>
-<blockquote>
-<p>Variables that you can actually vary!!!1!1!one!1eleventyone</p>
-</blockquote>
-<p>Code utilising these libraries can look very familiar to people used to
-imperative languages, e.g. past me. Here's the above quicksort rewritten in
-Haskell:</p>
-<div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE RankNTypes #-}</span>
-
-<span class="kr">import</span> <span class="nn">Control.Monad.ST</span>
-<span class="kr">import</span> <span class="nn">Data.STRef</span>
-<span class="kr">import</span> <span class="nn">Data.Vector</span> <span class="p">(</span><span class="nf">fromList</span><span class="p">,</span> <span class="nf">toList</span><span class="p">,</span> <span class="nf">freeze</span><span class="p">,</span> <span class="nf">thaw</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Control.Monad</span>
-<span class="kr">import</span> <span class="nn">Data.Vector.Mutable</span> <span class="p">(</span><span class="kt">STVector</span><span class="p">,</span> <span class="nf">read</span><span class="p">,</span> <span class="nf">write</span><span class="p">,</span> <span class="nf">swap</span><span class="p">)</span>
-<span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.Vector</span> <span class="k">as</span> <span class="n">V</span> <span class="p">(</span><span class="kt">Vector</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.List</span> <span class="p">(</span><span class="nf">sortOn</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Prelude</span> <span class="k">hiding</span> <span class="p">(</span><span class="nf">read</span><span class="p">)</span>
-
-<span class="nf">vector</span> <span class="ow">=</span> <span class="n">fromList</span> <span class="n">contents</span>
-
-<span class="nf">partitionFirst</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">p</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="n">array</span> <span class="n">l</span>
-    <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">forM_</span> <span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="o">..</span><span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span> <span class="o">$</span> <span class="nf">\</span><span class="n">j</span> <span class="ow">-&gt;</span> <span class="kr">do</span>
-        <span class="n">arrayJ</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="n">array</span> <span class="n">j</span>
-        <span class="n">i&#39;</span>     <span class="ow">&lt;-</span> <span class="n">readSTRef</span> <span class="n">i</span>
-        <span class="n">when</span> <span class="p">(</span><span class="n">arrayJ</span> <span class="o">&lt;</span> <span class="n">p</span><span class="p">)</span> <span class="o">$</span> <span class="kr">do</span>
-            <span class="n">swap</span> <span class="n">array</span> <span class="n">i&#39;</span> <span class="n">j</span>
-            <span class="n">modifySTRef&#39;</span> <span class="n">i</span> <span class="p">(</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">i&#39;</span> <span class="ow">&lt;-</span> <span class="n">readSTRef</span> <span class="n">i</span>
-    <span class="n">swap</span> <span class="n">array</span> <span class="p">(</span><span class="n">i&#39;</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="n">l</span>
-    <span class="n">return</span> <span class="p">(</span><span class="n">i&#39;</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="nf">partitionLast</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">swap</span> <span class="n">array</span> <span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="n">l</span>
-    <span class="n">partitionFirst</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span>
-
-<span class="nf">partitionMedian</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">p</span> <span class="ow">&lt;-</span> <span class="n">chooseMedian</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span>
-    <span class="n">swap</span> <span class="n">array</span> <span class="n">p</span> <span class="n">l</span>
-    <span class="n">partitionFirst</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span>
-
-<span class="nf">chooseMedian</span> <span class="n">array</span> <span class="n">l</span> <span class="n">r</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">h</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="n">array</span> <span class="n">l</span>
-    <span class="n">t</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="n">array</span> <span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="kr">let</span> <span class="n">len</span> <span class="ow">=</span> <span class="n">r</span><span class="o">-</span><span class="n">l</span>
-    <span class="kr">let</span> <span class="n">mid</span> <span class="ow">=</span> <span class="kr">if</span> <span class="p">(</span><span class="n">len</span> <span class="p">`</span><span class="n">mod</span><span class="p">`</span> <span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
-        <span class="kr">then</span> <span class="n">l</span> <span class="o">+</span> <span class="p">(</span><span class="n">len</span> <span class="p">`</span><span class="n">div</span><span class="p">`</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="kr">else</span> <span class="n">l</span> <span class="o">+</span> <span class="p">(</span><span class="n">len</span> <span class="p">`</span><span class="n">div</span><span class="p">`</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">m</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="n">array</span> <span class="n">mid</span>
-    <span class="kr">let</span> <span class="n">options</span> <span class="ow">=</span> <span class="n">sortOn</span> <span class="n">snd</span> <span class="p">[(</span><span class="n">l</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span> <span class="p">(</span><span class="n">mid</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="p">)]</span>
-    <span class="n">return</span> <span class="p">(</span><span class="n">fst</span> <span class="p">(</span><span class="n">options</span> <span class="o">!!</span> <span class="mi">1</span><span class="p">))</span>
-
-<span class="nf">quicksort</span> <span class="n">array</span> <span class="n">start</span> <span class="n">end</span> <span class="n">partition</span> <span class="n">comparisons</span> <span class="ow">=</span> <span class="n">when</span> <span class="p">(</span><span class="n">start</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">)</span> <span class="o">$</span> <span class="kr">do</span>
-    <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">partition</span> <span class="n">array</span> <span class="n">start</span> <span class="n">end</span>
-    <span class="n">modifySTRef&#39;</span> <span class="n">comparisons</span> <span class="p">(</span><span class="o">+</span> <span class="p">(</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-    <span class="n">quicksort</span> <span class="n">array</span> <span class="n">start</span> <span class="n">i</span>   <span class="n">partition</span> <span class="n">comparisons</span>
-    <span class="n">quicksort</span> <span class="n">array</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="n">end</span> <span class="n">partition</span> <span class="n">comparisons</span>
-
-<span class="nf">quicksort&#39;</span> <span class="ow">::</span> <span class="kt">Ord</span> <span class="n">a</span> <span class="ow">=&gt;</span> <span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">forall</span> <span class="n">s</span> <span class="n">a</span><span class="o">.</span> <span class="p">(</span><span class="kt">Ord</span> <span class="n">a</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">STVector</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">ST</span> <span class="n">s</span> <span class="kt">Int</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
-<span class="nf">quicksort&#39;</span> <span class="n">vector</span> <span class="n">partition</span> <span class="ow">=</span> <span class="n">runST</span> <span class="o">$</span> <span class="kr">do</span>
-    <span class="n">array</span>  <span class="ow">&lt;-</span> <span class="n">thaw</span> <span class="n">vector</span>
-    <span class="n">comps</span>  <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="mi">0</span>
-    <span class="n">quicksort</span> <span class="n">array</span> <span class="mi">0</span> <span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="n">length</span> <span class="n">vector</span><span class="p">)</span> <span class="n">partition</span> <span class="n">comps</span>
-    <span class="n">readSTRef</span> <span class="n">comps</span>
-
-<span class="nf">quicksort&#39;</span> <span class="n">vector</span> <span class="n">partitionFirst</span>
-<span class="nf">quicksort&#39;</span> <span class="n">vector</span> <span class="n">partitionLast</span>
-<span class="nf">quicksort&#39;</span> <span class="n">vector</span> <span class="n">partitionMedian</span>
-</pre></div>
-
-
-<p>This is roughly the same length as the Python implementation, and even improves
-on it in some ways: no recursion limit fiddling and no global variables.</p>
-<p>If we can write Haskell that resembles Python, and Python is executable
-pseudocode, can we cut out the middleman and translate pseudocode directly to
-Haskell? Let's take a look at another problem.</p>
-<p>I needed to calculate the size of the strongly connected components of a graph
-for another assignment, and I decided to use Tarjan's Strongly Connected
-Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
+<p><img alt="Strongly Connected Components" src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Scc.png#center"></p>
+<p>So why does this matter? I don't recall ever having the desire to deeply know
+the SCCs of a particular graph.</p>
+<p>Let's look at a different problem. Given a directed graph, how do we know if it
+is acyclic? The context here is that I was wondering how difficult it would be
+literally draw a Git commit history as a graph and render that to a repo. Git
+commits form a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic
+graph</a> (DAG), which is a
+directed graph without cycles, and I wanted to validate a user-drawn graph as
+well as process it.</p>
+<p><img alt="Directed Acyclic Graph" src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Tred-G.svg#center"></p>
+<p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic">the
+oracle</a>
+yielded the concept of a <a href="https://en.wikipedia.org/wiki/Topological_sorting">topological
+sort</a>, which is where
+vertices are ordered such that for all vertices <em>u</em> and <em>v</em>, if there is an
+edge from <em>u</em> to <em>v</em>, <em>u</em> appears earlier than <em>v</em> in the sorted output.  The
+directed edges for a Git commit graph are in the opposite direction from what
+we want though, because they point from children to parents. What we really
+want is a reverse topological sort. It would also be nice if I could somehow
+highlight the subgraphs of an invalid graph that are responsible for it being
+invalid.</p>
+<p><img alt="Topological Sort" src="https://upload.wikimedia.org/wikipedia/commons/c/c6/Topological_Ordering.svg#center"></p>
+<p>This is where we come back to the SCCs of a graph. If there are any SCCs of
+more than one vertex, the graph is not a DAG and those SCCs are the cause of
+this.  Collapsing the SCCs of a directed graph to a single vertex always leads
+to a DAG and this is known as the condensation of a directed graph, which I
+think is a nice way to visualise the relationship between SCCs and DAGs.</p>
+<p><img alt="Condensation" src="https://upload.wikimedia.org/wikipedia/commons/2/20/Graph_Condensation.svg#center"></p>
+<p>Alright, so we do actually want to know the SCCs of this graph, but first we
+want to try to sort it topologically and reverse that order if that is
+possible, otherwise we calculate the SCCs and identify the offending ones. This
+seems a bit messy for graph properties that seem somewhat related. How cool
+would it be if there were an algorithm that could calculate the SCCs and a
+reverse topological sort for us <em>at the same time</em>?</p>
+<p>It turns out that Tarjan's SCCs algorithm does exactly that! You'd think that
+its performance might not be great because it does two things at once, but it
+is linear in the number of edges and vertices, and has better constant factors
+than <a href="https://en.wikipedia.org/wiki/Kosaraju's_algorithm">Kosaraju's
+algorithm</a>, which only
+computes SCCs. Here it is as pseudocode:</p>
 <div class="highlight"><pre><span></span> algorithm tarjan is
   input: graph G = (V, E)
   output: set of strongly connected components (sets of vertices)
@@ -273,112 +145,73 @@ Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
 </pre></div>
 
 
-<p>and here's what that looks like in Haskell:</p>
-<div class="highlight"><pre><span></span><span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.Graph</span> <span class="k">as</span> <span class="n">G</span>
-<span class="kr">import</span> <span class="nn">Control.Monad.ST</span>
-<span class="kr">import</span> <span class="nn">Data.STRef</span>
-
-<span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.Map.Strict</span>    <span class="k">as</span> <span class="n">M</span>
-<span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.Set</span>           <span class="k">as</span> <span class="n">S</span>
-<span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.IntMap.Strict</span> <span class="k">as</span> <span class="n">I</span>
-<span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.Array</span>         <span class="k">as</span> <span class="n">A</span>
-
-<span class="kr">import</span> <span class="nn">Control.Monad</span> <span class="p">(</span><span class="nf">forM_</span><span class="p">,</span> <span class="nf">when</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.Maybe</span> <span class="p">(</span><span class="nf">isNothing</span><span class="p">,</span> <span class="nf">fromJust</span><span class="p">)</span>
-
-<span class="nf">tarjan</span> <span class="n">graph</span> <span class="ow">=</span> <span class="n">runST</span> <span class="o">$</span> <span class="kr">do</span>
-    <span class="n">index</span>    <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="mi">0</span>
-    <span class="n">stack</span>    <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="kt">[]</span>
-    <span class="n">indices</span>  <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="kt">I</span><span class="o">.</span><span class="n">empty</span>
-    <span class="n">lowlinks</span> <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="kt">I</span><span class="o">.</span><span class="n">empty</span>
-    <span class="n">output</span>   <span class="ow">&lt;-</span> <span class="n">newSTRef</span> <span class="kt">[]</span>
-
-    <span class="n">forM_</span> <span class="p">(</span><span class="kt">G</span><span class="o">.</span><span class="n">vertices</span> <span class="n">graph</span><span class="p">)</span> <span class="o">$</span> <span class="nf">\</span><span class="n">v</span> <span class="ow">-&gt;</span> <span class="kr">do</span>
-        <span class="n">vIndex</span> <span class="ow">&lt;-</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">v</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">indices</span>
-        <span class="n">when</span> <span class="p">(</span><span class="n">isNothing</span> <span class="n">vIndex</span><span class="p">)</span> <span class="o">$</span> <span class="n">strongConnect</span> <span class="n">v</span> <span class="n">graph</span> <span class="n">index</span> <span class="n">stack</span> <span class="n">indices</span> <span class="n">lowlinks</span> <span class="n">output</span>
-
-    <span class="n">reverse</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">output</span>
-
-<span class="nf">strongConnect</span> <span class="n">v</span> <span class="n">graph</span> <span class="n">index</span> <span class="n">stack</span> <span class="n">indices</span> <span class="n">lowlinks</span> <span class="n">output</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">readSTRef</span> <span class="n">index</span>
-    <span class="n">modifySTRef&#39;</span> <span class="n">indices</span>  <span class="p">(</span><span class="kt">I</span><span class="o">.</span><span class="n">insert</span> <span class="n">v</span> <span class="n">i</span><span class="p">)</span>
-    <span class="n">modifySTRef&#39;</span> <span class="n">lowlinks</span> <span class="p">(</span><span class="kt">I</span><span class="o">.</span><span class="n">insert</span> <span class="n">v</span> <span class="n">i</span><span class="p">)</span>
-    <span class="n">modifySTRef&#39;</span> <span class="n">index</span> <span class="p">(</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">push</span> <span class="n">stack</span> <span class="n">v</span>
-
-    <span class="n">forM_</span> <span class="p">(</span><span class="n">graph</span> <span class="kt">A</span><span class="o">.!</span> <span class="n">v</span><span class="p">)</span> <span class="o">$</span> <span class="nf">\</span><span class="n">w</span> <span class="ow">-&gt;</span> <span class="kr">do</span>
-        <span class="n">wIndex</span> <span class="ow">&lt;-</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">w</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">indices</span>
-        <span class="kr">if</span> <span class="n">isNothing</span> <span class="n">wIndex</span>
-            <span class="kr">then</span> <span class="kr">do</span>
-                <span class="n">strongConnect</span> <span class="n">w</span> <span class="n">graph</span> <span class="n">index</span> <span class="n">stack</span> <span class="n">indices</span> <span class="n">lowlinks</span> <span class="n">output</span>
-                <span class="n">vLowLink</span> <span class="ow">&lt;-</span> <span class="n">fromJust</span> <span class="o">.</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">v</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">lowlinks</span>
-                <span class="n">wLowLink</span> <span class="ow">&lt;-</span> <span class="n">fromJust</span> <span class="o">.</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">w</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">lowlinks</span>
-                <span class="n">modifySTRef&#39;</span> <span class="n">lowlinks</span> <span class="p">(</span><span class="kt">I</span><span class="o">.</span><span class="n">insert</span> <span class="n">v</span> <span class="o">$</span> <span class="n">min</span> <span class="n">vLowLink</span> <span class="n">wLowLink</span><span class="p">)</span>
-            <span class="kr">else</span> <span class="kr">do</span>
-                <span class="n">wOnStack</span> <span class="ow">&lt;-</span> <span class="n">elem</span> <span class="n">w</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">stack</span>
-                <span class="n">when</span> <span class="n">wOnStack</span> <span class="o">$</span> <span class="kr">do</span>
-                    <span class="n">vLowLink</span> <span class="ow">&lt;-</span> <span class="n">fromJust</span> <span class="o">.</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">v</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">lowlinks</span>
-                    <span class="n">modifySTRef&#39;</span> <span class="n">lowlinks</span> <span class="p">(</span><span class="kt">I</span><span class="o">.</span><span class="n">insert</span> <span class="n">v</span> <span class="o">$</span> <span class="n">min</span> <span class="n">vLowLink</span> <span class="p">(</span><span class="n">fromJust</span> <span class="n">wIndex</span><span class="p">))</span>
-
-    <span class="n">vLowLink</span> <span class="ow">&lt;-</span> <span class="n">fromJust</span> <span class="o">.</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">v</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">lowlinks</span>
-    <span class="n">vIndex</span>   <span class="ow">&lt;-</span> <span class="n">fromJust</span> <span class="o">.</span> <span class="kt">I</span><span class="o">.</span><span class="n">lookup</span> <span class="n">v</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">indices</span>
-    <span class="n">when</span> <span class="p">(</span><span class="n">vLowLink</span> <span class="o">==</span> <span class="n">vIndex</span><span class="p">)</span> <span class="o">$</span> <span class="kr">do</span>
-        <span class="n">scc</span> <span class="ow">&lt;-</span> <span class="n">addSCC</span> <span class="n">v</span> <span class="kt">[]</span> <span class="n">stack</span>
-        <span class="n">modifySTRef&#39;</span> <span class="n">output</span> <span class="p">(</span><span class="n">scc</span><span class="kt">:</span><span class="p">)</span>
-
-<span class="nf">addSCC</span> <span class="n">v</span> <span class="n">scc</span> <span class="n">stack</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">w</span> <span class="ow">&lt;-</span> <span class="n">pop</span> <span class="n">stack</span>
-    <span class="kr">let</span> <span class="n">scc&#39;</span> <span class="ow">=</span> <span class="n">w</span><span class="kt">:</span><span class="n">scc</span>
-    <span class="kr">if</span> <span class="n">w</span> <span class="o">==</span> <span class="n">v</span> <span class="kr">then</span> <span class="n">return</span> <span class="n">scc&#39;</span> <span class="kr">else</span> <span class="n">addSCC</span> <span class="n">v</span> <span class="n">scc&#39;</span> <span class="n">stack</span>
-
-<span class="nf">push</span> <span class="n">stack</span> <span class="n">e</span> <span class="ow">=</span> <span class="n">modifySTRef&#39;</span> <span class="n">stack</span> <span class="p">(</span><span class="n">e</span><span class="kt">:</span><span class="p">)</span>
-<span class="nf">pop</span>  <span class="n">stack</span>   <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">e</span> <span class="ow">&lt;-</span> <span class="n">head</span> <span class="o">&lt;$&gt;</span> <span class="n">readSTRef</span> <span class="n">stack</span>
-    <span class="n">modifySTRef&#39;</span> <span class="n">stack</span> <span class="n">tail</span>
-    <span class="n">return</span> <span class="n">e</span>
-</pre></div>
-
-
-<p>Aside from explicitly declaring our variables and passing them around, I think
-this looks pretty close.</p>
-<p>How do we square this with Haskell's reputation for purity and referential
-transparency? That's the subject of <a href="http://research.microsoft.com/en-us/um/people/simonpj/Papers/state-lasc.pdf">the paper mentioned
-above</a>
-that you don't have to read (but totally can if you want)! They figured out a
-way to provide a principled pure interface to mutable state by passing the
-references as arguments into each function that makes use of them and
-leveraging the type system to make sure any impurity is well contained. The
-correctness of this approach was <a href="http://iris-project.org/pdfs/2017-icfp-runST-submission.pdf">very recently
-verified</a>. If
-desired, we can replace any of the functions with purer and more idiomatic
-definitions without changing the output, and that satisfies the definition of
-referential transparency!</p>
-<p>Why don't we do this all the time, when Haskell is at least a serviceable
-imperative language? Because writing imperative programs is hard! They don't
-compose as well, have less useful type signatures, and are harder to reason
-about. Getting away from those things is why we have Haskell to begin with! The
-real question should be: how can we avoid doing things this way as much as
-possible?</p>
-<p>Before I discovered this part of Haskell, I had this perception of Haskell (and
-declarative programming more generally) as "imperative programming but less"
-from a practical perspective. I thought that although writing declarative code
-in Python was purely (heh) a matter of discipline, writing imperative code in
-Haskell required completely reconceptualising the algorithm. Thanks to <code>ST</code>, I
-now know that this not the case, which is a huge relief. If required, I can do
-a literal translation of the algorithm, and clean it up (or not) later. In fact
-Haskell is "imperative programming and more", and that's awesome!</p>
-<p>Thanks to <a href="http://blog.podsnap.com/">Peter Fraenkel</a>, <a href="https://jvns.ca/">Julia
-Evans</a>, and <a href="http://msteigerwalt.com/">Michelle Steigerwalt</a>
-for feedback.</p>
-<p><em>If you'd rather try to make sense of the <a href="https://github.com/vaibhavsagar/thursday-presentations/tree/master/imperative-haskell">set of disconnected
-files</a>
-that constitutes my slides for that presentation, you can do that instead,
-although I wouldn't recommend it.</em></p><p>There are <a href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/#disqus_thread">comments</a>.</p>                </article>
+<p>The algorithm does a depth-first search, keeping track of two properties for
+each vertex: when it was encountered (the <em>index</em>) and the lowest index of any
+vertex reachable from this vertex (the <em>lowlink</em>). It pushes vertices on to a
+stack as it goes and outputs a strongly connected component when it cannot find
+any vertices it has not seen before.</p>
+<p>As presented it is very imperative and I like Haskell, but fortunately
+<a href="http://vaibhavsagar.com/blog/2017/05/29/imperative-haskell/">imperative
+Haskell</a> is pretty
+straightforward and I have an implementation
+<a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms1/week4/SCC.ipynb">here</a>.</p>
+<p>This seems like an incredibly niche use case, but validating and processing
+DAGs in this way happens surprisingly frequently. Consider a build process
+where inputs and outputs are nodes and their relationships are directed edges.
+The presence of an SCC with more than one vertex indicates a cyclic dependency,
+and dependencies need to be built before the nodes that they depend on, which
+implies a reverse topological sort. This generalises to dataflow programming,
+where loops need to be identified (and usually eliminated). I like to think of
+this algorithm as an all-in-one DAG toolkit.</p>
+<p>We can also use it to solve
+<a href="https://en.wikipedia.org/wiki/2-satisfiability">2SAT</a>, which is the problem of
+determining whether boolean variables in series of constraints of the form <code>a
+|| b</code> can be assigned T and F values such that all constraints hold. This is
+discussed <a href="">here</a> but boils down to encoding the constraints as nodes and
+edges, calculating the SCCs, and processing the output in reverse topologically
+sorted order. An advantage to doing it this way is that the process can stop at
+the first SCC that indicates unsatisfiability. I have an implementation of this
+<a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms2/week6/Week6.ipynb">here</a>.</p>
+<p>Discovering this algorithm got me excited about theoretical computer science
+and reminded me that algorithms can be fun, interesting, and an opportunity to
+marvel at the music of the spheres. I'm curious to know what other equally
+awesome algorithms are out there. Which one's your favourite?</p>
+<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> for the title and
+feedback, and <a href="https://twitter.com/imccoy">Iain McCoy</a> for suggesting <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.3876">a more
+functional
+approach</a>.</p><p>There are <a href="http://www.vaibhavsagar.com/blog/2017/06/10/dag-toolkit/#disqus_thread">comments</a>.</p>                </article>
             </aside><!-- /#featured -->
                 <section id="content" class="body">
                     <h1>Other articles</h1>
                     <hr />
                     <ol id="posts-list" class="hfeed">
+
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/" rel="bookmark"
+                           title="Permalink to Imperative Haskell">Imperative Haskell</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <abbr class="published" title="2017-05-29T00:00:00+10:00">
+                Published: Mon 29 May 2017
+        </abbr>
+
+        <address class="vcard author">
+                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
+        </address>
+<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+
+</footer><!-- /.post-info -->                <p><em>This post covers essentially the same material as a 5-minute presentation I
+gave at RC, because giving that talk over and over again doesn't scale and
+there are things I would like to cover that are difficult within that time
+limit.</em></p>
+<p>I was working through Tim Roughgarden's <a href="https://www.coursera.org/learn/algorithm-design-analysis/">Algorithms
+1</a> (which …</p>
+                <a class="readmore" href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/">read more</a>
+<p>There are <a href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/#disqus_thread">comments</a>.</p>                </div><!-- /.entry-content -->
+            </article></li>
 
             <li><article class="hentry">
                 <header>
@@ -583,32 +416,6 @@ was my first ever technical talk, and I think it went fairly well.</p>
 <code>git</code> to the audience assuming some …</p>
                 <a class="readmore" href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/">read more</a>
 <p>There are <a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/#disqus_thread">comments</a>.</p>                </div><!-- /.entry-content -->
-            </article></li>
-
-            <li><article class="hentry">
-                <header>
-                    <h1><a href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/" rel="bookmark"
-                           title="Permalink to Generate A PDF From Your Resume With Travis-CI">Generate A PDF From Your Resume With Travis-CI</a></h1>
-                </header>
-
-                <div class="entry-content">
-<footer class="post-info">
-        <abbr class="published" title="2015-02-26T00:00:00+11:00">
-                Published: Thu 26 February 2015
-        </abbr>
-
-        <address class="vcard author">
-                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
-        </address>
-<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
-
-</footer><!-- /.post-info -->                <p>After <a href="http://www.vaibhavsagar.com/blog/2015/02/01/blog-setup/">automating my blog</a>, I decided to aim a little
-higher and use Travis-CI to automate document generation from my resume. I use
-<a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written
-in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
-PDF (via LaTeX) that I've spent a …</p>
-                <a class="readmore" href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/">read more</a>
-<p>There are <a href="http://www.vaibhavsagar.com/blog/2015/02/26/automate-resume/#disqus_thread">comments</a>.</p>                </div><!-- /.entry-content -->
             </article></li>
                 </ol><!-- /#posts-list -->
 <p class="paginator">
