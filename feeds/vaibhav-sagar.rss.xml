@@ -7,9 +7,10 @@ Components&lt;/a&gt;
 into its strongly connected components. A &lt;a href="https://en.wikipedia.org/wiki/Directed_graph"&gt;directed
 graph&lt;/a&gt; is one where the edges
 have …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Sat, 10 Jun 2017 00:00:00 +1000</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2017-06-10:/blog/2017/06/10/dag-toolkit/</guid></item><item><title>Imperative Haskell</title><link>http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/</link><description>&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
-gave at RC, because giving that talk over and over again doesn't scale and
-there are things I would like to cover that are difficult within that time
-limit.&lt;/em&gt;&lt;/p&gt;
+gave at
+&lt;a href="https://www.recurse.com/scout/click?t=5ac465e5d3396a7e491e42afac4c5c90"&gt;RC&lt;/a&gt;,
+because giving that talk over and over again doesn't scale and there are things
+I would like to cover that are difficult within that time limit.&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;I was working through Tim Roughgarden's &lt;a href="https://www.coursera.org/learn/algorithm-design-analysis/"&gt;Algorithms
 1&lt;/a&gt; (which …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Mon, 29 May 2017 00:00:00 +1000</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2017-05-29:/blog/2017/05/29/imperative-haskell/</guid></item><item><title>Discovering Continuations with Typed Holes</title><link>http://www.vaibhavsagar.com/blog/2017/05/22/discovering-continuations/</link><description>&lt;p&gt;I've been trying to wrap my head around continuations for a while. I was reading &lt;a href="https://github.com/quchen/articles/blob/master/cont_monad.md"&gt;David Luposchainsky's excellent article&lt;/a&gt; on them and playing with his definitions in an IHaskell notebook when I found that typed holes are an excellent hammer to attack this particular nail with.&lt;/p&gt;
 &lt;p&gt;If you haven't encountered …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Vaibhav Sagar</dc:creator><pubDate>Mon, 22 May 2017 00:00:00 +1000</pubDate><guid isPermaLink="false">tag:www.vaibhavsagar.com,2017-05-22:/blog/2017/05/22/discovering-continuations/</guid></item><item><title>Getting to RC</title><link>http://www.vaibhavsagar.com/blog/2017/02/26/getting-to-rc/</link><description>&lt;p&gt;You wouldn't know it from looking at my blog, but I attended a batch at the

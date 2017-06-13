@@ -148,14 +148,16 @@ awesome algorithms are out there. Which one's your favourite?&lt;/p&gt;
 feedback, and &lt;a href="https://twitter.com/imccoy"&gt;Iain McCoy&lt;/a&gt; for suggesting &lt;a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.3876"&gt;a more
 functional
 approach&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>Imperative Haskell</title><link href="http://www.vaibhavsagar.com/blog/2017/05/29/imperative-haskell/" rel="alternate"></link><published>2017-05-29T00:00:00+10:00</published><updated>2017-05-29T00:00:00+10:00</updated><author><name>Vaibhav Sagar</name></author><id>tag:www.vaibhavsagar.com,2017-05-29:/blog/2017/05/29/imperative-haskell/</id><summary type="html">&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
-gave at RC, because giving that talk over and over again doesn't scale and
-there are things I would like to cover that are difficult within that time
-limit.&lt;/em&gt;&lt;/p&gt;
+gave at
+&lt;a href="https://www.recurse.com/scout/click?t=5ac465e5d3396a7e491e42afac4c5c90"&gt;RC&lt;/a&gt;,
+because giving that talk over and over again doesn't scale and there are things
+I would like to cover that are difficult within that time limit.&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;I was working through Tim Roughgarden's &lt;a href="https://www.coursera.org/learn/algorithm-design-analysis/"&gt;Algorithms
 1&lt;/a&gt; (which …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;em&gt;This post covers essentially the same material as a 5-minute presentation I
-gave at RC, because giving that talk over and over again doesn't scale and
-there are things I would like to cover that are difficult within that time
-limit.&lt;/em&gt;&lt;/p&gt;
+gave at
+&lt;a href="https://www.recurse.com/scout/click?t=5ac465e5d3396a7e491e42afac4c5c90"&gt;RC&lt;/a&gt;,
+because giving that talk over and over again doesn't scale and there are things
+I would like to cover that are difficult within that time limit.&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;I was working through Tim Roughgarden's &lt;a href="https://www.coursera.org/learn/algorithm-design-analysis/"&gt;Algorithms
 1&lt;/a&gt; (which has now
 been replaced by two smaller courses) and attempting to do all the exercises in
