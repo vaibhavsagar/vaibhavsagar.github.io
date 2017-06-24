@@ -179,6 +179,45 @@ but we can do better! We have do-notation which is syntax sugar that converts</p
 samples in this post will use do-notation.</p>
 <p>The authors also mention the existence of <code>fixST</code>, but this isn't discussed
 elsewhere in the paper so I'll skip that.</p>
+<p>We now move to the other main contribution of the paper, which is the matter of
+how to prevent state from leaking out of our state transformers. The naive
+approach would be to define a <code>runST</code> that would provide an initial state as
+follows:</p>
+<div class="highlight"><pre><span></span><span class="nf">runST</span> <span class="ow">::</span> <span class="kt">ST</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">a</span>
+</pre></div>
+
+
+<p>But this would allow leakage as in the following example:</p>
+<div class="highlight"><pre><span></span><span class="kr">let</span> <span class="n">v</span> <span class="ow">=</span> <span class="n">runST</span> <span class="p">(</span><span class="n">newVar</span> <span class="kt">True</span><span class="p">)</span>
+<span class="kr">in</span>
+<span class="nf">runST</span> <span class="p">(</span><span class="n">readVar</span> <span class="n">v</span><span class="p">)</span>
+</pre></div>
+
+
+<p>and because Haskell is a lazy language, we cannot enforce an ordering on
+updates to the state. What we really want is for our <code>runST</code> to work <em>regardless
+of which initial state it was given</em>, and we can encode that in the type
+signature with rank-2 polymorphism as follows:</p>
+<div class="highlight"><pre><span></span><span class="nf">runST</span> <span class="ow">::</span> <span class="err">∀</span><span class="n">a</span><span class="o">.</span> <span class="p">(</span><span class="err">∀</span><span class="n">s</span><span class="o">.</span> <span class="kt">ST</span> <span class="n">s</span> <span class="n">a</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">a</span>
+</pre></div>
+
+
+<p>We can read ∀ as 'forall' and this is rank-2 because <code>s</code> is scoped within the
+parentheses and we can't move it outside without changing the meaning of the
+type signature. We can read this as 'for any <code>a</code>, given a state transformer
+that would work with any <code>s</code>, provide it with some state and extract the <code>a</code>'.
+Our previous example no longer typechecks, because <code>v</code> does not have the type
+<code>∀s.ST s a</code>, and we can see that the typechecker enforces our requirement that
+the state cannot leak out of the state transformer, hence ensuring referential
+transparency. This definition still allows useful code such as:</p>
+<div class="highlight"><pre><span></span><span class="nf">f</span> <span class="ow">::</span> <span class="kt">MutVar</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">MutVar</span> <span class="n">s</span> <span class="n">a</span>
+<span class="nf">f</span> <span class="n">v</span> <span class="ow">=</span> <span class="n">runST</span> <span class="o">$</span> <span class="kr">do</span>
+    <span class="n">w</span> <span class="ow">&lt;-</span> <span class="n">newVar</span> <span class="n">v</span>
+    <span class="n">readVar</span> <span class="n">w</span>
+</pre></div>
+
+
+<p>which works because <code>v</code> is never dereferenced.</p>
     </div><!-- /.entry-content -->
 
   </article>
