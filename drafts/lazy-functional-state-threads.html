@@ -218,6 +218,71 @@ transparency. This definition still allows useful code such as:</p>
 
 
 <p>which works because <code>v</code> is never dereferenced.</p>
+<p>We can generalise our references to consider an array of mutable references. An
+API for this could look like:</p>
+<div class="highlight"><pre><span></span><span class="nf">newArr</span>    <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">elt</span> <span class="ow">-&gt;</span> <span class="kt">ST</span> <span class="n">s</span> <span class="p">(</span><span class="kt">MutArr</span> <span class="n">s</span> <span class="n">i</span> <span class="n">elt</span><span class="p">)</span>
+<span class="nf">readArr</span>   <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="kt">MutArr</span> <span class="n">s</span> <span class="n">i</span> <span class="n">elt</span> <span class="ow">-&gt;</span> <span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">ST</span> <span class="n">s</span> <span class="n">elt</span>
+<span class="nf">writeArr</span>  <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="kt">MutArr</span> <span class="n">s</span> <span class="n">i</span> <span class="n">elt</span> <span class="ow">-&gt;</span> <span class="n">i</span> <span class="ow">-&gt;</span> <span class="n">elt</span> <span class="ow">-&gt;</span> <span class="kt">ST</span> <span class="n">s</span> <span class="nb">()</span>
+<span class="nf">freezeArr</span> <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="kt">MutArr</span> <span class="n">s</span> <span class="n">i</span> <span class="n">elt</span> <span class="ow">-&gt;</span> <span class="kt">ST</span> <span class="n">s</span> <span class="p">(</span><span class="kt">Array</span> <span class="n">i</span> <span class="n">elt</span><span class="p">)</span>
+</pre></div>
+
+
+<p>This is very similar to our API for references, but parametrised over the index
+type <code>i</code> and including a function <code>freezeArr</code> that looks up the current value
+of a mutable array in the state and returns an immutable copy of it.</p>
+<p>With this API, we can define <code>accumArray</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">accumArray</span> <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span> <span class="ow">-&gt;</span> <span class="n">a</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">b</span><span class="p">)]</span> <span class="ow">-&gt;</span> <span class="kt">Array</span> <span class="n">i</span> <span class="n">a</span>
+</pre></div>
+
+
+<p>This takes a function, an initial value, array bounds, and a list of indexed
+values, and does a left fold over each indexed value, putting the result at the
+associated index. This can be used to compute a histogram:</p>
+<div class="highlight"><pre><span></span><span class="nf">hist</span> <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">Array</span> <span class="n">i</span> <span class="kt">Int</span>
+<span class="nf">hist</span> <span class="n">bnds</span> <span class="n">is</span> <span class="ow">=</span> <span class="n">accumArray</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="mi">0</span> <span class="n">bnds</span> <span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">is</span><span class="p">,</span> <span class="n">inRange</span> <span class="n">bnds</span> <span class="n">i</span><span class="p">]</span>
+</pre></div>
+
+
+<p>that counts occurrences of elements in <code>is</code> within the bounds provided or
+<code>binSort</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">binSort</span> <span class="ow">::</span> <span class="kt">Ix</span> <span class="n">i</span> <span class="ow">=&gt;</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">i</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">Array</span> <span class="n">i</span> <span class="n">a</span>
+<span class="nf">binSort</span> <span class="n">bnds</span> <span class="n">key</span> <span class="n">vs</span> <span class="ow">=</span> <span class="n">accumArray</span> <span class="p">(</span><span class="n">flip</span> <span class="p">(</span><span class="kt">:</span><span class="p">))</span> <span class="kt">[]</span> <span class="n">bnds</span> <span class="p">[(</span><span class="n">key</span> <span class="n">v</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">|</span> <span class="n">v</span> <span class="ow">&lt;-</span> <span class="n">vs</span><span class="p">]</span>
+</pre></div>
+
+
+<p>that puts each element of <code>vs</code> into a bin based on its <code>key</code>. <code>accumArray</code> can
+be defined as follows:</p>
+<div class="highlight"><pre><span></span><span class="nf">accumArray</span> <span class="n">f</span> <span class="n">z</span> <span class="n">bnds</span> <span class="n">ivs</span> <span class="ow">=</span> <span class="n">runST</span> <span class="o">$</span> <span class="kr">do</span>
+    <span class="n">a</span> <span class="ow">&lt;-</span> <span class="n">newArr</span> <span class="n">bnds</span> <span class="n">z</span>
+    <span class="n">fill</span> <span class="n">a</span> <span class="n">f</span> <span class="n">ivs</span>
+    <span class="n">freezeArr</span> <span class="n">a</span>
+
+<span class="nf">fill</span> <span class="n">a</span> <span class="n">f</span> <span class="kt">[]</span>          <span class="ow">=</span> <span class="n">return</span> <span class="nb">()</span>
+<span class="nf">fill</span> <span class="n">a</span> <span class="n">f</span> <span class="p">((</span><span class="n">i</span><span class="p">,</span><span class="n">v</span><span class="p">)</span><span class="kt">:</span><span class="n">ivs</span><span class="p">)</span> <span class="ow">=</span> <span class="kr">do</span>
+    <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">readArr</span> <span class="n">a</span> <span class="n">i</span>
+    <span class="n">writeArr</span> <span class="n">a</span> <span class="n">i</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span> <span class="n">v</span><span class="p">)</span>
+    <span class="n">fill</span> <span class="n">a</span> <span class="n">f</span> <span class="n">ivs</span>
+</pre></div>
+
+
+<p>This is a good example of a function that is internally imperative but
+externally pure.</p>
+<p>If we define a function to sequence state transformers:</p>
+<div class="highlight"><pre><span></span><span class="nf">seqST</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ST</span> <span class="n">s</span> <span class="nb">()</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">ST</span> <span class="n">s</span> <span class="nb">()</span>
+<span class="nf">seqST</span> <span class="ow">=</span> <span class="n">sequence_</span> <span class="c1">-- originally defined as `foldr (&gt;&gt;) (return ())`</span>
+</pre></div>
+
+
+<p>then we can rewrite <code>accumArray</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">accumArray</span> <span class="n">f</span> <span class="n">z</span> <span class="n">bnds</span> <span class="n">ivs</span> <span class="ow">=</span> <span class="n">runST</span> <span class="o">$</span> <span class="kr">do</span>
+    <span class="n">a</span> <span class="ow">&lt;-</span> <span class="n">newArr</span> <span class="n">bnds</span> <span class="n">z</span>
+    <span class="n">seqST</span> <span class="p">(</span><span class="n">map</span> <span class="p">(</span><span class="n">update</span> <span class="n">a</span> <span class="n">f</span><span class="p">)</span> <span class="n">ivs</span><span class="p">)</span>
+    <span class="n">freezeArr</span> <span class="n">s</span>
+
+<span class="nf">update</span> <span class="n">a</span> <span class="n">f</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">=</span> <span class="kr">do</span>
+    <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">readArr</span> <span class="n">a</span> <span class="n">i</span>
+    <span class="n">writeArr</span> <span class="n">a</span> <span class="n">i</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span> <span class="n">v</span><span class="p">)</span>
+</pre></div>
     </div><!-- /.entry-content -->
 
   </article>
