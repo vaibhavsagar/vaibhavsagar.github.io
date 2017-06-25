@@ -283,6 +283,46 @@ externally pure.</p>
     <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">readArr</span> <span class="n">a</span> <span class="n">i</span>
     <span class="n">writeArr</span> <span class="n">a</span> <span class="n">i</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span> <span class="n">v</span><span class="p">)</span>
 </pre></div>
+
+
+<p>Let's reformulate IO in terms of state transformers. It can be thought of as
+a state transformer of type <code>ST RealWorld a</code>, where <code>RealWorld</code> is an abstract
+type representing the real world. We can make this explicit as a type synonym:</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span> <span class="kt">IO</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">ST</span> <span class="kt">RealWorld</span> <span class="n">a</span>
+</pre></div>
+
+
+<p>We also have a few functions that are specific to IO but not other ST
+computations, e.g.</p>
+<div class="highlight"><pre><span></span><span class="nf">putChar</span> <span class="ow">::</span> <span class="kt">Char</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="nb">()</span>
+<span class="nf">getChar</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="kt">Char</span>
+</pre></div>
+
+
+<p>And this is enough to build e.g. <code>putString</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">putString</span> <span class="n">cs</span> <span class="ow">=</span> <span class="n">seqST</span> <span class="p">(</span><span class="n">map</span> <span class="n">putChar</span> <span class="n">cs</span><span class="p">)</span>
+</pre></div>
+
+
+<p>However, we can take it further and define both <code>putChar</code> and <code>getChar</code> in
+terms of <code>ccall</code>, which is a language construct that allows the programmer to
+call any C procedure (with certain restrictions placed on its use):</p>
+<div class="highlight"><pre><span></span><span class="nf">putChar</span> <span class="n">c</span> <span class="ow">=</span> <span class="kr">do</span>
+    <span class="n">ccall</span> <span class="n">putChar</span> <span class="n">c</span>
+    <span class="n">return</span> <span class="nb">()</span>
+<span class="nf">getChar</span> <span class="ow">=</span> <span class="n">ccall</span> <span class="n">getChar</span>
+</pre></div>
+
+
+<p>Because <code>IO</code> is not polymorphic in its state, it can't be used with <code>runST</code>.
+This is the behaviour we want, and we need to define a special function to
+execute <code>IO</code> actions. We can call this <code>mainIO</code>:</p>
+<div class="highlight"><pre><span></span><span class="nf">mainIO</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
+</pre></div>
+
+
+<p>and have it play a role similar to <code>main()</code> in C. In fact, IO in GHC is
+implemented in Haskell in precisely this manner.</p>
     </div><!-- /.entry-content -->
 
   </article>
