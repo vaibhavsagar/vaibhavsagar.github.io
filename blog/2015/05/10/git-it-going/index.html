@@ -1,136 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-        <meta charset="utf-8" />
-        <title>Git It Going - an Introduction to Git</title>
-        <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
-        <link href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Vaibhav Sagar's Site Atom Feed" />
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Vaibhav Sagar - Git It Going - an Introduction to Git</title>
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-        <!--[if IE]>
-            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-</head>
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
 
-<body id="index" class="home">
-<a href="https://github.com/vaibhavsagar">
-<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" />
-</a>
-        <header id="banner" class="body">
-                <h1><a href="http://www.vaibhavsagar.com/">Vaibhav Sagar's Site </a></h1>
-                <nav><ul>
-                    <li><a href="/blog/archives/">all</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/about/">about</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/blog/misc/">misc</a></li>
-                    <li class="active"><a href="http://www.vaibhavsagar.com/blog/programming/">programming</a></li>
-                </ul></nav>
-        </header><!-- /#banner -->
-<section id="content" class="body">
-  <article>
-    <header>
-      <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/" rel="bookmark"
-           title="Permalink to Git It Going - an Introduction to Git">Git It Going - an Introduction to Git</a></h1>
-    </header>
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
 
-    <div class="entry-content">
-<footer class="post-info">
-        <abbr class="published" title="2015-05-10T00:00:00+10:00">
-                Published: Sun 10 May 2015
-        </abbr>
+        <div id="content">
+            <h1>Git It Going - an Introduction to Git</h1>
 
-        <address class="vcard author">
-                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
-        </address>
-<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+            <div class="info">
+    Posted on 10 May 2015
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../../../../tags/programming.html">programming</a>, <a href="../../../../../tags/git.html">git</a>
+    
+</div>
 
-</footer><!-- /.post-info -->      <p>I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It
-was my first ever technical talk, and I think it went fairly well.</p>
-<p>When writing my presentation, I decided it would be most useful to demonstrate
-<code>git</code> to the audience assuming some Subversion experience but minimal Git or
-Mercurial experience. I ended up presenting my talk with my slides on one
-window to the left, my Github repository configured as the remote origin of my
-demonstration repository in another window to the right, and a command line
-window that I used to interact with my repository in the middle (which was the
-most important). My instructions to myself were in a separate window as
-speaker's notes. Although I spent some time window juggling, I think this was
-the right approach.</p>
-<p>The audience had all types: hardcore Mercurial users, Subversion loyalists,
-people using Git as a frontend to other version control systems, and people new
-to version control and diffs in general. I spent a fair chunk of the
-presentation answering questions or listening to the audience answering each
-other's questions, which was exactly how I wanted it.</p>
-<p>I really enjoyed giving this talk, and would happily do so again. My
-presentation contents are <a href="https://github.com/vaibhavsagar/git-it-going">here</a>,
-complete with a <code>.travis.yml</code> file which uses <code>pandoc</code> to regenerate the slides
-on each push. The slides themselves are
-<a href="http://www.vaibhavsagar.com/git-it-going">available</a> although I think they're
-pretty pointless on their own. If you would like to use these materials, you
-are more than welcome to do so.</p>
-<p>Suggestions for improvement and pull requests are very welcome. There are a
-couple of things I would have liked to cover that I didn't: <code>git commit
---amend</code>, <code>git stash</code>, <code>git cherry-pick</code>, <code>git rebase</code>, and so on. The
-presentation is not very useful to people who want to know more about these
-topics, and it might be possible to add more slides and more instructions in
-case people are comfortable with basic <code>git</code> so I can safely skip the first
-couple of sections and instead spend more time talking about branching,
-rewriting history and different workflows.</p>
-<p>I would highly recommend giving a technical talk if you have the opportunity.
-If it is a topic I am familiar with, or if you'd like to run through the
-presentation with me then I'm more than happy to help.</p>
-    </div><!-- /.entry-content -->
-    <div class="comments">
-      <h2>Comments !</h2>
-      <div id="disqus_thread"></div>
-      <script type="text/javascript">
-        var disqus_shortname = 'vaibhavsagar';
-        var disqus_identifier = 'blog/2015/05/10/git-it-going/';
-        var disqus_url = 'http://www.vaibhavsagar.com/blog/2015/05/10/git-it-going/';
-        (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//vaibhavsagar.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the comments.</noscript>
-    </div>
+<p>I gave a talk on Git to the Canberra Python Users Group on the 7th of May. It was my first ever technical talk, and I think it went fairly well.</p>
+<p>When writing my presentation, I decided it would be most useful to demonstrate <code>git</code> to the audience assuming some Subversion experience but minimal Git or Mercurial experience. I ended up presenting my talk with my slides on one window to the left, my Github repository configured as the remote origin of my demonstration repository in another window to the right, and a command line window that I used to interact with my repository in the middle (which was the most important). My instructions to myself were in a separate window as speaker’s notes. Although I spent some time window juggling, I think this was the right approach.</p>
+<p>The audience had all types: hardcore Mercurial users, Subversion loyalists, people using Git as a frontend to other version control systems, and people new to version control and diffs in general. I spent a fair chunk of the presentation answering questions or listening to the audience answering each other’s questions, which was exactly how I wanted it.</p>
+<p>I really enjoyed giving this talk, and would happily do so again. My presentation contents are <a href="https://github.com/vaibhavsagar/git-it-going">here</a>, complete with a <code>.travis.yml</code> file which uses <code>pandoc</code> to regenerate the slides on each push. The slides themselves are <a href="http://www.vaibhavsagar.com/git-it-going">available</a> although I think they’re pretty pointless on their own. If you would like to use these materials, you are more than welcome to do so.</p>
+<p>Suggestions for improvement and pull requests are very welcome. There are a couple of things I would have liked to cover that I didn’t: <code>git commit --amend</code>, <code>git stash</code>, <code>git cherry-pick</code>, <code>git rebase</code>, and so on. The presentation is not very useful to people who want to know more about these topics, and it might be possible to add more slides and more instructions in case people are comfortable with basic <code>git</code> so I can safely skip the first couple of sections and instead spend more time talking about branching, rewriting history and different workflows.</p>
+<p>I would highly recommend giving a technical talk if you have the opportunity. If it is a topic I am familiar with, or if you’d like to run through the presentation with me then I’m more than happy to help.</p>
 
-  </article>
-</section>
-        <section id="extras" class="body">
-                <div class="social">
-                        <h2>social</h2>
-                        <ul>
-                            <li><a href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    /*
+    var disqus_config = function () {
+        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
 
-                        </ul>
-                </div><!-- /.social -->
-        </section><!-- /#extras -->
+        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
 
-        <footer id="contentinfo" class="body">
-                <address id="about" class="vcard body">
-                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
-                </address><!-- /#about -->
-
-                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
-        </footer><!-- /#contentinfo -->
-
-    <script type="text/javascript">
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-79891461-1', 'auto');
-    ga('send', 'pageview');
-    </script>
-<script type="text/javascript">
-    var disqus_shortname = 'vaibhavsagar';
-    (function () {
-        var s = document.createElement('script'); s.async = true;
-        s.type = 'text/javascript';
-        s.src = 'https://' + disqus_shortname + '.disqus.com/count.js';
-        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
-    }());
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
 </script>
-</body>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
 </html>

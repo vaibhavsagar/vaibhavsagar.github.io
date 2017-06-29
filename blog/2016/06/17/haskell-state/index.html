@@ -1,275 +1,162 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-        <meta charset="utf-8" />
-        <title>You Could Have Invented The State Monad</title>
-        <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
-        <link href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Vaibhav Sagar's Site Atom Feed" />
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Vaibhav Sagar - You Could Have Invented The State Monad</title>
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-        <!--[if IE]>
-            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-</head>
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
 
-<body id="index" class="home">
-<a href="https://github.com/vaibhavsagar">
-<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" />
-</a>
-        <header id="banner" class="body">
-                <h1><a href="http://www.vaibhavsagar.com/">Vaibhav Sagar's Site </a></h1>
-                <nav><ul>
-                    <li><a href="/blog/archives/">all</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/about/">about</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/blog/misc/">misc</a></li>
-                    <li class="active"><a href="http://www.vaibhavsagar.com/blog/programming/">programming</a></li>
-                </ul></nav>
-        </header><!-- /#banner -->
-<section id="content" class="body">
-  <article>
-    <header>
-      <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/" rel="bookmark"
-           title="Permalink to You Could Have Invented The State Monad">You Could Have Invented The State Monad</a></h1>
-    </header>
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
 
-    <div class="entry-content">
-<footer class="post-info">
-        <abbr class="published" title="2016-06-17T00:00:00+10:00">
-                Published: Fri 17 June 2016
-        </abbr>
+        <div id="content">
+            <h1>You Could Have Invented The State Monad</h1>
 
-        <address class="vcard author">
-                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
-        </address>
-<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+            <div class="info">
+    Posted on 17 June 2016
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../../../../tags/programming.html">programming</a>, <a href="../../../../../tags/haskell.html">haskell</a>, <a href="../../../../../tags/monads.html">monads</a>
+    
+</div>
 
-</footer><!-- /.post-info -->      <p>I'm attempting <a href="https://github.com/NICTA/course">NICTA/course</a> a second time. I
-gave up the last time because none of the State exercises were making sense and
-I found myself leaning so heavily on the solutions that I wasn't actually
-learning anything. This time I was much better prepared after watching lots of
-<a href="http://www.meetup.com/CanFPG/">CanFPG</a> talks, reading lots of blog posts and
-writing a little Haskell, and I easily cleared the State hurdle. In fact, I'm
-now going to demonstrate how you (yes, <em>you</em>) could have come up with it (with
-a little help).</p>
-<p>The fundamental insight of state is that it can be represented by a function
-that takes a value of type <code>s</code> and returns a tuple of some value <code>a</code> and a new
-value of type <code>s</code>:</p>
-<div class="highlight"><pre><span></span><span class="kr">newtype</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">{</span> <span class="n">runState</span> <span class="ow">::</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">s</span><span class="p">)</span> <span class="p">}</span>
-</pre></div>
-
-
+<p>I’m attempting <a href="https://github.com/NICTA/course">NICTA/course</a> a second time. I gave up the last time because none of the State exercises were making sense and I found myself leaning so heavily on the solutions that I wasn’t actually learning anything. This time I was much better prepared after watching lots of <a href="http://www.meetup.com/CanFPG/">CanFPG</a> talks, reading lots of blog posts and writing a little Haskell, and I easily cleared the State hurdle. In fact, I’m now going to demonstrate how you (yes, <em>you</em>) could have come up with it (with a little help).</p>
+<p>The fundamental insight of state is that it can be represented by a function that takes a value of type <code>s</code> and returns a tuple of some value <code>a</code> and a new value of type <code>s</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">State</span> s a <span class="fu">=</span> <span class="dt">State</span> {<span class="ot"> runState ::</span> s <span class="ot">-&gt;</span> (a,s) }</code></pre></div>
 <p>Given such a type, what would its <code>Functor</code> instance look like?</p>
-<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Functor</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
-  <span class="p">(</span><span class="o">&lt;$&gt;</span><span class="p">)</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
-</pre></div>
-
-
-<p>Our implementation should be another State that takes a value <code>s0</code>, passes it
-to the second argument <code>sa</code> (resulting in <code>(a, s1)</code>) and calls the function
-<code>fn</code> on <code>a</code>:</p>
-<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&lt;$&gt;</span><span class="p">)</span> <span class="n">fn</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span> <span class="kr">in</span> <span class="p">(</span><span class="n">fn</span> <span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">))</span>
-</pre></div>
-
-
-<p>This is a State that takes <code>s0</code> and returns <code>(b, s1)</code>, which is exactly what we
-wanted.</p>
-<p>Let's look at the <code>Applicative</code> instance next:</p>
-<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Applicative</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
-  <span class="n">pure</span>  <span class="ow">::</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span>
-  <span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
-</pre></div>
-
-
-<p>The implementation for <code>pure</code> explains where the <code>a</code> in our State comes from.
-Given some <code>a</code>, return a State that, when fed a value <code>s</code>, results in <code>(a,s)</code>.
-It practically writes itself.</p>
-<div class="highlight"><pre><span></span>  <span class="n">pure</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">s</span><span class="p">))</span>
-</pre></div>
-
-
-<p><code>(&lt;*&gt;)</code> is a bit trickier, because we're dealing with both the State the
-function is in and the State its argument is in. The implementation should be a
-State that takes a value <code>s0</code>, feeds it to <code>sa</code> to get <code>(fn, s1)</code>, feeds <code>s1</code>
-to <code>sb</code> to get <code>(a, s2)</code>, and calls <code>fn</code> on <code>a</code>:</p>
-<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sb</span><span class="p">)</span> <span class="ow">=</span>
-    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
-                      <span class="p">(</span><span class="n">a</span><span class="p">,</span>  <span class="n">s2</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sb</span> <span class="n">s1</span>
-                  <span class="kr">in</span> <span class="p">(</span><span class="n">fn</span> <span class="n">a</span><span class="p">,</span> <span class="n">s2</span><span class="p">))</span>
-</pre></div>
-
-
-<p>The hardest thing is remembering to thread <code>s0</code> through <code>sa</code> and <code>sb</code> so that
-we don't lose any state on the way. We can usually follow the types but they
-don't help in this specific case.</p>
-<p>Finally, let's look at the <code>Monad</code> instance:</p>
-<div class="highlight"><pre><span></span><span class="kr">instance</span> <span class="kt">Monad</span> <span class="p">(</span><span class="kt">State</span> <span class="n">s</span><span class="p">)</span> <span class="kr">where</span>
-  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">b</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">State</span> s) <span class="kw">where</span>
+<span class="ot">  (&lt;$&gt;) ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">State</span> s a <span class="ot">-&gt;</span> <span class="dt">State</span> s b</code></pre></div>
+<p>Our implementation should be another State that takes a value <code>s0</code>, passes it to the second argument <code>sa</code> (resulting in <code>(a, s1)</code>) and calls the function <code>fn</code> on <code>a</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">  (<span class="fu">&lt;$&gt;</span>) fn (<span class="dt">State</span> sa) <span class="fu">=</span> <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> (a, s1) <span class="fu">=</span> sa s0 <span class="kw">in</span> (fn a, s1))</code></pre></div>
+<p>This is a State that takes <code>s0</code> and returns <code>(b, s1)</code>, which is exactly what we wanted.</p>
+<p>Let’s look at the <code>Applicative</code> instance next:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">State</span> s) <span class="kw">where</span>
+<span class="ot">  pure  ::</span> a <span class="ot">-&gt;</span> <span class="dt">State</span> s a
+<span class="ot">  (&lt;*&gt;) ::</span> <span class="dt">State</span> s (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">State</span> s a <span class="ot">-&gt;</span> <span class="dt">State</span> s b</code></pre></div>
+<p>The implementation for <code>pure</code> explains where the <code>a</code> in our State comes from. Given some <code>a</code>, return a State that, when fed a value <code>s</code>, results in <code>(a,s)</code>. It practically writes itself.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">  pure a <span class="fu">=</span> <span class="dt">State</span> (\s <span class="ot">-&gt;</span> (a,s))</code></pre></div>
+<p><code>(&lt;*&gt;)</code> is a bit trickier, because we’re dealing with both the State the function is in and the State its argument is in. The implementation should be a State that takes a value <code>s0</code>, feeds it to <code>sa</code> to get <code>(fn, s1)</code>, feeds <code>s1</code> to <code>sb</code> to get <code>(a, s2)</code>, and calls <code>fn</code> on <code>a</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">  (<span class="fu">&lt;*&gt;</span>) (<span class="dt">State</span> sa) (<span class="dt">State</span> sb) <span class="fu">=</span>
+    <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> (fn, s1) <span class="fu">=</span> sa s0
+                      (a,  s2) <span class="fu">=</span> sb s1
+                  <span class="kw">in</span> (fn a, s2))</code></pre></div>
+<p>The hardest thing is remembering to thread <code>s0</code> through <code>sa</code> and <code>sb</code> so that we don’t lose any state on the way. We can usually follow the types but they don’t help in this specific case.</p>
+<p>Finally, let’s look at the <code>Monad</code> instance:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">State</span> s) <span class="kw">where</span>
+<span class="ot">  (&gt;&gt;=) ::</span> <span class="dt">State</span> s a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">State</span> s b) <span class="ot">-&gt;</span> <span class="dt">State</span> s b</code></pre></div>
 <p>As with all our previous implementations, it has the form:</p>
-<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="o">???</span> <span class="kr">in</span> <span class="o">???</span><span class="p">)</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">  (<span class="fu">&gt;&gt;=</span>) (<span class="dt">State</span> sa) fn <span class="fu">=</span> <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> <span class="fu">???</span> <span class="kw">in</span> <span class="fu">???</span>)</code></pre></div>
 <p>We know that we need to feed <code>s0</code> to <code>sa</code> to get an <code>a</code> to apply to <code>fn</code>:</p>
-<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span>
-    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span> <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
-                      <span class="o">???</span>     <span class="ow">=</span> <span class="n">fn</span> <span class="n">a</span>
-                  <span class="kr">in</span> <span class="o">???</span><span class="p">)</span>
-</pre></div>
-
-
-<p>The result of <code>fn a</code> is a <code>State sb</code> but we need to return a tuple of <code>(b, s)</code>.
-We can obtain one by feeding <code>s1</code> to <code>sb</code>:</p>
-<div class="highlight"><pre><span></span>  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">fn</span> <span class="ow">=</span>
-    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>  <span class="ow">=</span> <span class="n">sa</span> <span class="n">s0</span>
-                      <span class="kt">State</span> <span class="n">sb</span> <span class="ow">=</span> <span class="n">fn</span> <span class="n">a</span>
-                  <span class="kr">in</span> <span class="n">sb</span> <span class="n">s1</span><span class="p">)</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">  (<span class="fu">&gt;&gt;=</span>) (<span class="dt">State</span> sa) fn <span class="fu">=</span>
+    <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> (a, s1) <span class="fu">=</span> sa s0
+                      <span class="fu">???</span>     <span class="fu">=</span> fn a
+                  <span class="kw">in</span> <span class="fu">???</span>)</code></pre></div>
+<p>The result of <code>fn a</code> is a <code>State sb</code> but we need to return a tuple of <code>(b, s)</code>. We can obtain one by feeding <code>s1</code> to <code>sb</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">  (<span class="fu">&gt;&gt;=</span>) (<span class="dt">State</span> sa) fn <span class="fu">=</span>
+    <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> (a, s1)  <span class="fu">=</span> sa s0
+                      <span class="dt">State</span> sb <span class="fu">=</span> fn a
+                  <span class="kw">in</span> sb s1)</code></pre></div>
 <p>Success!</p>
-<p>Let's define a few functions to make our lives easier. <code>get</code> returns a State
-that, when fed some <code>s</code>, returns <code>(s,s)</code>. This allows us to expose <code>s</code> for
-direct modification:</p>
-<div class="highlight"><pre><span></span><span class="nf">get</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">s</span>
-<span class="nf">get</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-</pre></div>
-
-
+<p>Let’s define a few functions to make our lives easier. <code>get</code> returns a State that, when fed some <code>s</code>, returns <code>(s,s)</code>. This allows us to expose <code>s</code> for direct modification:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">get ::</span> <span class="dt">State</span> s s
+get <span class="fu">=</span> <span class="dt">State</span> (\s <span class="ot">-&gt;</span> (s, s))</code></pre></div>
 <p><code>put</code> allows us to store a State that ignores the <code>s</code> passed to it later:</p>
-<div class="highlight"><pre><span></span><span class="nf">put</span> <span class="ow">::</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="n">s</span> <span class="nb">()</span>
-<span class="nf">put</span> <span class="n">s</span> <span class="ow">=</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span><span class="n">s</span><span class="p">))</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">put ::</span> s <span class="ot">-&gt;</span> <span class="dt">State</span> s ()
+put s <span class="fu">=</span> <span class="dt">State</span> (\_ <span class="ot">-&gt;</span> ((),s))</code></pre></div>
 <p>Sometimes we want the <code>s</code> and not the <code>a</code>:</p>
-<div class="highlight"><pre><span></span><span class="nf">exec</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="n">s</span>
-<span class="nf">exec</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">s</span> <span class="ow">=</span> <span class="n">snd</span> <span class="o">$</span> <span class="n">sa</span> <span class="n">s</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">exec ::</span> <span class="dt">State</span> s a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
+exec (<span class="dt">State</span> sa) s <span class="fu">=</span> snd <span class="fu">$</span> sa s</code></pre></div>
 <p>At other times we want the <code>a</code> and not the <code>s</code>:</p>
-<div class="highlight"><pre><span></span><span class="nf">eval</span> <span class="ow">::</span> <span class="kt">State</span> <span class="n">s</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">s</span> <span class="ow">-&gt;</span> <span class="n">a</span>
-<span class="nf">eval</span> <span class="p">(</span><span class="kt">State</span> <span class="n">sa</span><span class="p">)</span> <span class="n">s</span> <span class="ow">=</span> <span class="n">fst</span> <span class="o">$</span> <span class="n">sa</span> <span class="n">s</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">State</span> s a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a
+eval (<span class="dt">State</span> sa) s <span class="fu">=</span> fst <span class="fu">$</span> sa s</code></pre></div>
 <p>With all this machinery in place, we can do this:</p>
-<div class="highlight"><pre><span></span><span class="kt">Prelude</span><span class="o">&gt;</span> <span class="n">exec</span> <span class="p">(</span><span class="kr">do</span> <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">get</span><span class="p">;</span> <span class="n">put</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span> <span class="n">return</span> <span class="nb">()</span><span class="p">)</span> <span class="mi">0</span>
-<span class="mi">1</span>
-</pre></div>
-
-
-<p>I still couldn't believe that this worked the first time I tried it, so let's
-desugar this:</p>
-<div class="highlight"><pre><span></span>    <span class="kr">do</span> <span class="n">i</span> <span class="ow">&lt;-</span> <span class="n">get</span><span class="p">;</span> <span class="n">put</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span> <span class="n">return</span> <span class="nb">()</span>
- <span class="o">==</span> <span class="n">get</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="n">put</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="n">pure</span> <span class="nb">()</span>
- <span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>    <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span>
-    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span>
-    <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-</pre></div>
-
-
-<p>Let's simplify from the bottom up. By the definition of <code>(&gt;&gt;=)</code>:</p>
-<div class="highlight"><pre><span></span>    <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s</span><span class="p">))))</span> <span class="ow">=</span>
-      <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>  <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="n">s0</span>
-                     <span class="c1">-- (a, s1)  = ((), i+1)</span>
-                        <span class="kt">State</span> <span class="n">sb</span> <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s</span><span class="p">))))</span> <span class="n">a</span>
-                     <span class="c1">--       sb = (\s -&gt; ((), s))</span>
-                    <span class="kr">in</span> <span class="n">sb</span> <span class="n">s1</span><span class="p">)</span>
-                     <span class="c1">-- ((), i+1)</span>
-<span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-<span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span>  <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Prelude</span><span class="fu">&gt;</span> exec (<span class="kw">do</span> i <span class="ot">&lt;-</span> get; put (i<span class="fu">+</span><span class="dv">1</span>); return ()) <span class="dv">0</span>
+<span class="dv">1</span></code></pre></div>
+<p>I still couldn’t believe that this worked the first time I tried it, so let’s desugar this:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">    <span class="kw">do</span> i <span class="ot">&lt;-</span> get; put (i<span class="fu">+</span><span class="dv">1</span>); return ()
+ <span class="fu">==</span> get <span class="fu">&gt;&gt;=</span> \i <span class="ot">-&gt;</span> put (i<span class="fu">+</span><span class="dv">1</span>) <span class="fu">&gt;&gt;=</span> \_ <span class="ot">-&gt;</span> pure ()
+ <span class="fu">==</span> <span class="dt">State</span> (\s <span class="ot">-&gt;</span> (s, s))    <span class="fu">&gt;&gt;=</span> \i <span class="ot">-&gt;</span>
+    <span class="dt">State</span> (\_ <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>)) <span class="fu">&gt;&gt;=</span> \_ <span class="ot">-&gt;</span>
+    <span class="dt">State</span> (\s <span class="ot">-&gt;</span> ((), s))</code></pre></div>
+<p>Let’s simplify from the bottom up. By the definition of <code>(&gt;&gt;=)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">    (<span class="fu">&gt;&gt;=</span>) (<span class="dt">State</span> (\_ <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))) (\_ <span class="ot">-&gt;</span> (<span class="dt">State</span> (\s <span class="ot">-&gt;</span> ((), s)))) <span class="fu">=</span>
+      <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> (a, s1)  <span class="fu">=</span> (\_ <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>)) s0
+                     <span class="co">-- (a, s1)  = ((), i+1)</span>
+                        <span class="dt">State</span> sb <span class="fu">=</span> (\_ <span class="ot">-&gt;</span> (<span class="dt">State</span> (\s <span class="ot">-&gt;</span> ((), s)))) a
+                     <span class="co">--       sb = (\s -&gt; ((), s))</span>
+                    <span class="kw">in</span> sb s1)
+                     <span class="co">-- ((), i+1)</span>
+<span class="fu">==</span> <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))
+<span class="fu">==</span> <span class="dt">State</span> (\_  <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))</code></pre></div>
 <p>Plugging that back in, we have</p>
-<div class="highlight"><pre><span></span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">))</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">State</span> (\s <span class="ot">-&gt;</span> (s,s)) <span class="fu">&gt;&gt;=</span> \i <span class="ot">-&gt;</span> <span class="dt">State</span> (\_ <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))</code></pre></div>
 <p>Which we can simplify in the same way:</p>
-<div class="highlight"><pre><span></span>    <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">)))</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="ow">=</span>
-      <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="kr">let</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>  <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="n">s</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">))</span> <span class="n">s0</span>
-                     <span class="c1">-- (a, s1)  = (s0, s0)</span>
-                        <span class="kt">State</span> <span class="n">sb</span> <span class="ow">=</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="n">a</span>
-                     <span class="c1">--       sb = (\_ -&gt; ((), s0+1))</span>
-                    <span class="kr">in</span> <span class="n">sb</span> <span class="n">s1</span><span class="p">)</span>
-                     <span class="c1">-- ((), s0+1)</span>
- <span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">s0</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">s0</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
- <span class="o">==</span> <span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span>  <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">    (<span class="fu">&gt;&gt;=</span>) (<span class="dt">State</span> (\s <span class="ot">-&gt;</span> (s,s))) (\i <span class="ot">-&gt;</span> <span class="dt">State</span> (\_ <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))) <span class="fu">=</span>
+      <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> <span class="kw">let</span> (a, s1)  <span class="fu">=</span> (\s <span class="ot">-&gt;</span> (s,s)) s0
+                     <span class="co">-- (a, s1)  = (s0, s0)</span>
+                        <span class="dt">State</span> sb <span class="fu">=</span> (\i <span class="ot">-&gt;</span> <span class="dt">State</span> (\_ <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))) a
+                     <span class="co">--       sb = (\_ -&gt; ((), s0+1))</span>
+                    <span class="kw">in</span> sb s1)
+                     <span class="co">-- ((), s0+1)</span>
+ <span class="fu">==</span> <span class="dt">State</span> (\s0 <span class="ot">-&gt;</span> ((), s0<span class="fu">+</span><span class="dv">1</span>))
+ <span class="fu">==</span> <span class="dt">State</span> (\i  <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))</code></pre></div>
 <p>Finally, we have</p>
-<div class="highlight"><pre><span></span>    <span class="n">exec</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="mi">0</span>
- <span class="o">==</span> <span class="n">snd</span> <span class="o">$</span> <span class="n">runState</span> <span class="p">(</span><span class="kt">State</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span> <span class="mi">0</span>
- <span class="o">==</span> <span class="n">snd</span> <span class="o">$</span> <span class="p">(</span><span class="nf">\</span><span class="n">i</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="mi">0</span>
- <span class="o">==</span> <span class="n">snd</span> <span class="o">$</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
- <span class="o">==</span> <span class="mi">1</span>
-</pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">    exec (<span class="dt">State</span> (\i <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))) <span class="dv">0</span>
+ <span class="fu">==</span> snd <span class="fu">$</span> runState (<span class="dt">State</span> (\i <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>))) <span class="dv">0</span>
+ <span class="fu">==</span> snd <span class="fu">$</span> (\i <span class="ot">-&gt;</span> ((), i<span class="fu">+</span><span class="dv">1</span>)) <span class="dv">0</span>
+ <span class="fu">==</span> snd <span class="fu">$</span> ((), <span class="dv">1</span>)
+ <span class="fu">==</span> <span class="dv">1</span></code></pre></div>
+<p>This is my favourite thing about Haskell: the fact that it is built on abstractions that can be reasoned about in such a rigorous manner.</p>
+<p>In fact, with some inspired renaming, <a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html">you too could have invented the continuation monad</a>.</p>
 
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    /*
+    var disqus_config = function () {
+        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
 
-<p>This is my favourite thing about Haskell: the fact that it is built on
-abstractions that can be reasoned about in such a rigorous manner.</p>
-<p>In fact, with some inspired renaming, <a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html">you too could have invented the
-continuation monad</a>.</p>
-    </div><!-- /.entry-content -->
-    <div class="comments">
-      <h2>Comments !</h2>
-      <div id="disqus_thread"></div>
-      <script type="text/javascript">
-        var disqus_shortname = 'vaibhavsagar';
-        var disqus_identifier = 'blog/2016/06/17/haskell-state/';
-        var disqus_url = 'http://www.vaibhavsagar.com/blog/2016/06/17/haskell-state/';
-        (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//vaibhavsagar.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the comments.</noscript>
-    </div>
+        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
 
-  </article>
-</section>
-        <section id="extras" class="body">
-                <div class="social">
-                        <h2>social</h2>
-                        <ul>
-                            <li><a href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
-
-                        </ul>
-                </div><!-- /.social -->
-        </section><!-- /#extras -->
-
-        <footer id="contentinfo" class="body">
-                <address id="about" class="vcard body">
-                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
-                </address><!-- /#about -->
-
-                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
-        </footer><!-- /#contentinfo -->
-
-    <script type="text/javascript">
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-79891461-1', 'auto');
-    ga('send', 'pageview');
-    </script>
-<script type="text/javascript">
-    var disqus_shortname = 'vaibhavsagar';
-    (function () {
-        var s = document.createElement('script'); s.async = true;
-        s.type = 'text/javascript';
-        s.src = 'https://' + disqus_shortname + '.disqus.com/count.js';
-        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
-    }());
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
 </script>
-</body>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
 </html>

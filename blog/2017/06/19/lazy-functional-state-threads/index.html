@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Vaibhav Sagar - Lazy Functional State Threads</title>
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Lazy Functional State Threads</h1>
+
+            <div class="info">
+    Posted on 19 June 2017
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../../../../tags/haskell.html">haskell</a>, <a href="../../../../../tags/programming.html">programming</a>, <a href="../../../../../tags/monads.html">monads</a>
+    
+</div>
+
+<p>A funny thing happened when I was writing my Imperative Haskell post: after railing against Haskell’s tendency to tell you to go off and read a paper when introducing a library, I went off and read ‘Lazy Functional State Threads’ and was gobsmacked by how accessible I found it. I’d like to try and demystify it for a wider audience.</p>
+<p>The paper begins by admitting that we sometimes want to express strict stateful computations in a purely-functional language efficiently. We want to do this <a href="http://www.threewordphrase.com/pardonme.gif">because of reasons</a>. Some examples of algorithms we’d like to express are those based on mutable hash tables, union find, and especially input/output. However, the language we are working with is renowned for its laziness, which means the order of evaluation can be counterintuitive, and its referential transparency, which means a lack of side effects.</p>
+<p>We square this circle by leveraging the type system, which simultaneously allows most of the features we take for granted in imperative languages (multiple named variables, in-place updates) as well as being encapsulated and referentially transparent (for certain values of referentially transparent). Let’s define a ‘state transformer’ that takes an initial state as input and returns a final state. This can be represented as a value of type <code>ST s a</code> where <code>s</code> is the state type and <code>a</code> is the return type.</p>
+<!-- picture of state transformer -->
+<p>A state transformer can have multiple inputs (multiple arguments to a function) and multiple outputs (a tuple).</p>
+<!-- picture of multiple input/output state transformer -->
+<p>The simplest state transformer takes a value of type <code>a</code> and sticks it in a state transformer. We’ll call it <code>returnST</code>.</p>
+<!-- picture of returnST -->
+<p>Let’s talk about ‘state’ now, specifically mutable variables or references. Let’s specify an API for working with references:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">newVar   ::</span> a <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">MutVar</span> s a)
+<span class="ot">readVar  ::</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">ST</span> s a
+<span class="ot">writeVar ::</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</code></pre></div>
+<p>In other words, <code>newVar</code> takes a value of type <code>a</code> and returns a state transformer that can be supplied a state to output a new state containing a fresh reference to the provided value. <code>readVar</code> is a state transformer which leaves the provided state unchanged but extracts the value in the reference from it. <code>writeVar</code> takes a reference and a new value and returns a state transformer that updates the reference to point to the new value. The fact that the return value is <code>()</code> indicates that this state transformer is only useful for its effect on the state.</p>
+<p>To compose these state transformers together we can define a <code>thenST</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">thenST ::</span> <span class="dt">ST</span> s a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">ST</span> s b) <span class="ot">-&gt;</span> <span class="dt">ST</span> s b</code></pre></div>
+<!-- picture of thenST -->
+<p>Two things to note here: both <code>s1</code> and <code>s2</code> have to work with the same state type <code>s</code>, and they way they work is inherently sequential, because the output of <code>s1</code> is the input of <code>s2</code>. This is where ‘thread’ in the title comes from. I like to think of this as the baton in a relay: you can’t run when you’re not holding the baton, and you can’t use a different team’s baton because that’s against the rules.</p>
+<p>While we let that sink in, I’d like to make a brief historical digression. At this stage in Haskell’s history, monads had been identified as a useful abstraction and a predecessor to this paper had proposed a particular syntax for working with them, but do-notation had not yet made its way into the language. If you’re not familiar with monads, you can think of them as an interface for a type defined by two functions, <code>return</code> and <code>&gt;&gt;=</code> (pronounced ‘bind’) and certain laws that these functions must obey:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Monad</span> m <span class="kw">where</span>
+<span class="ot">    return ::</span> a <span class="ot">-&gt;</span> m a
+<span class="ot">    (&gt;&gt;=)  ::</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</code></pre></div>
+<p>The actual definition differs slightly in ways that aren’t relevant here. Why do I bring this up? If you look closely, we’ve encountered functions that look very similar to the two above. If we textually replace <code>m</code> with <code>ST s</code>, we get</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">return<span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ST</span> s a
+<span class="ot">(&gt;&gt;=)  ::</span> <span class="dt">ST</span> s a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">ST</span> s b) <span class="ot">-&gt;</span> <span class="dt">ST</span> s b</code></pre></div>
+<p>which are exactly the type signatures of <code>returnST</code> and <code>thenST</code>. This isn’t a coincidence. I will also claim (but not prove) that these definitions are law-abiding.</p>
+<p>What can we do with this information? Let’s take this code snippet that swaps the contents of two references:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">swap ::</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()
+swap v w <span class="fu">=</span> readVar v    <span class="ot">`thenST`</span> (\a <span class="ot">-&gt;</span>
+           readVar w    <span class="ot">`thenST`</span> (\b <span class="ot">-&gt;</span>
+           writeVar v b <span class="ot">`thenST`</span> (\_ <span class="ot">-&gt;</span>
+           writeVar w a)))</code></pre></div>
+<p>This requires working with infix backticks and lambdas and looks pretty ugly, but we can do better! We have do-notation which is syntax sugar that converts</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">do</span> x <span class="ot">&lt;-</span> f
+   y</code></pre></div>
+<p>into</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">&gt;&gt;=</span> (\x <span class="ot">-&gt;</span> y)</code></pre></div>
+<p>and</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">do</span> x
+   y</code></pre></div>
+<p>into</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">x <span class="fu">&gt;&gt;</span> y</code></pre></div>
+<p>where <code>&gt;&gt;</code> is like <code>&gt;&gt;=</code> that ignores the output of the left hand side:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&gt;&gt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> m b <span class="ot">-&gt;</span> m b
+(<span class="fu">&gt;&gt;</span>) ma mb <span class="fu">=</span> ma <span class="fu">&gt;&gt;=</span> (\_ <span class="ot">-&gt;</span> mb)</code></pre></div>
+<p>Armed with this knowledge, we can rewrite the above example:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">swap ::</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()
+swap v w <span class="fu">=</span> <span class="kw">do</span>
+    a <span class="ot">&lt;-</span> readVar v
+    b <span class="ot">&lt;-</span> readVar w
+    writeVar v b
+    writeVar w a</code></pre></div>
+<p>Much better! We even define <code>(&gt;&gt;)</code> directly as <code>thenST_</code>. The rest of the code samples in this post will use do-notation.</p>
+<p>The authors also mention the existence of <code>fixST</code>, but this isn’t discussed elsewhere in the paper so I’ll skip that.</p>
+<p>We now move to the other main contribution of the paper, which is the matter of how to prevent state from leaking out of our state transformers. The naive approach would be to define a <code>runST</code> that would provide an initial state as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">runST ::</span> <span class="dt">ST</span> s a <span class="ot">-&gt;</span> a</code></pre></div>
+<p>But this would allow leakage as in the following example:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> v <span class="fu">=</span> runST (newVar <span class="dt">True</span>)
+<span class="kw">in</span>
+runST (readVar v)</code></pre></div>
+<p>and because Haskell is a lazy language, we cannot enforce an ordering on updates to the state. What we really want is for our <code>runST</code> to work <em>regardless of which initial state it was given</em>, and we can encode that in the type signature with rank-2 polymorphism as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">runST ::</span> <span class="ot">∀</span>a<span class="fu">.</span> (<span class="ot">∀</span>s<span class="fu">.</span> <span class="dt">ST</span> s a) <span class="ot">-&gt;</span> a</code></pre></div>
+<p>We can read ∀ as ‘forall’ and this is rank-2 because <code>s</code> is scoped within the parentheses and we can’t move it outside without changing the meaning of the type signature. We can read this as ‘for any <code>a</code>, given a state transformer that would work with any <code>s</code>, provide it with some state and extract the <code>a</code>’. Our previous example no longer typechecks, because <code>v</code> does not have the type <code>∀s.ST s a</code>, and we can see that the typechecker enforces our requirement that the state cannot leak out of the state transformer, hence ensuring referential transparency. This definition still allows useful code such as:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">MutVar</span> s a
+f v <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span>
+    w <span class="ot">&lt;-</span> newVar v
+    readVar w</code></pre></div>
+<p>which works because <code>v</code> is never dereferenced.</p>
+<p>We can generalise our references to consider an array of mutable references. An API for this could look like:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">newArr    ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> (i, i) <span class="ot">-&gt;</span> elt <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">MutArr</span> s i elt)
+<span class="ot">readArr   ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> <span class="dt">MutArr</span> s i elt <span class="ot">-&gt;</span> i <span class="ot">-&gt;</span> <span class="dt">ST</span> s elt
+<span class="ot">writeArr  ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> <span class="dt">MutArr</span> s i elt <span class="ot">-&gt;</span> i <span class="ot">-&gt;</span> elt <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()
+<span class="ot">freezeArr ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> <span class="dt">MutArr</span> s i elt <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Array</span> i elt)</code></pre></div>
+<p>This is very similar to our API for references, but parametrised over the index type <code>i</code> and including a function <code>freezeArr</code> that looks up the current value of a mutable array in the state and returns an immutable copy of it.</p>
+<p>With this API, we can define <code>accumArray</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">accumArray ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> (i, i) <span class="ot">-&gt;</span> [(i, b)] <span class="ot">-&gt;</span> <span class="dt">Array</span> i a</code></pre></div>
+<p>This takes a function, an initial value, array bounds, and a list of indexed values, and does a left fold over each indexed value, putting the result at the associated index. This can be used to compute a histogram:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">hist ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> (i, i) <span class="ot">-&gt;</span> [i] <span class="ot">-&gt;</span> <span class="dt">Array</span> i <span class="dt">Int</span>
+hist bnds is <span class="fu">=</span> accumArray (<span class="fu">+</span>) <span class="dv">0</span> bnds [(i, <span class="dv">1</span>) <span class="fu">|</span> i <span class="ot">&lt;-</span> is, inRange bnds i]</code></pre></div>
+<p>that counts occurrences of elements in <code>is</code> within the bounds provided or <code>binSort</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">binSort ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> (i,i) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> i) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> <span class="dt">Array</span> i a
+binSort bnds key vs <span class="fu">=</span> accumArray (flip (<span class="fu">:</span>)) [] bnds [(key v, v) <span class="fu">|</span> v <span class="ot">&lt;-</span> vs]</code></pre></div>
+<p>that puts each element of <code>vs</code> into a bin based on its <code>key</code>. <code>accumArray</code> can be defined as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">accumArray f z bnds ivs <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span>
+    a <span class="ot">&lt;-</span> newArr bnds z
+    fill a f ivs
+    freezeArr a
+
+fill a f []          <span class="fu">=</span> return ()
+fill a f ((i,v)<span class="fu">:</span>ivs) <span class="fu">=</span> <span class="kw">do</span>
+    x <span class="ot">&lt;-</span> readArr a i
+    writeArr a i (f x v)
+    fill a f ivs</code></pre></div>
+<p>This is a good example of a function that is internally imperative but externally pure.</p>
+<p>If we define a function to sequence state transformers:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">seqST ::</span> [<span class="dt">ST</span> s ()] <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()
+seqST <span class="fu">=</span> sequence_ <span class="co">-- originally defined as `foldr (&gt;&gt;) (return ())`</span></code></pre></div>
+<p>then we can rewrite <code>accumArray</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">accumArray f z bnds ivs <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span>
+    a <span class="ot">&lt;-</span> newArr bnds z
+    seqST (map (update a f) ivs)
+    freezeArr s
+
+update a f (i, v) <span class="fu">=</span> <span class="kw">do</span>
+    x <span class="ot">&lt;-</span> readArr a i
+    writeArr a i (f x v)</code></pre></div>
+<p>Let’s reformulate IO in terms of state transformers. It can be thought of as a state transformer of type <code>ST RealWorld a</code>, where <code>RealWorld</code> is an abstract type representing the real world. We can make this explicit as a type synonym:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">IO</span> a <span class="fu">=</span> <span class="dt">ST</span> <span class="dt">RealWorld</span> a</code></pre></div>
+<p>We also have a few functions that are specific to IO but not other ST computations, e.g.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">putChar<span class="ot"> ::</span> <span class="dt">Char</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+getChar<span class="ot"> ::</span> <span class="dt">IO</span> <span class="dt">Char</span></code></pre></div>
+<p>And this is enough to build e.g. <code>putString</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">putString cs <span class="fu">=</span> seqST (map putChar cs)</code></pre></div>
+<p>However, we can take it further and define both <code>putChar</code> and <code>getChar</code> in terms of <code>ccall</code>, which is a language construct that allows the programmer to call any C procedure (with certain restrictions placed on its use):</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">putChar c <span class="fu">=</span> <span class="kw">do</span>
+    ccall putChar c
+    return ()
+getChar <span class="fu">=</span> ccall getChar</code></pre></div>
+<p>Because <code>IO</code> is not polymorphic in its state, it can’t be used with <code>runST</code>. This is the behaviour we want, and we need to define a special function to execute <code>IO</code> actions. We can call this <code>mainIO</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">mainIO ::</span> <span class="dt">IO</span> ()</code></pre></div>
+<p>and have it play a role similar to <code>main()</code> in C. In fact, IO in GHC is implemented in Haskell in precisely this manner.</p>
+<p>There follows a section with formal semantics which formalises what we’ve seen already and outlines a proof of safety. I won’t go into more detail than that.</p>
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    /*
+    var disqus_config = function () {
+        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+
+        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
+</html>

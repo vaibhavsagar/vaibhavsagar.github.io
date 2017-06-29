@@ -1,220 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-        <meta charset="utf-8" />
-        <title>A Simple Key-Value Store with Servant</title>
-        <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
-        <link href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Vaibhav Sagar's Site Atom Feed" />
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Vaibhav Sagar - A Simple Key-Value Store with Servant</title>
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-        <!--[if IE]>
-            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-</head>
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
 
-<body id="index" class="home">
-<a href="https://github.com/vaibhavsagar">
-<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" />
-</a>
-        <header id="banner" class="body">
-                <h1><a href="http://www.vaibhavsagar.com/">Vaibhav Sagar's Site </a></h1>
-                <nav><ul>
-                    <li><a href="/blog/archives/">all</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/about/">about</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/blog/misc/">misc</a></li>
-                    <li class="active"><a href="http://www.vaibhavsagar.com/blog/programming/">programming</a></li>
-                </ul></nav>
-        </header><!-- /#banner -->
-<section id="content" class="body">
-  <article>
-    <header>
-      <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/" rel="bookmark"
-           title="Permalink to A Simple Key-Value Store with Servant">A Simple Key-Value Store with Servant</a></h1>
-    </header>
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
 
-    <div class="entry-content">
-<footer class="post-info">
-        <abbr class="published" title="2017-01-24T00:00:00+11:00">
-                Published: Tue 24 January 2017
-        </abbr>
+        <div id="content">
+            <h1>A Simple Key-Value Store with Servant</h1>
 
-        <address class="vcard author">
-                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
-        </address>
-<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+            <div class="info">
+    Posted on 24 January 2017
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../../../../tags/programming.html">programming</a>, <a href="../../../../../tags/haskell.html">haskell</a>
+    
+</div>
 
-</footer><!-- /.post-info -->      <p>The <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis">meat of the Servant
-tutorial</a>
-starts with an imposing list of language extensions and imports and only gets
-more confusing from there. I don't think this gives newbies (i.e. me) the best
-first impression of Servant. Let's build the simplest possible key-value store
-with it instead.</p>
-<p>We're going to write this as a <code>stack</code> script so everything is in one file.</p>
-<div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env stack</span>
-</pre></div>
-
-
-<p>Let's import the modules we need.</p>
-<div class="highlight"><pre><span></span><span class="cm">{- stack --resolver lts-7 --install-ghc runghc</span>
-<span class="cm">    --package aeson</span>
-<span class="cm">    --package servant-server</span>
-<span class="cm">    --package text</span>
-<span class="cm">    --package transformers</span>
-<span class="cm">    --package unordered-containers</span>
-<span class="cm">    --package warp</span>
-<span class="cm">    -}</span>
-</pre></div>
-
-
-<p>At minimum we need <code>servant-server</code> for Servant goodness and <code>warp</code> to actually
-run our web service. The plan is to create an <code>IORef</code> holding a <code>HashMap</code> and
-use that as our store, which is why we need <code>unordered-containers</code>. I'd like to
-store arbitrary JSON, therefore <code>aeson</code>, and I think our keys should be <code>Text</code>,
-because <code>aeson</code> and <code>Text</code> are great together. That leaves <code>transformers</code>,
-which we need because of <code>liftIO</code>.</p>
+<p>The <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis">meat of the Servant tutorial</a> starts with an imposing list of language extensions and imports and only gets more confusing from there. I don’t think this gives newbies (i.e. me) the best first impression of Servant. Let’s build the simplest possible key-value store with it instead.</p>
+<p>We’re going to write this as a <code>stack</code> script so everything is in one file.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/usr/bin/env stack</span></code></pre></div>
+<p>Let’s import the modules we need.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">{- stack --resolver lts-7 --install-ghc runghc</span>
+<span class="co">    --package aeson</span>
+<span class="co">    --package servant-server</span>
+<span class="co">    --package text</span>
+<span class="co">    --package transformers</span>
+<span class="co">    --package unordered-containers</span>
+<span class="co">    --package warp</span>
+<span class="co">    -}</span></code></pre></div>
+<p>At minimum we need <code>servant-server</code> for Servant goodness and <code>warp</code> to actually run our web service. The plan is to create an <code>IORef</code> holding a <code>HashMap</code> and use that as our store, which is why we need <code>unordered-containers</code>. I’d like to store arbitrary JSON, therefore <code>aeson</code>, and I think our keys should be <code>Text</code>, because <code>aeson</code> and <code>Text</code> are great together. That leaves <code>transformers</code>, which we need because of <code>liftIO</code>.</p>
 <p>It turns out that we only need two language extensions for this example.</p>
-<div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE DataKinds #-}</span>
-<span class="cm">{-# LANGUAGE TypeOperators #-}</span>
-</pre></div>
-
-
-<p>As far as I can tell, both these extensions are needed for Servant's cute API
-specification EDSL. We'll let you have this one, Servant.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds #-}</span>
+<span class="ot">{-# LANGUAGE TypeOperators #-}</span></code></pre></div>
+<p>As far as I can tell, both these extensions are needed for Servant’s cute API specification EDSL. We’ll let you have this one, Servant.</p>
 <p>Time for a (hopefully manageable) list of imports!</p>
-<div class="highlight"><pre><span></span><span class="kr">module</span> <span class="nn">Main</span> <span class="kr">where</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
 
-<span class="kr">import</span> <span class="nn">Control.Monad.IO.Class</span>   <span class="p">(</span><span class="nf">liftIO</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.Aeson</span>               <span class="p">(</span><span class="kt">Value</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.IORef</span>               <span class="p">(</span><span class="kt">IORef</span><span class="p">,</span> <span class="nf">newIORef</span><span class="p">,</span> <span class="nf">readIORef</span><span class="p">,</span> <span class="nf">atomicModifyIORef&#39;</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.HashMap.Strict</span>      <span class="p">(</span><span class="kt">HashMap</span><span class="p">,</span> <span class="nf">lookup</span><span class="p">,</span> <span class="nf">insert</span><span class="p">,</span> <span class="nf">empty</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Data.Text</span>                <span class="p">(</span><span class="kt">Text</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Network.Wai.Handler.Warp</span> <span class="p">(</span><span class="nf">run</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">System.Environment</span>       <span class="p">(</span><span class="nf">getArgs</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Prelude</span> <span class="k">hiding</span>           <span class="p">(</span><span class="nf">lookup</span><span class="p">)</span>
-<span class="kr">import</span> <span class="nn">Servant</span>
-</pre></div>
-
-
-<p>All imports are explicit except <code>Servant</code>'s.</p>
+<span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span>   (liftIO)
+<span class="kw">import </span><span class="dt">Data.Aeson</span>               (<span class="dt">Value</span>)
+<span class="kw">import </span><span class="dt">Data.IORef</span>               (<span class="dt">IORef</span>, newIORef, readIORef, atomicModifyIORef')
+<span class="kw">import </span><span class="dt">Data.HashMap.Strict</span>      (<span class="dt">HashMap</span>, lookup, insert, empty)
+<span class="kw">import </span><span class="dt">Data.Text</span>                (<span class="dt">Text</span>)
+<span class="kw">import </span><span class="dt">Network.Wai.Handler.Warp</span> (run)
+<span class="kw">import </span><span class="dt">System.Environment</span>       (getArgs)
+<span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span>           (lookup)
+<span class="kw">import </span><span class="dt">Servant</span></code></pre></div>
+<p>All imports are explicit except <code>Servant</code>’s.</p>
 <p>Speaking of the EDSL:</p>
-<div class="highlight"><pre><span></span><span class="kr">type</span> <span class="kt">API</span>
-    <span class="ow">=</span>    <span class="s">&quot;get&quot;</span> <span class="kt">:&gt;</span> <span class="kt">Capture</span> <span class="s">&quot;key&quot;</span> <span class="kt">Text</span> <span class="kt">:&gt;</span> <span class="kt">Get</span> <span class="kt">&#39;[JSON]</span> <span class="p">(</span><span class="kt">Maybe</span> <span class="kt">Value</span><span class="p">)</span>
-    <span class="kt">:&lt;|&gt;</span> <span class="s">&quot;put&quot;</span> <span class="kt">:&gt;</span> <span class="kt">Capture</span> <span class="s">&quot;key&quot;</span> <span class="kt">Text</span>
-        <span class="kt">:&gt;</span> <span class="kt">ReqBody</span> <span class="kt">&#39;[JSON]</span> <span class="kt">Value</span>     <span class="kt">:&gt;</span> <span class="kt">Put</span> <span class="kt">&#39;[JSON]</span> <span class="kt">Text</span>
-</pre></div>
-
-
-<p>This API has two endpoints: a "/get/:key" endpoint that provides the value
-associated with a key if the key exists in our store, or a "put/:key" endpoint
-that allows us to associate some JSON with a key, returning the key used. How
-this fits together is still a bit magical to me, but <a href="http://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html">this blog
-post</a>
-provides the best explanation I've read so far. The section of the Servant
-tutorial <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/ApiType.html">on the API specification
-EDSL</a> is
-also quite good.</p>
-<p>Let's define a type synonym so we don't have to keep writing <code>IORef (HashMap
-Text Value)</code> over and over again:</p>
-<div class="highlight"><pre><span></span><span class="kr">type</span> <span class="kt">Store</span> <span class="ow">=</span> <span class="kt">IORef</span> <span class="p">(</span><span class="kt">HashMap</span> <span class="kt">Text</span> <span class="kt">Value</span><span class="p">)</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">API</span>
+    <span class="fu">=</span>    <span class="st">&quot;get&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] (Maybe Value)</span>
+    <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;put&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span>
+        <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON] Value     :&gt; Put '</span>[<span class="dt">JSON</span>] <span class="dt">Text</span></code></pre></div>
+<p>This API has two endpoints: a “/get/:key” endpoint that provides the value associated with a key if the key exists in our store, or a “put/:key” endpoint that allows us to associate some JSON with a key, returning the key used. How this fits together is still a bit magical to me, but <a href="http://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html">this blog post</a> provides the best explanation I’ve read so far. The section of the Servant tutorial <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/ApiType.html">on the API specification EDSL</a> is also quite good.</p>
+<p>Let’s define a type synonym so we don’t have to keep writing <code>IORef (HashMap Text Value)</code> over and over again:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Store</span> <span class="fu">=</span> <span class="dt">IORef</span> (<span class="dt">HashMap</span> <span class="dt">Text</span> <span class="dt">Value</span>)</code></pre></div>
 <p>Servant uses the same operator to define the type and the serving action:</p>
-<div class="highlight"><pre><span></span><span class="nf">server</span> <span class="ow">::</span> <span class="kt">Store</span> <span class="ow">-&gt;</span> <span class="kt">Server</span> <span class="kt">API</span>
-<span class="nf">server</span> <span class="n">store</span> <span class="ow">=</span> <span class="n">getValue</span> <span class="n">store</span> <span class="kt">:&lt;|&gt;</span> <span class="n">putValue</span> <span class="n">store</span>
-</pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span>
+server store <span class="fu">=</span> getValue store <span class="fu">:&lt;|&gt;</span> putValue store</code></pre></div>
+<p>The order in which these actions are composed needs to match the order used in the API definition.</p>
+<p>Next we define <code>getValue</code> and <code>putValue</code>. We need actions of type <code>Handler</code>, which is <code>ExceptT ServantErr IO</code>, so we <code>liftIO</code> as necessary:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">getValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> (<span class="dt">Maybe</span> <span class="dt">Value</span>)
+getValue store key <span class="fu">=</span> liftIO <span class="fu">$</span> lookup key <span class="fu">&lt;$&gt;</span> readIORef store
 
-
-<p>The order in which these actions are composed needs to match the order used in
-the API definition.</p>
-<p>Next we define <code>getValue</code> and <code>putValue</code>. We need actions of type <code>Handler</code>,
-which is <code>ExceptT ServantErr IO</code>, so we <code>liftIO</code> as necessary:</p>
-<div class="highlight"><pre><span></span><span class="nf">getValue</span> <span class="ow">::</span> <span class="kt">Store</span> <span class="ow">-&gt;</span> <span class="kt">Text</span> <span class="ow">-&gt;</span> <span class="kt">Handler</span> <span class="p">(</span><span class="kt">Maybe</span> <span class="kt">Value</span><span class="p">)</span>
-<span class="nf">getValue</span> <span class="n">store</span> <span class="n">key</span> <span class="ow">=</span> <span class="n">liftIO</span> <span class="o">$</span> <span class="n">lookup</span> <span class="n">key</span> <span class="o">&lt;$&gt;</span> <span class="n">readIORef</span> <span class="n">store</span>
-
-<span class="nf">putValue</span> <span class="ow">::</span> <span class="kt">Store</span> <span class="ow">-&gt;</span> <span class="kt">Text</span> <span class="ow">-&gt;</span> <span class="kt">Value</span> <span class="ow">-&gt;</span> <span class="kt">Handler</span> <span class="kt">Text</span>
-<span class="nf">putValue</span> <span class="n">store</span> <span class="n">key</span> <span class="n">value</span> <span class="ow">=</span> <span class="n">liftIO</span> <span class="o">$</span> <span class="n">atomicModifyIORef&#39;</span> <span class="n">store</span> <span class="n">modify</span>
-    <span class="kr">where</span> <span class="n">modify</span> <span class="n">kv</span> <span class="ow">=</span> <span class="p">(</span><span class="n">insert</span> <span class="n">key</span> <span class="n">value</span> <span class="n">kv</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
-</pre></div>
-
-
+<span class="ot">putValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Text</span>
+putValue store key value <span class="fu">=</span> liftIO <span class="fu">$</span> atomicModifyIORef' store modify
+    <span class="kw">where</span> modify kv <span class="fu">=</span> (insert key value kv, key)</code></pre></div>
 <p>Almost there. We declare the API we want to serve:</p>
-<div class="highlight"><pre><span></span><span class="nf">kvAPI</span> <span class="ow">::</span> <span class="kt">Proxy</span> <span class="kt">API</span>
-<span class="nf">kvAPI</span> <span class="ow">=</span> <span class="kt">Proxy</span>
-</pre></div>
-
-
-<p>Once again, Kwang Yul Seo has <a href="http://kseo.github.io/posts/2017-01-15-data-proxy.html">a great blog
-post</a> on this.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">kvAPI ::</span> <span class="dt">Proxy</span> <span class="dt">API</span>
+kvAPI <span class="fu">=</span> <span class="dt">Proxy</span></code></pre></div>
+<p>Once again, Kwang Yul Seo has <a href="http://kseo.github.io/posts/2017-01-15-data-proxy.html">a great blog post</a> on this.</p>
 <p>Finally, we define our entry point:</p>
-<div class="highlight"><pre><span></span><span class="nf">main</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
-<span class="nf">main</span> <span class="ow">=</span> <span class="kr">do</span>
-    <span class="n">port</span> <span class="ow">&lt;-</span> <span class="n">read</span> <span class="o">.</span> <span class="n">head</span> <span class="o">&lt;$&gt;</span> <span class="n">getArgs</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="kt">Int</span>
-    <span class="n">run</span> <span class="n">port</span> <span class="o">.</span> <span class="n">serve</span> <span class="n">kvAPI</span> <span class="o">.</span> <span class="n">server</span> <span class="o">=&lt;&lt;</span> <span class="n">newIORef</span> <span class="n">empty</span>
-</pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+    port <span class="ot">&lt;-</span> read <span class="fu">.</span> head <span class="fu">&lt;$&gt;</span><span class="ot"> getArgs ::</span> <span class="dt">IO</span> <span class="dt">Int</span>
+    run port <span class="fu">.</span> serve kvAPI <span class="fu">.</span> server <span class="fu">=&lt;&lt;</span> newIORef empty</code></pre></div>
+<p>To recap: we define our API as a type, our handlers, and the type we want to serve, and then we plug it all together.</p>
+<p>And we’re done! We can now <code>chmod +x KVStore.hs</code> (or whatever you called the file) and run it: <code>./KVStore.hs 8081</code>.</p>
+<p>I hope this provides a better starting point for learning Servant. If desired, the full script is available <a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d">here</a>.</p>
 
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    /*
+    var disqus_config = function () {
+        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
 
-<p>To recap: we define our API as a type, our handlers, and the type we want to
-serve, and then we plug it all together.</p>
-<p>And we're done! We can now <code>chmod +x KVStore.hs</code> (or whatever you called the
-file) and run it: <code>./KVStore.hs 8081</code>.</p>
-<p>I hope this provides a better starting point for learning Servant. If desired,
-the full script is available
-<a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d">here</a>.</p>
-    </div><!-- /.entry-content -->
-    <div class="comments">
-      <h2>Comments !</h2>
-      <div id="disqus_thread"></div>
-      <script type="text/javascript">
-        var disqus_shortname = 'vaibhavsagar';
-        var disqus_identifier = 'blog/2017/01/24/simple-kv-store/';
-        var disqus_url = 'http://www.vaibhavsagar.com/blog/2017/01/24/simple-kv-store/';
-        (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//vaibhavsagar.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the comments.</noscript>
-    </div>
+        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
 
-  </article>
-</section>
-        <section id="extras" class="body">
-                <div class="social">
-                        <h2>social</h2>
-                        <ul>
-                            <li><a href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
-
-                        </ul>
-                </div><!-- /.social -->
-        </section><!-- /#extras -->
-
-        <footer id="contentinfo" class="body">
-                <address id="about" class="vcard body">
-                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
-                </address><!-- /#about -->
-
-                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
-        </footer><!-- /#contentinfo -->
-
-    <script type="text/javascript">
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-79891461-1', 'auto');
-    ga('send', 'pageview');
-    </script>
-<script type="text/javascript">
-    var disqus_shortname = 'vaibhavsagar';
-    (function () {
-        var s = document.createElement('script'); s.async = true;
-        s.type = 'text/javascript';
-        s.src = 'https://' + disqus_shortname + '.disqus.com/count.js';
-        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
-    }());
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
 </script>
-</body>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
 </html>

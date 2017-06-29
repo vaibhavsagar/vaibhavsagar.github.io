@@ -1,201 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-        <meta charset="utf-8" />
-        <title>Using The Writer Monad Outside Logging</title>
-        <link rel="stylesheet" href="http://www.vaibhavsagar.com/theme/css/main.css" />
-        <link href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Vaibhav Sagar's Site Atom Feed" />
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Vaibhav Sagar - Using The Writer Monad Outside Logging</title>
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-        <!--[if IE]>
-            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-</head>
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
 
-<body id="index" class="home">
-<a href="https://github.com/vaibhavsagar">
-<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" />
-</a>
-        <header id="banner" class="body">
-                <h1><a href="http://www.vaibhavsagar.com/">Vaibhav Sagar's Site </a></h1>
-                <nav><ul>
-                    <li><a href="/blog/archives/">all</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/about/">about</a></li>
-                    <li><a href="http://www.vaibhavsagar.com/blog/misc/">misc</a></li>
-                    <li class="active"><a href="http://www.vaibhavsagar.com/blog/programming/">programming</a></li>
-                </ul></nav>
-        </header><!-- /#banner -->
-<section id="content" class="body">
-  <article>
-    <header>
-      <h1 class="entry-title">
-        <a href="http://www.vaibhavsagar.com/blog/2016/07/24/writer-delta/" rel="bookmark"
-           title="Permalink to Using The Writer Monad Outside Logging">Using The Writer Monad Outside Logging</a></h1>
-    </header>
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
 
-    <div class="entry-content">
-<footer class="post-info">
-        <abbr class="published" title="2016-07-24T00:00:00+10:00">
-                Published: Sun 24 July 2016
-        </abbr>
+        <div id="content">
+            <h1>Using The Writer Monad Outside Logging</h1>
 
-        <address class="vcard author">
-                By                         <a class="url fn" href="http://www.vaibhavsagar.com/author/vaibhav-sagar.html">Vaibhav Sagar</a>
-        </address>
-<p>In <a href="http://www.vaibhavsagar.com/blog/programming/">programming</a>.</p>
+            <div class="info">
+    Posted on 24 July 2016
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../../../../tags/programming.html">programming</a>, <a href="../../../../../tags/haskell.html">haskell</a>, <a href="../../../../../tags/monads.html">monads</a>
+    
+</div>
 
-</footer><!-- /.post-info -->      <p>I hadn't given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven't had to do much logging in Haskell so far and so I incorrectly assumed that I didn't need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:</p>
-<ol>
-<li>The Writer monad's output can be any Monoid, such as strings, lists, sets, etc.</li>
+<p>I hadn’t given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven’t had to do much logging in Haskell so far and so I incorrectly assumed that I didn’t need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:</p>
+<ol style="list-style-type: decimal">
+<li>The Writer monad’s output can be any Monoid, such as strings, lists, sets, etc.</li>
 <li>ByteString is a Monoid.</li>
 </ol>
 <p>Git Packfiles store some entries as deltas against other entries. The delta format is a bit hairy to parse, but it consists of a sequence of either copy or insert instructions. Copy instructions specify an offset in the source and a length of bytes to copy, whereas insert instructions specify a series of bytes to be copied as is.</p>
-<div class="highlight"><pre><span></span><span class="kr">import</span> <span class="k">qualified</span> <span class="nn">Data.ByteString</span> <span class="k">as</span> <span class="n">B</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.ByteString</span> <span class="kw">as</span> <span class="dt">B</span>
 
-<span class="kr">data</span> <span class="kt">DeltaInstruction</span>
-    <span class="ow">=</span> <span class="kt">CopyInstruction</span>   <span class="kt">Int</span> <span class="kt">Int</span>
-    <span class="o">|</span> <span class="kt">InsertInstruction</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-    <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Show</span><span class="p">)</span>
-</pre></div>
-
-
+<span class="kw">data</span> <span class="dt">DeltaInstruction</span>
+    <span class="fu">=</span> <span class="dt">CopyInstruction</span>   <span class="dt">Int</span> <span class="dt">Int</span>
+    <span class="fu">|</span> <span class="dt">InsertInstruction</span> <span class="dt">B.ByteString</span>
+    <span class="kw">deriving</span> (<span class="dt">Show</span>)</code></pre></div>
 <p>An instruction can be interpreted with reference to a source to result in a ByteString.</p>
-<div class="highlight"><pre><span></span><span class="nf">substring</span> <span class="ow">::</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">substring</span> <span class="n">offset</span> <span class="n">length</span> <span class="n">bytestring</span> <span class="ow">=</span> <span class="kt">B</span><span class="o">.</span><span class="n">take</span> <span class="n">length</span> <span class="p">(</span><span class="kt">B</span><span class="o">.</span><span class="n">drop</span> <span class="n">offset</span> <span class="n">bytestring</span><span class="p">)</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">substring ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
+substring offset length bytestring <span class="fu">=</span> B.take length (B.drop offset bytestring)
 
-<span class="c1">-- Under this interpretation, `InsertInstruction` corresponds to `const`</span>
-<span class="c1">-- and `CopyInstruction` corresponds to `substring`.</span>
-<span class="nf">interpretInstruction</span> <span class="ow">::</span> <span class="kt">DeltaInstruction</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">interpretInstruction</span> <span class="n">instruction</span> <span class="n">source</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">instruction</span> <span class="kr">of</span>
-    <span class="kt">InsertInstruction</span> <span class="n">string</span>        <span class="ow">-&gt;</span> <span class="n">string</span>
-    <span class="kt">CopyInstruction</span>   <span class="n">offset</span> <span class="n">length</span> <span class="ow">-&gt;</span> <span class="n">substring</span> <span class="n">offset</span> <span class="n">length</span> <span class="n">source</span>
-</pre></div>
-
-
+<span class="co">-- Under this interpretation, `InsertInstruction` corresponds to `const`</span>
+<span class="co">-- and `CopyInstruction` corresponds to `substring`.</span>
+<span class="ot">interpretInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
+interpretInstruction instruction source <span class="fu">=</span> <span class="kw">case</span> instruction <span class="kw">of</span>
+    <span class="dt">InsertInstruction</span> string        <span class="ot">-&gt;</span> string
+    <span class="dt">CopyInstruction</span>   offset length <span class="ot">-&gt;</span> substring offset length source</code></pre></div>
 <p>The concatenation of a list of interpreted instructions is a resolved delta.</p>
-<div class="highlight"><pre><span></span><span class="nf">applyInstructions&#39;</span> <span class="ow">::</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="kt">DeltaInstruction</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">applyInstructions&#39;</span> <span class="n">source</span> <span class="n">dest</span> <span class="kt">[]</span>     <span class="ow">=</span> <span class="n">dest</span>
-<span class="nf">applyInstructions&#39;</span> <span class="n">source</span> <span class="n">dest</span> <span class="p">(</span><span class="n">i</span><span class="kt">:</span><span class="n">is</span><span class="p">)</span> <span class="ow">=</span> <span class="kr">let</span>
-    <span class="n">dest&#39;</span> <span class="ow">=</span> <span class="kt">B</span><span class="o">.</span><span class="n">append</span> <span class="n">dest</span> <span class="o">$</span> <span class="n">interpretInstruction</span> <span class="n">i</span> <span class="n">source</span>
-    <span class="kr">in</span> <span class="n">applyInstructions&#39;</span> <span class="n">source</span> <span class="n">dest&#39;</span> <span class="n">is</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applyInstructions' ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
+applyInstructions' source dest []     <span class="fu">=</span> dest
+applyInstructions' source dest (i<span class="fu">:</span>is) <span class="fu">=</span> <span class="kw">let</span>
+    dest' <span class="fu">=</span> B.append dest <span class="fu">$</span> interpretInstruction i source
+    <span class="kw">in</span> applyInstructions' source dest' is</code></pre></div>
 <p>For example:</p>
-<div class="highlight"><pre><span></span><span class="kt">:</span><span class="n">set</span> <span class="o">-</span><span class="kt">XOverloadedStrings</span>
-<span class="nf">testSource</span> <span class="ow">=</span> <span class="s">&quot;tree 9977d7726a568347a513a6b061b87fd687322650</span><span class="se">\n</span><span class="s">parent e05bba28b796e7af7e5d981955327621a6c43a5f</span><span class="se">\n</span><span class="s">author Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800</span><span class="se">\n</span><span class="s">committer Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467781641 +0800</span><span class="se">\n\n</span><span class="s">Use record wildcards.</span><span class="se">\n</span><span class="s">&quot;</span> <span class="ow">::</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">testInstructions</span> <span class="ow">=</span> <span class="p">[</span><span class="kt">InsertInstruction</span> <span class="s">&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&quot;</span><span class="p">,</span><span class="kt">CopyInstruction</span> <span class="mi">44</span> <span class="mi">167</span><span class="p">,</span><span class="kt">InsertInstruction</span> <span class="s">&quot;60597&quot;</span><span class="p">,</span><span class="kt">CopyInstruction</span> <span class="mi">216</span> <span class="mi">30</span><span class="p">]</span>
-<span class="nf">applyInstructions&#39;</span> <span class="n">testSource</span> <span class="kt">B</span><span class="o">.</span><span class="n">empty</span> <span class="n">testInstructions</span>
-</pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span>
+testSource <span class="fu">=</span> <span class="st">&quot;tree 9977d7726a568347a513a6b061b87fd687322650\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467781641 +0800\n\nUse record wildcards.\n&quot;</span><span class="ot"> ::</span> <span class="dt">B.ByteString</span>
+testInstructions <span class="fu">=</span> [<span class="dt">InsertInstruction</span> <span class="st">&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">44</span> <span class="dv">167</span>,<span class="dt">InsertInstruction</span> <span class="st">&quot;60597&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">216</span> <span class="dv">30</span>]
+applyInstructions' testSource B.empty testInstructions</code></pre></div>
+<pre><code>&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\n\nUse record wildcards.\n&quot;</code></pre>
+<p>Although this works, it isn’t particularly elegant and it would be nice to abstract away the details of the empty ByteString and the append. Luckily, these correspond to the <code>mempty</code> and <code>mappend</code> methods of a Monoid, and since the Writer monad works with monoids, we might be able to use it. Let’s start by defining a monadic action that appends an interpreted instruction and returns the source we fed it.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Control.Monad.Trans.Writer</span>
 
-
-<div class="highlight"><pre><span></span>&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\n\nUse record wildcards.\n&quot;
-</pre></div>
-
-
-<p>Although this works, it isn't particularly elegant and it would be nice to abstract away the details of the empty ByteString and the append. Luckily, these correspond to the <code>mempty</code> and <code>mappend</code> methods of a Monoid, and since the Writer monad works with monoids, we might be able to use it. Let's start by defining a monadic action that appends an interpreted instruction and returns the source we fed it.</p>
-<div class="highlight"><pre><span></span><span class="kr">import</span> <span class="nn">Control.Monad</span>
-<span class="kr">import</span> <span class="nn">Control.Monad.Trans.Writer</span>
-
-<span class="nf">applyInstruction</span> <span class="ow">::</span> <span class="kt">DeltaInstruction</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="kt">Writer</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">applyInstruction</span> <span class="n">instruction</span> <span class="n">source</span> <span class="ow">=</span> <span class="n">writer</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">interpretInstruction</span> <span class="n">instruction</span> <span class="n">source</span><span class="p">)</span>
-</pre></div>
-
-
+<span class="ot">applyInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">B.ByteString</span> <span class="dt">B.ByteString</span>
+applyInstruction instruction source <span class="fu">=</span> writer (source, interpretInstruction instruction source)</code></pre></div>
 <p>Our action takes two parameters and so we <code>map</code> it to our list of instructions. This gives us a list of actions expecting a source buffer to operate on.</p>
-<div class="highlight"><pre><span></span><span class="kt">:</span><span class="n">t</span> <span class="n">map</span> <span class="n">applyInstruction</span> <span class="n">testInstructions</span>
-</pre></div>
-
-
-<div class="highlight"><pre><span></span>map applyInstruction testInstructions :: [ByteString -&gt; Writer ByteString ByteString]
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:</span>t map applyInstruction testInstructions</code></pre></div>
+<pre><code>map applyInstruction testInstructions :: [ByteString -&gt; Writer ByteString ByteString]</code></pre>
 <p>We need to reduce this list to a single value while executing each action in sequence, which implies a fold. <code>foldM</code> looks like what we need; according to the documentation:</p>
-<div class="highlight"><pre><span></span><span class="nf">foldM</span> <span class="n">f</span> <span class="n">a1</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">xm</span><span class="p">]</span> <span class="o">==</span>
-<span class="kr">do</span>
-    <span class="n">a2</span> <span class="ow">&lt;-</span> <span class="n">f</span> <span class="n">a1</span> <span class="n">x1</span>
-    <span class="n">a3</span> <span class="ow">&lt;-</span> <span class="n">f</span> <span class="n">a2</span> <span class="n">x2</span>
-    <span class="o">...</span>
-    <span class="n">f</span> <span class="n">am</span> <span class="n">xm</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldM f a1 [x1, x2, <span class="fu">...</span>, xm] <span class="fu">==</span>
+<span class="kw">do</span>
+    a2 <span class="ot">&lt;-</span> f a1 x1
+    a3 <span class="ot">&lt;-</span> f a2 x2
+    <span class="fu">...</span>
+    f am xm</code></pre></div>
 <p>The only wrinkle is that <code>f</code> needs to take the argument first and the action second. We can accomplish this by defining</p>
-<div class="highlight"><pre><span></span><span class="nf">f</span> <span class="n">a</span> <span class="n">b</span> <span class="ow">=</span> <span class="n">b</span> <span class="n">a</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f a b <span class="fu">=</span> b a</code></pre></div>
 <p>or</p>
-<div class="highlight"><pre><span></span><span class="nf">f</span> <span class="ow">=</span> <span class="n">flip</span> <span class="p">(</span><span class="o">$</span><span class="p">)</span>
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">=</span> flip (<span class="fu">$</span>)</code></pre></div>
 <p>Putting it all together, we have</p>
-<div class="highlight"><pre><span></span><span class="nf">applyInstructions</span> <span class="ow">::</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="kt">DeltaInstruction</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">ByteString</span>
-<span class="nf">applyInstructions</span> <span class="n">source</span> <span class="n">instructions</span> <span class="ow">=</span> <span class="n">execWriter</span> <span class="o">$</span> <span class="n">foldM</span> <span class="p">(</span><span class="n">flip</span> <span class="p">(</span><span class="o">$</span><span class="p">))</span> <span class="n">source</span> <span class="o">$</span> <span class="n">map</span> <span class="n">applyInstruction</span> <span class="n">instructions</span>
-<span class="nf">applyInstructions</span> <span class="n">testSource</span> <span class="n">testInstructions</span> <span class="o">==</span> <span class="n">applyInstructions&#39;</span> <span class="n">testSource</span> <span class="kt">B</span><span class="o">.</span><span class="n">empty</span> <span class="n">testInstructions</span>
-</pre></div>
-
-
-<div class="highlight"><pre><span></span>True
-</pre></div>
-
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applyInstructions ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
+applyInstructions source instructions <span class="fu">=</span> execWriter <span class="fu">$</span> foldM (flip (<span class="fu">$</span>)) source <span class="fu">$</span> map applyInstruction instructions
+applyInstructions testSource testInstructions <span class="fu">==</span> applyInstructions' testSource B.empty testInstructions</code></pre></div>
+<pre><code>True</code></pre>
 <p>And there you have it, a use of Writer that has absolutely nothing to do with logging!</p>
-    </div><!-- /.entry-content -->
-    <div class="comments">
-      <h2>Comments !</h2>
-      <div id="disqus_thread"></div>
-      <script type="text/javascript">
-        var disqus_shortname = 'vaibhavsagar';
-        var disqus_identifier = 'blog/2016/07/24/writer-delta/';
-        var disqus_url = 'http://www.vaibhavsagar.com/blog/2016/07/24/writer-delta/';
-        (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//vaibhavsagar.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the comments.</noscript>
-    </div>
 
-  </article>
-</section>
-        <section id="extras" class="body">
-                <div class="social">
-                        <h2>social</h2>
-                        <ul>
-                            <li><a href="http://www.vaibhavsagar.com/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    /*
+    var disqus_config = function () {
+        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
 
-                        </ul>
-                </div><!-- /.social -->
-        </section><!-- /#extras -->
+        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
 
-        <footer id="contentinfo" class="body">
-                <address id="about" class="vcard body">
-                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
-                </address><!-- /#about -->
-
-                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
-        </footer><!-- /#contentinfo -->
-
-    <script type="text/javascript">
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-79891461-1', 'auto');
-    ga('send', 'pageview');
-    </script>
-<script type="text/javascript">
-    var disqus_shortname = 'vaibhavsagar';
-    (function () {
-        var s = document.createElement('script'); s.async = true;
-        s.type = 'text/javascript';
-        s.src = 'https://' + disqus_shortname + '.disqus.com/count.js';
-        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
-    }());
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
 </script>
-</body>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
 </html>
