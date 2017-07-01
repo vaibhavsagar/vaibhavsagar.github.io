@@ -45,14 +45,50 @@
 <p>When I started this blog, I was reluctant to put a continuous integration system like Travis-CI in charge of deployment because it seemed like a frivolous use of resources and so I settled for the approach outlined <a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html">here</a> which worked reasonably well. As my understanding of continuous integration and the possibilities of Travis improved, I changed my mind and decided it would be a good idea to automate this process. I also realised that automating my deployment would allow me to theoretically create or update a post using the GitHub web interface which would automatically get turned into a new post on my blog. This would allow me to use this blog from any web browser! In other words, I wanted a convoluted reimplementation of half of a CMS’s functionality.</p>
 <p>I found a very helpful <a href="http://zonca.github.io/2013/09/automatically-build-pelican-and-publish-to-github-pages.html">blog post</a> that covered most of the details I needed. Let me go through the changes I made.</p>
 <p>First off, I use Python 3 wherever possible so I simplified my <code>requirements.txt</code>:</p>
-<script src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/requirements.txt"></script>
+<pre class="text"><code>pelican
+Markdown</code></pre>
 <p>My <code>.travis.yml</code> is different too (I removed unnecessary nesting to make it shorter):</p>
-<script src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/.travis.yml"></script>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">branches:</span>
+  <span class="fu">only:</span><span class="at"> master</span>
+<span class="fu">language:</span><span class="at"> python</span>
+<span class="fu">python:</span><span class="at"> 3.6</span>
+<span class="fu">cache:</span><span class="at"> pip</span>
+<span class="fu">script:</span><span class="at"> make html</span>
+<span class="fu">notifications:</span>
+  <span class="fu">email:</span>
+    <span class="fu">on_success:</span><span class="at"> always</span>
+    <span class="fu">on_failure:</span><span class="at"> always</span>
+<span class="fu">before_install:</span><span class="at"> git submodule update --init --recursive</span>
+<span class="fu">after_success:</span><span class="at"> bash deploy.sh</span>
+<span class="fu">env:</span>
+  <span class="fu">global:</span>
+<span class="fu">secure:</span><span class="at"> Ew3edSrbYr/rofui49TpBTbmHivreifr0FLjqP+1CBPXERKEsCjs9thWBnjKIZYirfetMb5ShF9EZ1g8D459BS7Sn+ziXUP4X3I4jvdx1Yj55o2CuWOD6Gx6ShPkWEhZRZhFFIKpGfLO4XAKP3suSPJvB1Lp67GC0BFyPucSSU8=</span></code></pre></div>
 <p>I installed the <code>travis</code> gem, got a GitHub token, and tried to set the token with</p>
 <pre><code>travis encrypt GH_TOKEN=LONGTOKENFROMGITHUB --add env.global</code></pre>
 <p>but it didn’t recognise my repository until I went to my <a href="https://travis-ci.org/profile/">Travis-CI profile</a>, enabled GitHub access, and enabled it to check my repository.</p>
 <p>The <code>deploy.sh</code> script was almost the same (change your username):</p>
-<script src="http://gist-it.appspot.com/github.com/vaibhavsagar/website/blob/master/deploy.sh"></script>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/usr/bin/env bash</span>
+<span class="va">BRANCH=</span>master
+<span class="va">TARGET_REPO=</span>vaibhavsagar/vaibhavsagar.github.io.git
+<span class="va">PELICAN_OUTPUT_FOLDER=</span>output
+
+<span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS_PULL_REQUEST</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;false&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span>
+    <span class="bu">echo</span> -e <span class="st">&quot;Starting to deploy to Github Pages\n&quot;</span>
+    <span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;true&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span>
+        <span class="fu">git</span> config --global user.email <span class="st">&quot;travis@travis-ci.org&quot;</span>
+        <span class="fu">git</span> config --global user.name <span class="st">&quot;Travis&quot;</span>
+    <span class="kw">fi</span>
+    <span class="co"># using token, clone gh-pages branch</span>
+    <span class="fu">git</span> clone --depth 1 --quiet --branch=<span class="va">$BRANCH</span> https://<span class="va">${GH_TOKEN}</span>@github.com/<span class="va">$TARGET_REPO</span> built_website <span class="op">&gt;</span> /dev/null
+    <span class="co"># go into directory and copy data we're interested in to that directory</span>
+    <span class="bu">cd</span> built_website
+    <span class="fu">rsync</span> -av --delete --exclude=.git  ../<span class="va">$PELICAN_OUTPUT_FOLDER</span>/ ./
+    <span class="co"># add, commit and push files</span>
+    <span class="fu">git</span> add -A
+    <span class="fu">git</span> commit -m <span class="st">&quot;Travis build </span><span class="va">$TRAVIS_BUILD_NUMBER</span><span class="st"> pushed to Github Pages&quot;</span>
+    <span class="fu">git</span> push -fq origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null
+    <span class="bu">echo</span> -e <span class="st">&quot;Deploy completed\n&quot;</span>
+<span class="kw">fi</span></code></pre></div>
 <p>and that was all the setup I had to do. I then pushed a commit and watched as Pelican and its dependencies were downloaded, my blog posts were regenerated, and my GitHub Pages repo was updated. Seems a bit wasteful, but it was surprisingly easy to get working and it performs admirably.</p>
 
 <div id="disqus_thread"></div>
