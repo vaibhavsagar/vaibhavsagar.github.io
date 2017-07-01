@@ -45,23 +45,23 @@
 <p>After <a href="../../../../../blog/2015/02/01/blog-setup">automating my blog</a>, I decided to aim a little higher and use Travis-CI to automate document generation from my resume. I use <a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written in Markdown to Github-flavoured Markdown, an HTML file for my website, and a PDF (via LaTeX) that I’ve spent a ludicrous amount of time styling. I do have all these packages configured on my home computer, but it was becoming tedious to make changes and commit three separate files instead of just one. I was also finding it difficult to keep the PDF version of my resume up to date with the rest of my changes, and I thought it would be an interesting challenge to get everything set up in a repeatable manner. One good reference is <a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/">this blog post</a> by Steve Klabnik.</p>
 <p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for its workers) are hopelessly out of date, so my first problem was getting the newest version of <code>pandoc</code> installed. I used <code>stack</code> to download and install this.</p>
 <p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
-<pre class="make"><code>all:: pdf html readme
+<div class="sourceCode"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span class="dv">all:</span><span class="dt">: pdf html readme</span>
 
-travis:: html readme
+<span class="dv">travis:</span><span class="dt">: html readme</span>
 
-pdf:: resume.md templates/header.tex
+<span class="dv">pdf:</span><span class="dt">: resume.md templates/header.tex</span>
 	pandoc resume.md -H templates/header.tex -o Vaibhav_Sagar_resume.pdf
 
-html:: resume.md templates/header.css
+<span class="dv">html:</span><span class="dt">: resume.md templates/header.css</span>
 	pandoc resume.md -s -H templates/header.css -o index.html
 
-readme:: resume.md
+<span class="dv">readme:</span><span class="dt">: resume.md</span>
 	pandoc resume.md -t markdown_github -o readme.md
 
-clean::
+<span class="dv">clean:</span><span class="dt">:</span>
 	rm Vaibhav_Sagar_resume.pdf
 	rm readme.md
-rm index.html</code></pre>
+	rm index.html</code></pre></div>
 <p>I decided it would be best if the build process updated my <code>gh-pages</code> branch instead of uploading to a different repository:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/usr/bin/env bash</span>
 <span class="va">BRANCH=</span>gh-pages
@@ -122,7 +122,7 @@ rm index.html</code></pre>
     <span class="fu">secure:</span><span class="at"> gtBPUeDXL9S6h4aWyXCEhWxbtkATx2lIBmkVTcWDHMvgwQHmfo42OPq7rQWjO6g/iOlv71Q1VQMQc84ERcZjtBRSE0pb1s1Baqs2Hk7ec/JeWsEXDZmBIs/Z3V6pHb14zCs5GNYyerXDpQ97P4RG9Vjdy+rc3I1+kkuCMF7zB3k=</span>
 <span class="fu">env:</span>
   <span class="fu">global:</span>
-<span class="fu">secure:</span><span class="at"> Bzof/7yN7HgV2eJk7FNliNx/cagIU4I113SwNJhChFyYOSy816oPrwQaCMyZuwvbcEIfLMY0K0qxtQK1MoPq7zTYiCTW3UPB2+mzTfTHPMTm5nWjZv0BmdqVoG8IJwxfo5cIV8hfKiu2ezNKcDuqgwb80mYwpTwlQPsY9gOm1Tc=</span></code></pre></div>
+    <span class="fu">secure:</span><span class="at"> Bzof/7yN7HgV2eJk7FNliNx/cagIU4I113SwNJhChFyYOSy816oPrwQaCMyZuwvbcEIfLMY0K0qxtQK1MoPq7zTYiCTW3UPB2+mzTfTHPMTm5nWjZv0BmdqVoG8IJwxfo5cIV8hfKiu2ezNKcDuqgwb80mYwpTwlQPsY9gOm1Tc=</span></code></pre></div>
 <p>And if you’d like to see the process I went through to arrive at this solution, have a look at <a href="https://github.com/vaibhavsagar/resumate">the test repo</a> I used. The commit log is a fairly accurate representation of my thought process. If you’re trying something similar and you’re getting stuck, feel free to reach out and I’ll be more than happy to help.</p>
 
 <div id="disqus_thread"></div>
