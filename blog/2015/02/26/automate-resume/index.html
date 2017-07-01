@@ -45,14 +45,84 @@
 <p>After <a href="../../../../../blog/2015/02/01/blog-setup">automating my blog</a>, I decided to aim a little higher and use Travis-CI to automate document generation from my resume. I use <a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written in Markdown to Github-flavoured Markdown, an HTML file for my website, and a PDF (via LaTeX) that I’ve spent a ludicrous amount of time styling. I do have all these packages configured on my home computer, but it was becoming tedious to make changes and commit three separate files instead of just one. I was also finding it difficult to keep the PDF version of my resume up to date with the rest of my changes, and I thought it would be an interesting challenge to get everything set up in a repeatable manner. One good reference is <a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/">this blog post</a> by Steve Klabnik.</p>
 <p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for its workers) are hopelessly out of date, so my first problem was getting the newest version of <code>pandoc</code> installed. I used <code>stack</code> to download and install this.</p>
 <p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
-<script src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/Makefile">
-</script>
+<pre class="make"><code>all:: pdf html readme
+
+travis:: html readme
+
+pdf:: resume.md templates/header.tex
+	pandoc resume.md -H templates/header.tex -o Vaibhav_Sagar_resume.pdf
+
+html:: resume.md templates/header.css
+	pandoc resume.md -s -H templates/header.css -o index.html
+
+readme:: resume.md
+	pandoc resume.md -t markdown_github -o readme.md
+
+clean::
+	rm Vaibhav_Sagar_resume.pdf
+	rm readme.md
+rm index.html</code></pre>
 <p>I decided it would be best if the build process updated my <code>gh-pages</code> branch instead of uploading to a different repository:</p>
-<script src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.ci/update_pages.sh">
-</script>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/usr/bin/env bash</span>
+<span class="va">BRANCH=</span>gh-pages
+<span class="va">TARGET_REPO=</span>vaibhavsagar/resume.git
+
+<span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS_PULL_REQUEST</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;false&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span>
+    <span class="bu">echo</span> -e <span class="st">&quot;Starting to deploy to Github Pages\n&quot;</span>
+    <span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;true&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span>
+        <span class="fu">git</span> config --global user.email <span class="st">&quot;travis@travis-ci.org&quot;</span>
+        <span class="fu">git</span> config --global user.name <span class="st">&quot;Travis&quot;</span>
+    <span class="kw">fi</span>
+    <span class="co"># using token clone gh-pages branch</span>
+    <span class="fu">git</span> clone --quiet --branch=<span class="va">$BRANCH</span> https://<span class="va">${GH_TOKEN}</span>@github.com/<span class="va">$TARGET_REPO</span> build <span class="op">&gt;</span> /dev/null
+    <span class="co"># go into directory and copy data we're interested in to that directory</span>
+    <span class="bu">cd</span> build
+    <span class="fu">cp</span> ../readme.md ../index.html .
+    <span class="co"># add, commit and push files</span>
+    <span class="fu">git</span> add -f .
+    <span class="fu">git</span> commit -m <span class="st">&quot;Travis build </span><span class="va">$TRAVIS_BUILD_NUMBER</span><span class="st"> pushed to Github Pages&quot;</span>
+    <span class="fu">git</span> push -fq origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null
+    <span class="bu">echo</span> -e <span class="st">&quot;Deploy completed\n&quot;</span>
+<span class="kw">fi</span></code></pre></div>
 <p>The next challenge was actually generating my PDF and uploading it to Github Releases. Travis CI has excellent support for deploying binaries to Releases but using the <code>travis</code> gem to configure support makes a completely new Github token which I thought was a bit redundant. The documentation for <code>travis encrypt</code> is pretty comprehensive and I just encrypted my old token and used that instead. My completed <code>.travis.yml</code> is as follows:</p>
-<script src="http://gist-it.appspot.com/github.com/vaibhavsagar/resume/blob/master/.travis.yml">
-</script>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">language:</span><span class="at"> c</span>
+<span class="fu">sudo:</span><span class="at"> true</span>
+
+<span class="fu">cache:</span>
+  <span class="fu">directories:</span>
+  <span class="kw">-</span> $HOME/.stack
+  <span class="kw">-</span> /usr/local/texlive/2016/bin/x86_64-linux
+<span class="fu">addons:</span>
+  <span class="fu">apt:</span>
+    <span class="fu">packages:</span>
+    <span class="kw">-</span> libgmp-dev
+    <span class="kw">-</span> xzdec
+<span class="fu">before_install:</span>
+<span class="kw">-</span> mkdir -p $HOME/.local/bin
+<span class="kw">-</span> <span class="fu">travis_retry curl -L https:</span><span class="at">//www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'</span>
+
+<span class="fu">install:</span>
+<span class="kw">-</span> stack setup
+<span class="kw">-</span> stack install pandoc
+<span class="fu">script:</span><span class="at"> make travis</span>
+<span class="fu">notifications:</span>
+  <span class="fu">email:</span>
+    <span class="fu">on_success:</span><span class="at"> always</span>
+    <span class="fu">on_failure:</span><span class="at"> always</span>
+<span class="fu">after_success:</span><span class="at"> bash .ci/update_pages.sh</span>
+<span class="fu">before_deploy:</span><span class="at"> bash .ci/build_pdf.sh</span>
+<span class="fu">deploy:</span>
+  <span class="fu">provider:</span><span class="at"> releases</span>
+  <span class="fu">file:</span><span class="at"> Vaibhav_Sagar_resume.pdf</span>
+  <span class="fu">on:</span>
+    <span class="fu">repo:</span><span class="at"> vaibhavsagar/resume</span>
+    <span class="fu">all_branches:</span><span class="at"> true</span>
+    <span class="fu">tags:</span><span class="at"> true</span>
+  <span class="fu">api_key:</span>
+    <span class="fu">secure:</span><span class="at"> gtBPUeDXL9S6h4aWyXCEhWxbtkATx2lIBmkVTcWDHMvgwQHmfo42OPq7rQWjO6g/iOlv71Q1VQMQc84ERcZjtBRSE0pb1s1Baqs2Hk7ec/JeWsEXDZmBIs/Z3V6pHb14zCs5GNYyerXDpQ97P4RG9Vjdy+rc3I1+kkuCMF7zB3k=</span>
+<span class="fu">env:</span>
+  <span class="fu">global:</span>
+<span class="fu">secure:</span><span class="at"> Bzof/7yN7HgV2eJk7FNliNx/cagIU4I113SwNJhChFyYOSy816oPrwQaCMyZuwvbcEIfLMY0K0qxtQK1MoPq7zTYiCTW3UPB2+mzTfTHPMTm5nWjZv0BmdqVoG8IJwxfo5cIV8hfKiu2ezNKcDuqgwb80mYwpTwlQPsY9gOm1Tc=</span></code></pre></div>
 <p>And if you’d like to see the process I went through to arrive at this solution, have a look at <a href="https://github.com/vaibhavsagar/resumate">the test repo</a> I used. The commit log is a fairly accurate representation of my thought process. If you’re trying something similar and you’re getting stuck, feel free to reach out and I’ll be more than happy to help.</p>
 
 <div id="disqus_thread"></div>
