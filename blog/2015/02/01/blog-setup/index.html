@@ -42,6 +42,7 @@
     
 </div>
 
+<p><em>Update: I’ve switched to Hakyll, but the instructions below should continue to work.</em></p>
 <p>When I started this blog, I was reluctant to put a continuous integration system like Travis-CI in charge of deployment because it seemed like a frivolous use of resources and so I settled for the approach outlined <a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html">here</a> which worked reasonably well. As my understanding of continuous integration and the possibilities of Travis improved, I changed my mind and decided it would be a good idea to automate this process. I also realised that automating my deployment would allow me to theoretically create or update a post using the GitHub web interface which would automatically get turned into a new post on my blog. This would allow me to use this blog from any web browser! In other words, I wanted a convoluted reimplementation of half of a CMS’s functionality.</p>
 <p>I found a very helpful <a href="http://zonca.github.io/2013/09/automatically-build-pelican-and-publish-to-github-pages.html">blog post</a> that covered most of the details I needed. Let me go through the changes I made.</p>
 <p>First off, I use Python 3 wherever possible so I simplified my <code>requirements.txt</code>:</p>
