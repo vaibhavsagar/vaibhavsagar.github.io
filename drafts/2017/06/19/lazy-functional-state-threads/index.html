@@ -42,7 +42,7 @@
     
 </div>
 
-<p>A funny thing happened when I was writing my Imperative Haskell post: after railing against Haskell’s tendency to tell you to go off and read a paper when introducing a library, I went off and read ‘Lazy Functional State Threads’ and was gobsmacked by how accessible I found it. I’d like to try and demystify it for a wider audience.</p>
+<p>A funny thing happened when I was writing my Imperative Haskell post: after railing against Haskell’s tendency to tell you to go off and read a paper when introducing a library, I did exactly that and read ‘Lazy Functional State Threads’ and found it relatively accessible. I signed myself up to present it at Papers We Love SG, and as a way of clarifying what I want to talk about, I’m going to try to summarise it here.</p>
 <p>The paper begins by admitting that we sometimes want to express strict stateful computations in a purely-functional language efficiently. We want to do this <a href="http://www.threewordphrase.com/pardonme.gif">because of reasons</a>. Some examples of algorithms we’d like to express are those based on mutable hash tables, union find, and especially input/output. However, the language we are working with is renowned for its laziness, which means the order of evaluation can be counterintuitive, and its referential transparency, which means a lack of side effects.</p>
 <p>We square this circle by leveraging the type system, which simultaneously allows most of the features we take for granted in imperative languages (multiple named variables, in-place updates) as well as being encapsulated and referentially transparent (for certain values of referentially transparent). Let’s define a ‘state transformer’ that takes an initial state as input and returns a final state. This can be represented as a value of type <code>ST s a</code> where <code>s</code> is the state type and <code>a</code> is the return type.</p>
 <!-- picture of state transformer -->
@@ -163,6 +163,43 @@ getChar <span class="fu">=</span> ccall getChar</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">mainIO ::</span> <span class="dt">IO</span> ()</code></pre></div>
 <p>and have it play a role similar to <code>main()</code> in C. In fact, IO in GHC is implemented in Haskell in precisely this manner.</p>
 <p>There follows a section with formal semantics which formalises what we’ve seen already and outlines a proof of safety. I won’t go into more detail than that.</p>
+<p>Now we come to the implementation. It is crucial that updates happen in-place, and we justify this by arguing that each combinator uses the state in a single threaded way and is strict in it, so there should be no unevaluated reads depending on some state. We achieve data hiding through the monadic interface.</p>
+<p>A useful first approximation is the definition of the well-known <code>State</code> type:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ST</span> s a <span class="fu">=</span> <span class="dt">State</span> s <span class="ot">-&gt;</span> (a, <span class="dt">State</span> s)
+
+<span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">ST</span> s) <span class="kw">where</span>
+
+return  x s <span class="fu">=</span> (x, s)
+m (<span class="fu">&gt;&gt;=</span>) k s <span class="fu">=</span> k x s' <span class="kw">where</span> (x, s') <span class="fu">=</span> m s
+
+fixST k s <span class="fu">=</span> (r, s') <span class="kw">where</span> (r, s') <span class="fu">=</span> k r s
+runST m <span class="fu">=</span> r <span class="kw">where</span> (r, s) <span class="fu">=</span> m currentState</code></pre></div>
+<p>The interesting thing to note here is the definition of <code>fixST</code>, which works regardless of the state passed to it and so is passed a placeholder value. Strictness is enforced by the use of unboxed values.</p>
+<p>This implementation lends itself to inlining and optimisation, e.g.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">do</span>
+    v1 <span class="ot">&lt;-</span> m1
+    v2 <span class="ot">&lt;-</span> m2
+    return e</code></pre></div>
+<p>can be inlined to</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">\s <span class="ot">-&gt;</span> <span class="kw">let</span> (v1, s1) <span class="fu">=</span> m1 s
+          (v2, s2) <span class="fu">=</span> m2 s1
+      <span class="kw">in</span> (e, s3)</code></pre></div>
+<p>and further optimised to</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">\s <span class="ot">-&gt;</span> <span class="kw">case</span> m1 s <span class="kw">of</span>
+        (v1, s1) <span class="ot">-&gt;</span> <span class="kw">case</span> m2 s1 <span class="kw">of</span>
+                      (v2, s2) <span class="ot">-&gt;</span> (e, s2)</code></pre></div>
+<p>What is the role of the explicit state? It preserves the ordering of operations because each step relies on the state output by the previous step, and allows us to communicate strictness when defined like</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">State</span> s <span class="fu">=</span> <span class="dt">MkState</span> (<span class="dt">State</span><span class="fu">#</span> s)</code></pre></div>
+<p>where <code>State# s</code> is the primitive type of states. <code>newVar</code> can be defined as</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">newVar init (<span class="dt">MkState</span> s<span class="fu">#</span>)
+  <span class="fu">=</span> <span class="kw">case</span> newVar<span class="fu">#</span> init s<span class="fu">#</span> <span class="kw">of</span>
+        (v, t<span class="fu">#</span>) <span class="ot">-&gt;</span> (v, <span class="dt">MkState</span> t<span class="fu">#</span>)</code></pre></div>
+<p>where <code>State# s</code> is a ‘token’ that is very important although its precise value does not matter.</p>
+<p>Arrays can be similarly implemented, except for <code>freezeArray</code> which can be optimised for the scenario where no further mutations are performed.</p>
+<p><code>IO</code> is special because the final state of the thread will be demanded: the whole purpose of using <code>IO</code> is to perform some effect on the outside world. Noting this, <code>(&gt;&gt;=)</code> can be implemented by</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">m (<span class="fu">&gt;&gt;=</span>) k s <span class="fu">=</span> <span class="kw">case</span> m s <span class="kw">of</span>
+                (r, s') <span class="ot">-&gt;</span> k r s'</code></pre></div>
+<p>replacing the earlier <code>let</code> with a <code>case</code> which is more strict.</p>
 
 <div id="disqus_thread"></div>
 <script>
