@@ -201,8 +201,8 @@ runST m <span class="fu">=</span> r <span class="kw">where</span> (r, s) <span c
                 (r, s') <span class="ot">-&gt;</span> k r s'</code></pre></div>
 <p>replacing the earlier <code>let</code> with a <code>case</code> which is more strict.</p>
 <p>We can introduce some more combinators, such as a reference equality check:</p>
-<pre><code>eqMutVar :: MutVar s a -&gt; MutVar s a -&gt; Bool
-eqMutArr :: Ix i =&gt; MutArr s i a -&gt; MutArr s i a -&gt; Bool</code></pre>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eqMutVar ::</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">MutVar</span> s a <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<span class="ot">eqMutArr ::</span> <span class="dt">Ix</span> i <span class="ot">=&gt;</span> <span class="dt">MutArr</span> s i a <span class="ot">-&gt;</span> <span class="dt">MutArr</span> s i a <span class="ot">-&gt;</span> <span class="dt">Bool</span></code></pre></div>
 <p>and we can even reintroduce laziness:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">interleaveST ::</span> <span class="dt">ST</span> s a <span class="ot">-&gt;</span> <span class="dt">ST</span> s a</code></pre></div>
 <p>by duplicating the state. This allows us to write programs like</p>
