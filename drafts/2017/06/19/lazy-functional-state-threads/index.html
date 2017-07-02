@@ -200,6 +200,26 @@ runST m <span class="fu">=</span> r <span class="kw">where</span> (r, s) <span c
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">m (<span class="fu">&gt;&gt;=</span>) k s <span class="fu">=</span> <span class="kw">case</span> m s <span class="kw">of</span>
                 (r, s') <span class="ot">-&gt;</span> k r s'</code></pre></div>
 <p>replacing the earlier <code>let</code> with a <code>case</code> which is more strict.</p>
+<p>We can introduce some more combinators, such as a reference equality check:</p>
+<pre><code>eqMutVar :: MutVar s a -&gt; MutVar s a -&gt; Bool
+eqMutArr :: Ix i =&gt; MutArr s i a -&gt; MutArr s i a -&gt; Bool</code></pre>
+<p>and we can even reintroduce laziness:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">interleaveST ::</span> <span class="dt">ST</span> s a <span class="ot">-&gt;</span> <span class="dt">ST</span> s a</code></pre></div>
+<p>by duplicating the state. This allows us to write programs like</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">readFile<span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Char</span>]
+readFile filename <span class="fu">=</span> <span class="kw">do</span>
+    f <span class="ot">&lt;-</span> openFile filename
+    readCts f
+
+<span class="ot">readCts ::</span> <span class="dt">FileDescriptor</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Char</span>]
+readCts f <span class="fu">=</span> interleaveST <span class="fu">$</span> <span class="kw">do</span>
+    c <span class="ot">&lt;-</span> readCh f
+    <span class="kw">if</span> c <span class="fu">==</span> eofChar
+        <span class="kw">then</span> return []
+        <span class="kw">else</span> <span class="kw">do</span>
+            cs <span class="ot">&lt;-</span> readCts f
+            return (c<span class="fu">:</span>cs)</code></pre></div>
+<p>but also opens the door to incorrect programs because it is the programmer’s obligation to ensure that side effects in both branches of the fork are independent.</p>
 
 <div id="disqus_thread"></div>
 <script>
