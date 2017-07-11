@@ -119,11 +119,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -205,11 +205,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -291,11 +291,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -377,11 +377,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -466,11 +466,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -556,11 +556,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -643,11 +643,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -730,11 +730,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -826,11 +826,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -912,11 +912,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -998,11 +998,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -1088,11 +1088,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -1174,11 +1174,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -1260,11 +1260,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -1346,11 +1346,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning { 
+.suggestion-warning {
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error { 
+.suggestion-error {
 font-weight: bold;
 color: red;
 }
@@ -1376,12 +1376,12 @@ callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu"
 
 <span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span>
     a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> k f'
-    
+
 <span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m a) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b
 callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">ContT</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> k b) <span class="fu">&gt;&gt;-</span> k</code></pre></div>
 <p>I love being able to interact with these definitions like this. This is really how I want to program, and I’d encourage you to try it! The notebook is <a href="https://github.com/vaibhavsagar/notebooks/blob/master/notebooks/Continuation.ipynb">here</a> for you to play with if you have IHaskell set up. IHaskell isn’t just useful for programming: I even used it to <a href="https://github.com/vaibhavsagar/notebooks/blob/master/notebooks/DiscoveringContinuationsWithTypedHoles.ipynb">write this blog post</a>!</p>
 <p>I feel like I should end with something profound about continuations, but I’ll instead link you to <a href="http://teh.id.au/posts/2017/05/10/lambdajam-slides/index.html">this presentation by Tim Humphries</a> and once again nudge you to try typed holes the next time you’re in a Haskell bind (pun very much intended).</p>
-<p>Thanks to Iain McCoy, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="https://ivanthetricourne.github.io/">Carl Factora</a> for their feedback and suggestions on this post.</p>
+<p>Thanks to <a href="https://twitter.com/imccoy">Iain McCoy</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="https://ivanthetricourne.github.io/">Carl Factora</a> for their feedback and suggestions on this post.</p>
 
 <div id="disqus_thread"></div>
 <script>
