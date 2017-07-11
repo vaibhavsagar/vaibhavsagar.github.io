@@ -110,29 +110,6 @@ p.caption {
 <p>We can also use it to solve <a href="https://en.wikipedia.org/wiki/2-satisfiability">2SAT</a>, which is the problem of determining whether boolean variables in series of constraints of the form <code>a || b</code> can be assigned T and F values such that all constraints hold. This is discussed <a href="">here</a> but boils down to encoding the constraints as nodes and edges, calculating the SCCs, and processing the output in reverse topologically sorted order. An advantage to doing it this way is that the process can stop at the first SCC that indicates unsatisfiability. I have an implementation of this <a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms2/week6/Week6.ipynb">here</a>.</p>
 <p>Discovering this algorithm got me excited about theoretical computer science and reminded me that algorithms can be fun, interesting, and an opportunity to marvel at the music of the spheres. I’m curious to know what other equally awesome algorithms are out there. Which one’s your favourite?</p>
 <p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> for the title and feedback, and <a href="https://twitter.com/imccoy">Iain McCoy</a> for suggesting <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.3876">a more functional approach</a>.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -416,29 +393,6 @@ pop  stack   <span class="fu">=</span> <span class="kw">do</span>
 <p>Before I discovered this part of Haskell, I had this perception of Haskell (and declarative programming more generally) as “imperative programming but less” from a practical perspective. I thought that although writing declarative code in Python was purely (heh) a matter of discipline, writing imperative code in Haskell required completely reconceptualising the algorithm. Thanks to <code>ST</code>, I now know that this not the case, which is a huge relief. If required, I can do a literal translation of the algorithm, and clean it up (or not) later. In fact Haskell is “imperative programming and more”, and that’s awesome!</p>
 <p>Thanks to <a href="http://blog.podsnap.com/">Peter Fraenkel</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="http://msteigerwalt.com/">Michelle Steigerwalt</a> for feedback.</p>
 <p><em>If you’d rather try to make sense of the <a href="https://github.com/vaibhavsagar/presentations/tree/master/imperative-haskell">set of disconnected files</a> that constitutes my slides for that presentation, you can do that instead, although I wouldn’t recommend it.</em></p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -1797,29 +1751,6 @@ callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu
 <p>I love being able to interact with these definitions like this. This is really how I want to program, and I’d encourage you to try it! The notebook is <a href="https://github.com/vaibhavsagar/notebooks/blob/master/notebooks/Continuation.ipynb">here</a> for you to play with if you have IHaskell set up. IHaskell isn’t just useful for programming: I even used it to <a href="https://github.com/vaibhavsagar/notebooks/blob/master/notebooks/DiscoveringContinuationsWithTypedHoles.ipynb">write this blog post</a>!</p>
 <p>I feel like I should end with something profound about continuations, but I’ll instead link you to <a href="http://teh.id.au/posts/2017/05/10/lambdajam-slides/index.html">this presentation by Tim Humphries</a> and once again nudge you to try typed holes the next time you’re in a Haskell bind (pun very much intended).</p>
 <p>Thanks to <a href="https://twitter.com/imccoy">Iain McCoy</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="https://ivanthetricourne.github.io/">Carl Factora</a> for their feedback and suggestions on this post.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -1849,29 +1780,6 @@ callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu
 <p>Both my parents <a href="http://infotech.co.id/">work in IT</a> so their hope was that I would be able to help them with some projects they were working on until I left for my batch. Instead, what I ended up doing was showing up at work and ignoring them for the rest of the day in favour of my project. This was not the best idea for my relationship with my parents, but I definitely got a lot better at Haskell. Fortunately for me my parents are incredibly supportive :).</p>
 <p>My mum celebrated her birthday in Bali, and I insisted on bringing my laptop so I could keep my Github commit streak going. This turned out to a good decision because that day the RC mailing list thread welcoming new batchlings was started. I ducked out of celebrations and spent a while agonising over the perfect introduction.</p>
 <p>Two weeks later I was in New York.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -1951,29 +1859,6 @@ main <span class="fu">=</span> <span class="kw">do</span>
 <p>To recap: we define our API as a type, our handlers, and the type we want to serve, and then we plug it all together.</p>
 <p>And we’re done! We can now <code>chmod +x KVStore.hs</code> (or whatever you called the file) and run it: <code>./KVStore.hs 8081</code>.</p>
 <p>I hope this provides a better starting point for learning Servant. If desired, the full script is available <a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d">here</a>.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -2129,29 +2014,6 @@ y <span class="fu">=</span> <span class="kw">do</span>
 <p>Okay, enough examples. As you can see, we’ve used the same interface to deal with failure, an arbitrary number of values, an extra parameter, and input/output. There are many useful monad instances in Haskell, from container types such as Set and Map to abstractions such as Writer and State, through to control flow as implemented by the Cont monad.</p>
 <p>If you can make your type conform to the typeclass, Haskell will give you a pretty general and flexible API to work with it. Even if you don’t completely understand what’s going on with a certain type, you know enough to use it based on your knowledge of the interface. As far as I’m concerned, this is the point of monads in Haskell.</p>
 <p>Thanks to <a href="http://jamesporter.me/">James Porter</a>, <a href="https://nick-platt.com/">Nick Platt</a>, and <a href="http://composition.al/">Lindsey Kuper</a> for their feedback on this post.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -2225,29 +2087,6 @@ snd   <span class="op">=</span> <span class="kw">lambda</span> p: p(false)</code
 <p>Our code is represented as bits in memory i.e. data, but our data can be represented as functions i.e. code. You might say that bits and bytes are the lowest level representation and therefore somehow more fundamental than code, but even our data is just an undistinguished pattern of 1s and 0s without some code to make sense of it. It really is turtles all the way down.</p>
 <p>There are much more comprehensive treatments of this material available online. I’m aware of <a href="http://matt.might.net/articles/js-church/">Matt Might’s</a> and <a href="http://jtauber.com/blog/2008/11/26/church_encoding_in_python/">James Tauber’s</a>.</p>
 <p>Many thanks to <a href="http://www.notesfromandy.com/">Andy Lee</a>, <a href="http://juansoto.me/">Juan Soto</a>, and <a href="http://sranso.com/">Sarah Ransohoff</a> for their excellent feedback on on this post.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -2326,29 +2165,6 @@ applyInstructions source instructions <span class="fu">=</span> execWriter <span
 applyInstructions testSource testInstructions <span class="fu">==</span> applyInstructions&#39; testSource B.empty testInstructions</code></pre></div>
 <pre><code>True</code></pre>
 <p>And there you have it, a use of Writer that has absolutely nothing to do with logging!</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -2455,29 +2271,6 @@ eval (<span class="dt">State</span> sa) s <span class="fu">=</span> fst <span cl
  <span class="fu">==</span> <span class="dv">1</span></code></pre></div>
 <p>This is my favourite thing about Haskell: the fact that it is built on abstractions that can be reasoned about in such a rigorous manner.</p>
 <p>In fact, with some inspired renaming, <a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html">you too could have invented the continuation monad</a>.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 <entry>
@@ -2502,29 +2295,6 @@ eval (<span class="dt">State</span> sa) s <span class="fu">=</span> fst <span cl
 <p>I really enjoyed giving this talk, and would happily do so again. My presentation contents are <a href="https://github.com/vaibhavsagar/git-it-going">here</a>, complete with a <code>.travis.yml</code> file which uses <code>pandoc</code> to regenerate the slides on each push. The slides themselves are <a href="http://www.vaibhavsagar.com/git-it-going">available</a> although I think they’re pretty pointless on their own. If you would like to use these materials, you are more than welcome to do so.</p>
 <p>Suggestions for improvement and pull requests are very welcome. There are a couple of things I would have liked to cover that I didn’t: <code>git commit --amend</code>, <code>git stash</code>, <code>git cherry-pick</code>, <code>git rebase</code>, and so on. The presentation is not very useful to people who want to know more about these topics, and it might be possible to add more slides and more instructions in case people are comfortable with basic <code>git</code> so I can safely skip the first couple of sections and instead spend more time talking about branching, rewriting history and different workflows.</p>
 <p>I would highly recommend giving a technical talk if you have the opportunity. If it is a topic I am familiar with, or if you’d like to run through the presentation with me then I’m more than happy to help.</p>
-
-<div id="disqus_thread"></div>
-<script>
-    /**
-     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-     */
-    /*
-    var disqus_config = function () {
-        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() {  // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-
-        s.src = 'https://vaibhavsagar.disqus.com/embed.js';
-
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 ]]></summary>
 </entry>
 
