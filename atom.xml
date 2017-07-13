@@ -21,7 +21,7 @@
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>
+        Tags: <a href="/tags/programming.html">programming</a>
     
 </div>
 
@@ -124,7 +124,7 @@ p.caption {
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/programming/index.html">programming</a>
+        Tags: <a href="/tags/haskell.html">haskell</a>, <a href="/tags/programming.html">programming</a>
     
 </div>
 
@@ -407,7 +407,7 @@ pop  stack   <span class="fu">=</span> <span class="kw">do</span>
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/monads/index.html">monads</a>
+        Tags: <a href="/tags/haskell.html">haskell</a>, <a href="/tags/programming.html">programming</a>, <a href="/tags/monads.html">monads</a>
     
 </div>
 
@@ -1765,7 +1765,7 @@ callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/misc/index.html">misc</a>, <a href="/blog/tags/RC/index.html">RC</a>
+        Tags: <a href="/tags/misc.html">misc</a>, <a href="/tags/RC.html">RC</a>
     
 </div>
 
@@ -1794,7 +1794,7 @@ callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>
+        Tags: <a href="/tags/programming.html">programming</a>, <a href="/tags/haskell.html">haskell</a>
     
 </div>
 
@@ -1873,7 +1873,7 @@ main <span class="fu">=</span> <span class="kw">do</span>
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/monads/index.html">monads</a>
+        Tags: <a href="/tags/programming.html">programming</a>, <a href="/tags/haskell.html">haskell</a>, <a href="/tags/monads.html">monads</a>
     
 </div>
 
@@ -2028,7 +2028,7 @@ y <span class="fu">=</span> <span class="kw">do</span>
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>
+        Tags: <a href="/tags/programming.html">programming</a>
     
 </div>
 
@@ -2101,7 +2101,7 @@ snd   <span class="op">=</span> <span class="kw">lambda</span> p: p(false)</code
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/monads/index.html">monads</a>
+        Tags: <a href="/tags/programming.html">programming</a>, <a href="/tags/haskell.html">haskell</a>, <a href="/tags/monads.html">monads</a>
     
 </div>
 
@@ -2179,7 +2179,7 @@ applyInstructions testSource testInstructions <span class="fu">==</span> applyIn
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/monads/index.html">monads</a>
+        Tags: <a href="/tags/programming.html">programming</a>, <a href="/tags/haskell.html">haskell</a>, <a href="/tags/monads.html">monads</a>
     
 </div>
 
@@ -2285,7 +2285,7 @@ eval (<span class="dt">State</span> sa) s <span class="fu">=</span> fst <span cl
 </div>
 <div class="info">
     
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/git/index.html">git</a>
+        Tags: <a href="/tags/programming.html">programming</a>, <a href="/tags/git.html">git</a>
     
 </div>
 
