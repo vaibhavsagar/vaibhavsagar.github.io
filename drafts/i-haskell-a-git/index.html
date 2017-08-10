@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Vaibhav Sagar - I Haskell a Git</title>
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>I Haskell a Git</h1>
+
+            <div class="info">
+    Posted on  5 August 2017
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../blog/tags/programming/">programming</a>, <a href="../../blog/tags/haskell/">haskell</a>, <a href="../../blog/tags/git/">git</a>
+    
+</div>
+
+<p>I struggled with Git for a long time, and every time I thought I had finally made sense of it, I would accidentally delete a repository or mess up a branch, causing me to question my grasp of what I was doing. I found it very difficult to form a mental model of the tool from the proliferation of seemingly endless command line flags that I had to use to achieve anything meaningful, and the cryptic errors that would inevitably result.</p>
+<p>When I finally thought I understood what was going on, I offered to give a talk on it to the local functional group, because Git is functional, right? The co-organisers explained that it wouldn’t be an interesting or useful talk, but a talk on implementing Git in Haskell would be very welcome.</p>
+<p>It turns out that understanding Git from the inside out is far, far easier than whatever I was trying to do earlier, and this blog post is my attempt to share that comfort and understanding with you.</p>
+<p>I’ve chosen to write this as an IHaskell notebook that is available <a href="https://github.com/vaibhavsagar/notebooks/tree/master/git-from-scratch">here</a>, and I’ve included a <code>default.nix</code> to make things easier if you have Nix installed. You should be able to run</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span> .
+$ <span class="ex">result/bin/ihaskell-notebook</span></code></pre></div>
+<p>to open a Jupyter notebook environment with all the dependencies you’ll need to follow along.</p>
+<p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s large, well-known, and was last updated in 2011, so the hashes here shouldn’t go out of date.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+
+<span class="fu">:!</span><span class="kw">if</span> [ <span class="fu">-</span>d solarized<span class="fu">/</span> ]; <span class="kw">then</span> rm <span class="fu">-</span>rf solarized; fi
+<span class="fu">:!</span>git clone <span class="fu">/</span>home<span class="fu">/</span>vaibhavsagar<span class="fu">/</span>repos<span class="fu">/</span>solarized
+<span class="fu">:!</span>cd solarized
+<span class="fu">:!</span>git show <span class="co">--format=raw -s</span></code></pre></div>
+<pre><code>Cloning into 'solarized'...
+done.
+
+
+
+commit e40cd4130e2a82f9b03ada1ca378b7701b1a9110
+tree ecd0e58d6832566540a30dfd4878db518d5451d0
+parent ab3c5646b41de1b6d95782371289db585ba8aa85
+author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
+committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
+
+    add tmux by @seebi!</code></pre>
+<p><code>git show</code> displays the latest commit on the current branch, <code>--format=raw</code> shows it in raw format, and the <code>-s</code> flag suppresses the diff output, which (as we’ll see later) isn’t part of the commit.</p>
+<p>The first thing we have to address is the fact that Git has two storage formats: loose objects and packfiles. Loose objects are used below a certain size threshold as an on-disk format, and packfiles are used to transfer files over the network because transferring one large file has less overhead than transferring lots of small files. Loose objects are easier to work with, so I’m going to convert the packfiles into loose objects.</p>
+<p>If you’d like to learn more about packfiles, my favourite resource is Aditya Mukerjee’s <a href="https://codewords.recurse.com/issues/three/unpacking-git-packfiles">Unpacking Git packfiles</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>mv <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>pack<span class="fu">/*</span> <span class="fu">.</span>
+<span class="fu">:!</span>cat <span class="fu">*.</span>pack <span class="fu">|</span> git unpack<span class="fu">-</span>objects
+<span class="fu">:!</span>rm <span class="fu">-</span>rf pack<span class="fu">-*</span></code></pre></div>
+<p><code>git show</code> is an example of a ‘porcelain’ command for users to interact with, as opposed to a ‘plumbing’ command that is more low-level and meant for Git itself to use under the hood. The latest commit on the current branch is known as the <code>HEAD</code> commit, and we should be able to use <code>git cat-file -p</code> to get essentially the same output as before (the <code>-p</code> flag means ‘pretty-print’).</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p <span class="dt">HEAD</span></code></pre></div>
+<pre><code>tree ecd0e58d6832566540a30dfd4878db518d5451d0
+parent ab3c5646b41de1b6d95782371289db585ba8aa85
+author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
+committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
+
+add tmux by @seebi!</code></pre>
+<p><code>HEAD</code> is in fact a file that lives at <code>.git/HEAD</code>. Let’s view its contents.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>cat <span class="fu">.</span>git<span class="fu">/</span><span class="dt">HEAD</span></code></pre></div>
+<pre><code>ref: refs/heads/master</code></pre>
+<p>This is essentially a symlink in text. <code>refs/heads/master</code> refers to <code>.git/refs/heads/master</code>. What are its contents?</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>cat <span class="fu">.</span>git<span class="fu">/</span>refs<span class="fu">/</span>heads<span class="fu">/</span>master</code></pre></div>
+<pre><code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre>
+<p>Okay, no more pointers! This is a SHA1 hash representing the commit we want. One last <code>git cat-file -p</code>…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre></div>
+<pre><code>tree ecd0e58d6832566540a30dfd4878db518d5451d0
+parent ab3c5646b41de1b6d95782371289db585ba8aa85
+author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
+committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
+
+add tmux by @seebi!</code></pre>
+<p>As expected, we get the same output as before. On to something different: <code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code> is a reference to an object stored at <code>.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110</code>. The first two characters of the hash are the directory name and the 38 remaining characters are the file name.</p>
+<p>This directory structure was chosen as a tradeoff between the number of directories and the number of objects under each directory. One approach might have been to put all objects under <code>.git/objects</code>, but then listing all the references in that directory would have gotten unwieldy quickly. Another approach would have been to use the first character of the hash as the directory name, which would lead to at most 16 directories but a still large number of possible objects in each directory. Git settled on the first two characters, which gives us at most 256 directories and a manageable number of objects in each.</p>
+<p>Let’s confirm that the file does exist, and then look at its contents.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>ls <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110
+<span class="fu">:!</span>cat <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre></div>
+<pre><code>.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110
+
+
+
+xmj1DûÛ§PÐâ/ÙZ(%ô¹´RéB®SÛ×^ ¿ÃY÷Ö¶1ÓÓèf`«zCÒB)b)='¯©
+RÌÔ»w;`I+\$µ E¬SÙ'&amp;fBÇ×ñ¹w8uûñÞ¹ÉÁëvývÓÊ¾¬{{ê&lt;ýBðì«÷nÒùtØÿ1ä?cUíz¹ÃñÛL¶ûÈO</code></pre>
+<p>Git compresses these files with zlib before storing them, and we’ll need to handle this. Fortunately there’s a tool called <code>zlib-flate</code> (part of the <code>qpdf</code> package) that we can use.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>zlib<span class="fu">-</span>flate <span class="fu">-</span>uncompress <span class="fu">&lt;</span> <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre></div>
+<pre><code>commit 248 tree ecd0e58d6832566540a30dfd4878db518d5451d0
+parent ab3c5646b41de1b6d95782371289db585ba8aa85
+author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
+committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
+
+add tmux by @seebi!</code></pre>
+<p>This is identical to the output of <code>git cat-file -p</code>, except for the <code>commit 248</code> at the beginning. That’s a header that Git uses to tell different types of objects apart, and <code>248</code> is the content length of this particular commit. There’s also a null byte after the content length that the shell is not displaying here, and this will become important when we write code to handle the header in a moment.</p>
+<p>I’m done playing with the shell for now, and I want to write some code. The first thing I’d like to do is import some libraries and define helper functions for compresssion and decompression. Haskell’s <code>zlib</code> library works with lazy bytestrings but I’d rather use strict bytestrings in the rest of my code, so I’ll define <code>compress</code> and <code>decompress</code> accordingly.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Codec.Compression.Zlib</span> <span class="kw">as</span> <span class="dt">Z</span> (compress, decompress)
+<span class="kw">import           </span><span class="dt">Data.ByteString.Lazy</span>        (fromStrict, toStrict)
+<span class="kw">import           </span><span class="dt">Data.ByteString</span>             (<span class="dt">ByteString</span>)
+<span class="kw">import qualified</span> <span class="dt">Data.ByteString</span>        <span class="kw">as</span> <span class="dt">B</span>
+
+compress,<span class="ot"> decompress ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">ByteString</span>
+compress   <span class="fu">=</span> toStrict <span class="fu">.</span> Z.compress   <span class="fu">.</span> fromStrict
+decompress <span class="fu">=</span> toStrict <span class="fu">.</span> Z.decompress <span class="fu">.</span> fromStrict</code></pre></div>
+<p>Now to recreate the <code>zlib-flate</code> output from earlier, and demonstrate the presence of that null byte in the header:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">commit <span class="ot">&lt;-</span> B.readFile <span class="st">&quot;.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110&quot;</span>
+decompress commit</code></pre></div>
+<pre><code>commit 248 tree ecd0e58d6832566540a30dfd4878db518d5451d0
+parent ab3c5646b41de1b6d95782371289db585ba8aa85
+author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
+committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
+
+add tmux by @seebi!</code></pre>
+<p>Next, I want to make sense of this content, and by ‘make sense of’ I mean ‘write a parser for’, because I think of a parser as a function that turns a sequence of bytes into values that I can work with. I also want to define serialisers (or unparsers, as I like to think of them) that take those values and turn them back into the sequence of bytes we started with.</p>
+<p>Haskell has a couple of great options for this, and I’ve decided to go with <code>attoparsec</code>. It does the right thing and accounts for a parsing failure by default, but I’m pretty confident that my parsers won’t fail, so I’ll define a helper function that gets rid of that behaviour.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import           </span><span class="dt">Data.Attoparsec.ByteString</span> (<span class="dt">Parser</span>)
+<span class="kw">import qualified</span> <span class="dt">Data.Attoparsec.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">AC</span>
+
+<span class="ot">parsed ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> a
+parsed parser <span class="fu">=</span> either error id <span class="fu">.</span> AC.parseOnly parser</code></pre></div>
+<p>Let’s write our first parser! We’ll start with a simple one for the header. We want some sequence of characters, a space, a number, and a null byte, and parser combinators make implementing this straightforward.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">parseHeader ::</span> <span class="dt">Parser</span> (<span class="dt">ByteString</span>, <span class="dt">Int</span>)
+parseHeader <span class="fu">=</span> <span class="kw">do</span>
+    objectType <span class="ot">&lt;-</span> AC.takeTill AC.isSpace
+    AC.space
+    len <span class="ot">&lt;-</span> AC.decimal
+    AC.char <span class="ch">'\NUL'</span>
+    return (objectType, len)
+
+commit <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110&quot;</span>
+
+parsed parseHeader commit</code></pre></div>
+<pre><code>(&quot;commit&quot;,248)</code></pre>
+<p>The next parser I want is one for references. The correct way to do this is to look for 40 characters that are in the range 0-9 or a-f, but I’m lazy and I’m going to just grab 40 characters instead. Rabbit hole: write a parser that only outputs valid <code>Ref</code>s.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Ref</span> <span class="fu">=</span> <span class="dt">ByteString</span>
+
+<span class="ot">parseHexRef ::</span> <span class="dt">Parser</span> <span class="dt">Ref</span>
+parseHexRef <span class="fu">=</span> AC.take <span class="dv">40</span></code></pre></div>
+<p>We now have all the smaller parsers we’ll need to plug together in order to parse a commit. We want to parse the <code>tree</code>, any number of <code>parent</code>s, an <code>author</code>, a <code>committer</code>, and a message. Why any number of parents? The initial commit of a repository won’t have any parents, and merge commits will have at least two, although there can be more (this is known as an <a href="https://www.destroyallsoftware.com/blog/2017/the-biggest-and-weirdest-commits-in-linux-kernel-git-history">octopus merge</a>).</p>
+<p>The author and committer lines consist of a user’s name, their email, the unix timestamp, and the timezone. A better parser for this would validate each of those components, but to demonstrate I’m just going to grab the whole line. Rabbit hole: write the better person+time parser.</p>
+<p>One thing I really like about parser combinators is that I can write a parser whose form imitates the content I’m trying to parse. This is purely a cute stylistic quirk, but I enjoy it.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Commit</span> <span class="fu">=</span> <span class="dt">Commit</span>
+    {<span class="ot"> commitTree      ::</span> <span class="dt">Ref</span>
+    ,<span class="ot"> commitParents   ::</span> [<span class="dt">Ref</span>]
+    ,<span class="ot"> commitAuthor    ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> commitCommitter ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> commitMessage   ::</span> <span class="dt">ByteString</span>
+    } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+parseCommit <span class="fu">=</span> <span class="kw">do</span>
+    cTree      <span class="ot">&lt;-</span>           AC.string <span class="st">&quot;tree&quot;</span>      <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> parseHexRef                   <span class="fu">&lt;*</span> AC.endOfLine
+    cParents   <span class="ot">&lt;-</span> AC.many' (AC.string <span class="st">&quot;parent&quot;</span>    <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> parseHexRef                   <span class="fu">&lt;*</span> AC.endOfLine)
+    cAuthor    <span class="ot">&lt;-</span>           AC.string <span class="st">&quot;author&quot;</span>    <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> AC.takeTill (AC.inClass <span class="st">&quot;\n&quot;</span>) <span class="fu">&lt;*</span> AC.endOfLine
+    cCommitter <span class="ot">&lt;-</span>           AC.string <span class="st">&quot;committer&quot;</span> <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> AC.takeTill (AC.inClass <span class="st">&quot;\n&quot;</span>) <span class="fu">&lt;*</span> AC.endOfLine
+    AC.endOfLine
+    cMessage   <span class="ot">&lt;-</span> AC.takeByteString
+    return <span class="fu">$</span> <span class="dt">Commit</span> cTree cParents cAuthor cCommitter cMessage
+
+parsed (parseHeader <span class="fu">*&gt;</span> parseCommit) commit</code></pre></div>
+<pre><code>Commit {commitTree = &quot;ecd0e58d6832566540a30dfd4878db518d5451d0&quot;, commitParents = [&quot;ab3c5646b41de1b6d95782371289db585ba8aa85&quot;], commitAuthor = &quot;Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700&quot;, commitCommitter = &quot;Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700&quot;, commitMessage = &quot;add tmux by @seebi!\n&quot;}</code></pre>
+<p>Now to write our first serialiser that takes values of the Commit type and turns them back into bytestrings. Again, with some formatting liberties I can make this look a lot like the content I want to output. I can quickly check the <a href="http://teh.id.au/posts/2017/06/07/round-trip-property/">roundtrip property</a> to see that both my parser and serialiser work properly.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Monoid</span> ((&lt;&gt;), mappend, mconcat)
+<span class="kw">import </span><span class="dt">Data.Byteable</span>
+
+<span class="kw">instance</span> <span class="dt">Byteable</span> <span class="dt">Commit</span> <span class="kw">where</span>
+    toBytes (<span class="dt">Commit</span> cTree cParents cAuthor cCommitter cMessage) <span class="fu">=</span> mconcat
+        [                        <span class="st">&quot;tree &quot;</span>      <span class="fu">&lt;&gt;</span> cTree      <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        , mconcat (map (\cRef <span class="ot">-&gt;</span> <span class="st">&quot;parent &quot;</span>    <span class="fu">&lt;&gt;</span> cRef       <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>) cParents)
+        ,                        <span class="st">&quot;author &quot;</span>    <span class="fu">&lt;&gt;</span> cAuthor    <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        ,                        <span class="st">&quot;committer &quot;</span> <span class="fu">&lt;&gt;</span> cCommitter <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        ,                                                      <span class="st">&quot;\n&quot;</span>
+        ,                                        cMessage
+        ]
+
+parsedCommit <span class="fu">=</span> parsed (parseHeader <span class="fu">*&gt;</span> parseCommit) commit
+(parsed parseCommit <span class="fu">.</span> toBytes <span class="fu">$</span> parsedCommit) <span class="fu">==</span> parsedCommit</code></pre></div>
+<pre><code>True</code></pre>
+<p>Let’s backtrack and also define a serialiser for our headers.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.ByteString.UTF8</span> (fromString, toString)
+
+<span class="ot">withHeader ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">ByteString</span>
+withHeader oType content <span class="fu">=</span> mconcat [oType, <span class="st">&quot; &quot;</span>, fromString <span class="fu">.</span> show <span class="fu">$</span> B.length content, <span class="st">&quot;\NUL&quot;</span>, content]
+
+withHeader <span class="st">&quot;commit&quot;</span> (toBytes parsedCommit)</code></pre></div>
+<pre><code>commit 248 tree ecd0e58d6832566540a30dfd4878db518d5451d0
+parent ab3c5646b41de1b6d95782371289db585ba8aa85
+author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
+committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
+
+add tmux by @seebi!</code></pre>
+<p>Great, it looks like that does the right thing. We’ll test it more thoroughly later.</p>
+<p>So far I’ve avoided the question of where the hashes come from. Git is a content-addressable store (CAS) and the content of our Git objects uniquely determines their hash. This is very much like a hash table, and that’s a useful way to think about Git: a hashtable on the filesystem.</p>
+<p>More specifically, the SHA1 hash of a git object before compression is used as the reference. Let me demonstrate.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Digest.Pure.SHA</span>
+
+<span class="ot">hash ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Ref</span>
+hash <span class="fu">=</span> fromString <span class="fu">.</span> showDigest <span class="fu">.</span> sha1 <span class="fu">.</span> fromStrict
+
+hash (withHeader <span class="st">&quot;commit&quot;</span> (toBytes parsedCommit))</code></pre></div>
+<pre><code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre>
+<p>This is the same hash as the one we’ve been using to get at the commit so far, which is consistent with my explanation.</p>
+<p>Now that we’re done with commits, let’s look at trees. A tree is what Git calls a directory listing. I think the tree reference <code>ecd0e58d6832566540a30dfd4878db518d5451d0</code> in the above commit is a good one to start with.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p ecd0e58d6832566540a30dfd4878db518d5451d0</code></pre></div>
+<pre><code>100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	.gitmodules
+100644 blob ec00a76061539cf774614788270214499696f871	CHANGELOG.mkd
+100644 blob f95aaf80007d225f00d3109987ee42ef2c2e0c0a	DEVELOPERS.mkd
+100644 blob ee08d7e44f15108ef5359550399dad55955b56ca	LICENSE
+100644 blob d18ee9450251ea1b9a02ebd4d6fce022df9eb5e4	README.md
+040000 tree 1981c76881c6a14e14d067a44247acd1bf6bbc3a	adobe-swatches-solarized
+040000 tree 825c732bdd3a62aeb543ca89026a26a2ee0fba26	apple-colorpalette-solarized
+040000 tree 7bab2828df5de23262a821cc48fe0ccf8bd2a9ae	emacs-colors-solarized
+040000 tree f5fe8c3e20b2577223f617683a52eac31c5c9f30	files
+040000 tree 5b60111510dbb3d8560cf58a36a20a99fc175658	gedit
+040000 tree 60c9df3d6e1994b76d72c061a02639af3d925655	gimp-palette-solarized
+040000 tree 979cf43752e4d698c7b5b47cff665142a274c133	img
+040000 tree 3ff6d431303b66cc50e45b6fabd72302f210aebc	intellij-colors-solarized
+040000 tree 8f387a531ad08f146c86e4b6007b898064ad4d7f	iterm2-colors-solarized
+040000 tree 1e37592e62c85909be4c5e5eb774f177766e8422	mutt-colors-solarized
+040000 tree 8f321f917040d903f701a2b33aeee26aed2ee544	netbeans-colors-solarized
+040000 tree 0d408465820822f6a2afccf43e9627375fedc278	osx-terminal.app-colors-solarized
+040000 tree 63dfa6c40d214f8e0f76d39f7a2283e053940a19	putty-colors-solarized
+040000 tree 453921a267d3eb855e40c7de73aee46088563f3e	qtcreator
+040000 tree 5dd6832a324187f8f521bef928891fb87cf845f6	seestyle-colors-solarized
+040000 tree 3c15973ed107e7b37d1c4885f82984658ecbdf6a	textmate-colors-solarized
+040000 tree 4db152b36a47e31a872e778c02161f537888e44b	textwrangler-bbedit-colors-solarized
+040000 tree 09b5f2f69e1596c6ff66fb187ea6bdc385845152	tmux
+040000 tree 635ebbb919fcbbaf6fe958998553bf3f5fe09210	utils
+040000 tree b87a2100b0a79424cd4b2a4e4ef03274b130a206	vim-colors-solarized
+040000 tree 8dea7190b79c05404aa6a1f0d67c5c6671d66fe1	visualstudio-colors-solarized
+040000 tree 0a531826e913a4b11823ee1be6e1b367f826006f	xchat
+040000 tree 2870bdf394a6b6b3bd10c263ffe9396a0d3d3366	xfce4-terminal
+040000 tree 5d1a212e2fd9cdc2b678e3be56cf776b2f16cfe2	xresources</code></pre>
+<p>A tree object consists of some number of tree entries, and each tree entry represents a directory/file. Tree entries mostly reference either subtrees or blobs, which are what Git calls files.</p>
+<p>The number at the beginning of each entry represents the entry permissions, and is a subset of Unix file permissions. <code>100644</code> corresponds to a blob and <code>040000</code> corresponds to a tree. Other numbers exist but are uncommon. The rest of the tree entry is the entry reference and the entry name.</p>
+<p>As before, we should be able to decompress the file and get essentially the same output as before, right?</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/d0e58d6832566540a30dfd4878db518d5451d0&quot;</span></code></pre></div>
+<pre><code>tree 1282 100644 .gitmodules �⛲��CK�)�wZ���S�100644 CHANGELOG.mkd � �`aS��taG�'I���q100644 DEVELOPERS.mkd �Z�� }&quot;_ ����B�,.
+100644 LICENSE ���O��5�P9��U�[V�100644 README.md ю�EQ�������&quot;ߞ��40000 adobe-swatches-solarized ��h�ơN�g�BG�ѿk�:40000 apple-colorpalette-solarized �\s+�:b��Cʉj&amp;���&amp;40000 emacs-colors-solarized {�((�]�2b�!�H�ϋҩ�40000 files ���&gt; �Wr#�h:R��\�040000 gedit [`۳�V�6�
+��VX40000 gimp-palette-solarized `��=n��mr�a�&amp;9�=�VU40000 img ���7R�֘ǵ�|�fQB�t�340000 intellij-colors-solarized ?��10;f�P�[o��#���40000 iterm2-colors-solarized �8zSЏl�� {��d�M40000 mutt-colors-solarized 7Y.b�Y	�L^^�t�wvn�&quot;40000 netbeans-colors-solarized �2�p@����:��j�.�D40000 osx-terminal.app-colors-solarized @�e�&quot;���&gt;�'7_��x40000 putty-colors-solarized cߦ�!O�vӟz&quot;��S�
+40000 qtcreator E9!�g��^@��s��`�V?&gt;40000 seestyle-colors-solarized ]փ*2A���!��(��|�E�40000 textmate-colors-solarized &lt;�&gt;��}H��)�e���j40000 textwrangler-bbedit-colors-solarized M�R�jG��.w�Sx��K40000 tmux 	������f�~��Å�QR40000 utils c^�����o�X��S�?_�40000 vim-colors-solarized �z! ���$�K*NN�2t�0�40000 visualstudio-colors-solarized ��q���@J����|\fq�o�40000 xchat 
+S&amp;���#���g�&amp; o40000 xfce4-terminal (p�󔦶���c��9j=3f40000 xresources ]!./��¶x�V�wk/��</code></pre>
+<p>Although this looks very much like gibberish, it is the same content as above with one big difference: instead of the 40-byte hexadecimal representation of a SHA1 hash, the 20-byte representation is used. The <code>tree &lt;length&gt;</code> header is present, as is the entry permission. Each entry name is followed by a <code>\NUL</code> to facilitate parsing.</p>
+<p>We are now able to define a parser for tree objects. Rabbit hole: the tree entries need to be sorted in a certain quirky order, and we would like to disallow duplicates. Use a different data structure and manual <code>Ord</code> definitions to ensure this.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.ByteString.Base16</span> (encode)
+
+<span class="ot">parseBinRef ::</span> <span class="dt">Parser</span> <span class="dt">Ref</span>
+parseBinRef <span class="fu">=</span> encode <span class="fu">&lt;$&gt;</span> AC.take <span class="dv">20</span>
+
+<span class="kw">data</span> <span class="dt">Tree</span> <span class="fu">=</span> <span class="dt">Tree</span> {<span class="ot"> treeEntries ::</span> [<span class="dt">TreeEntry</span>] } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="kw">data</span> <span class="dt">TreeEntry</span> <span class="fu">=</span> <span class="dt">TreeEntry</span>
+    {<span class="ot"> treeEntryPerms ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> treeEntryName  ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> treeEntryRef   ::</span> <span class="dt">Ref</span>
+    } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="ot">parseTreeEntry ::</span> <span class="dt">Parser</span> <span class="dt">TreeEntry</span>
+parseTreeEntry <span class="fu">=</span> <span class="kw">do</span>
+    perms <span class="ot">&lt;-</span> fromString <span class="fu">&lt;$&gt;</span> AC.many1' AC.digit
+    AC.space
+    name  <span class="ot">&lt;-</span> AC.takeWhile (<span class="fu">/=</span><span class="ch">'\NUL'</span>)
+    AC.char <span class="ch">'\NUL'</span>
+    ref   <span class="ot">&lt;-</span> parseBinRef
+    return <span class="fu">$</span> <span class="dt">TreeEntry</span> perms name ref
+
+<span class="ot">parseTree ::</span> <span class="dt">Parser</span> <span class="dt">Tree</span>
+parseTree <span class="fu">=</span> <span class="dt">Tree</span> <span class="fu">&lt;$&gt;</span> AC.many' parseTreeEntry
+
+tree <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/d0e58d6832566540a30dfd4878db518d5451d0&quot;</span>
+
+parsedTree <span class="fu">=</span> parsed (parseHeader <span class="fu">*&gt;</span> parseTree) tree
+parsedTree</code></pre></div>
+<pre><code>Tree {treeEntries = [TreeEntry {treeEntryPerms = &quot;100644&quot;, treeEntryName = &quot;.gitmodules&quot;, treeEntryRef = &quot;e69de29bb2d1d6434b8b29ae775ad8c2e48c5391&quot;},TreeEntry {treeEntryPerms = &quot;100644&quot;, treeEntryName = &quot;CHANGELOG.mkd&quot;, treeEntryRef = &quot;ec00a76061539cf774614788270214499696f871&quot;},TreeEntry {treeEntryPerms = &quot;100644&quot;, treeEntryName = &quot;DEVELOPERS.mkd&quot;, treeEntryRef = &quot;f95aaf80007d225f00d3109987ee42ef2c2e0c0a&quot;},TreeEntry {treeEntryPerms = &quot;100644&quot;, treeEntryName = &quot;LICENSE&quot;, treeEntryRef = &quot;ee08d7e44f15108ef5359550399dad55955b56ca&quot;},TreeEntry {treeEntryPerms = &quot;100644&quot;, treeEntryName = &quot;README.md&quot;, treeEntryRef = &quot;d18ee9450251ea1b9a02ebd4d6fce022df9eb5e4&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;adobe-swatches-solarized&quot;, treeEntryRef = &quot;1981c76881c6a14e14d067a44247acd1bf6bbc3a&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;apple-colorpalette-solarized&quot;, treeEntryRef = &quot;825c732bdd3a62aeb543ca89026a26a2ee0fba26&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;emacs-colors-solarized&quot;, treeEntryRef = &quot;7bab2828df5de23262a821cc48fe0ccf8bd2a9ae&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;files&quot;, treeEntryRef = &quot;f5fe8c3e20b2577223f617683a52eac31c5c9f30&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;gedit&quot;, treeEntryRef = &quot;5b60111510dbb3d8560cf58a36a20a99fc175658&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;gimp-palette-solarized&quot;, treeEntryRef = &quot;60c9df3d6e1994b76d72c061a02639af3d925655&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;img&quot;, treeEntryRef = &quot;979cf43752e4d698c7b5b47cff665142a274c133&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;intellij-colors-solarized&quot;, treeEntryRef = &quot;3ff6d431303b66cc50e45b6fabd72302f210aebc&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;iterm2-colors-solarized&quot;, treeEntryRef = &quot;8f387a531ad08f146c86e4b6007b898064ad4d7f&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;mutt-colors-solarized&quot;, treeEntryRef = &quot;1e37592e62c85909be4c5e5eb774f177766e8422&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;netbeans-colors-solarized&quot;, treeEntryRef = &quot;8f321f917040d903f701a2b33aeee26aed2ee544&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;osx-terminal.app-colors-solarized&quot;, treeEntryRef = &quot;0d408465820822f6a2afccf43e9627375fedc278&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;putty-colors-solarized&quot;, treeEntryRef = &quot;63dfa6c40d214f8e0f76d39f7a2283e053940a19&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;qtcreator&quot;, treeEntryRef = &quot;453921a267d3eb855e40c7de73aee46088563f3e&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;seestyle-colors-solarized&quot;, treeEntryRef = &quot;5dd6832a324187f8f521bef928891fb87cf845f6&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;textmate-colors-solarized&quot;, treeEntryRef = &quot;3c15973ed107e7b37d1c4885f82984658ecbdf6a&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;textwrangler-bbedit-colors-solarized&quot;, treeEntryRef = &quot;4db152b36a47e31a872e778c02161f537888e44b&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;tmux&quot;, treeEntryRef = &quot;09b5f2f69e1596c6ff66fb187ea6bdc385845152&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;utils&quot;, treeEntryRef = &quot;635ebbb919fcbbaf6fe958998553bf3f5fe09210&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;vim-colors-solarized&quot;, treeEntryRef = &quot;b87a2100b0a79424cd4b2a4e4ef03274b130a206&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;visualstudio-colors-solarized&quot;, treeEntryRef = &quot;8dea7190b79c05404aa6a1f0d67c5c6671d66fe1&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;xchat&quot;, treeEntryRef = &quot;0a531826e913a4b11823ee1be6e1b367f826006f&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;xfce4-terminal&quot;, treeEntryRef = &quot;2870bdf394a6b6b3bd10c263ffe9396a0d3d3366&quot;},TreeEntry {treeEntryPerms = &quot;40000&quot;, treeEntryName = &quot;xresources&quot;, treeEntryRef = &quot;5d1a212e2fd9cdc2b678e3be56cf776b2f16cfe2&quot;}]}</code></pre>
+<p>It’s similarly straightforward to define a serialiser. All we have to do is serialise the tree entries and concatenate them.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.ByteString.Base16</span> (decode)
+
+<span class="kw">instance</span> <span class="dt">Byteable</span> <span class="dt">TreeEntry</span> <span class="kw">where</span>
+    toBytes (<span class="dt">TreeEntry</span> perms name ref) <span class="fu">=</span> mconcat [perms, <span class="st">&quot; &quot;</span>, name, <span class="st">&quot;\NUL&quot;</span>, fst <span class="fu">$</span> decode ref]
+
+<span class="kw">instance</span> <span class="dt">Byteable</span> <span class="dt">Tree</span> <span class="kw">where</span>
+    toBytes (<span class="dt">Tree</span> entries) <span class="fu">=</span> mconcat (map toBytes entries)
+
+(parsed parseTree <span class="fu">.</span> toBytes <span class="fu">$</span> parsedTree) <span class="fu">==</span> parsedTree</code></pre></div>
+<pre><code>True</code></pre>
+<p>Next we move to blobs. I’m using the reference associated with <code>CHANGELOG.mkd</code> because <code>.gitmodules</code> is empty, and limiting the output to the first ten lines for now because we’ll see the whole thing later anyway.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p ec00a76061539cf774614788270214499696f871 <span class="fu">|</span> head <span class="fu">-</span>n10</code></pre></div>
+<pre><code>Solarized Changelog
+===================
+
+## Current release 1.0.0beta2
+
+1.0.0beta2
+----------
+
+### Summary</code></pre>
+<p>A blob is some bytes with a header.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">BC</span>
+blob <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/00a76061539cf774614788270214499696f871&quot;</span>
+BC.unlines <span class="fu">.</span> take <span class="dv">10</span> <span class="fu">.</span> BC.lines <span class="fu">$</span> blob</code></pre></div>
+<pre><code>blob 5549 Solarized Changelog
+===================
+
+## Current release 1.0.0beta2
+
+1.0.0beta2
+----------
+
+### Summary</code></pre>
+<p>Parsing these is easy!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Blob</span> <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot"> blobContent ::</span> <span class="dt">ByteString</span> } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="ot">parseBlob ::</span> <span class="dt">Parser</span> <span class="dt">Blob</span>
+parseBlob <span class="fu">=</span> <span class="dt">Blob</span> <span class="fu">&lt;$&gt;</span> AC.takeByteString
+
+parsedBlob <span class="fu">=</span> parsed (parseHeader <span class="fu">*&gt;</span> parseBlob) blob
+parsedBlob</code></pre></div>
+<pre><code>Blob {blobContent = &quot;Solarized Changelog\n===================\n\n## Current release 1.0.0beta2\n\n1.0.0beta2\n----------\n\n### Summary\n\nSwitch to the alternative red hue (final and only hue change), included a whole\nheap of new ports and updates to the existing Vim colorscheme. The list of all \ncurrently included ports, highlighted items are new, updates noted:\n\n#### Editors &amp; IDEs\n\n*   \\[UPDATED\\] **Vim**\n*   \\[NEW\\] ***Emacs***\n*   \\[NEW\\] ***IntelliJ IDEA***\n*   \\[NEW\\] ***NetBeans***\n*   \\[NEW\\] ***SeeStyle theme for Coda &amp; SubEthaEdit***\n*   \\[NEW\\] ***TextMate***\n*   \\[NEW\\] ***Visual Studio***\n\n#### Terminal Emulators\n\n* \\[UPDATED\\] **iTerm2 colorschemes**\n* \\[UPDATED\\] **OS X Terminal.app colors**\n* \\[UPDATED\\] **Xresources colors**\n\n#### Other Applications\n\n* \\[UPDATED\\] **Mutt mail client colorschemes**\n\n#### Palettes\n\n* \\[UPDATED\\] **Adobe Photoshop Swatches**\n* \\[UPDATED\\] **Apple Color Picker Palette**\n* \\[UPDATED\\] **Gimp Palette**\n\n\n### Critical Changes\n\nThese changes may require you to change your configuration.\n\n*   **GLOBAL : IMPROVEMENT : New red accent color value**\n    Modified red from L\\*a\\*b lightness value 45 to 50 to bring it in\n    line with the other accent colors and address bleed into dark background on \n    some displays, as well as reducing shift of red against base03 when viewed \n    with glasses (chromatic aberration). All instances of the colorscheme and \n    palettes updated to new red and avalailable for use/import without further \n    modification. Forks and ports should pull new changes and/or update ported \n    red value accordingly.  The new red:\n\n            red #dc322f\n\n*   **VIM : CHANGE : Default mode now 16 color**\n    Default terminal mode is now ***16 colors***. Most of the users of terminal \n    mode seem comfortabel and capable changing terminal colors. This is the \n    preferred method of implementing Solarized in Terminal mode. If you wish to \n    instead use the degraded 256 color palette, you may do so with the \n    following line in your .vimrc:\n\n            let g:solarized_termcolors=256\n\n    You no longer need to specify \&quot;let g:solarized_termcolors=16\&quot; as it is now \n    the default; leaving it in your .vimrc won't hurt anything, however.\n\n*   **VIM : IMPROVEMENT : New Toggle Background Plugin**\n    Added new Toggle Background plugin. Will load automatically and show up as \n    a menu item in the `Window` menu in gui vim. Automatically maps to\n    `&lt;F5&gt;` if available (won't clobber that mapping if you're using it).\n    Also available as a command `:ToggleBG`.  To manually map to\n    something other than `&lt;F5&gt;`:\n\n    To set your own mapping in your .vimrc file, simply add the following line \n    to support normal, insert and visual mode usage, changing the\n    \&quot;`&lt;F5&gt;`\&quot; value to the key or key combination you wish to use:\n\n        call togglebg#map(\&quot;&lt;F5&gt;\&quot;)\n\n    Note that you'll want to use a single function key or equivalent if you want \n    the plugin to work in all modes (normal, insert, visual).\n\n*   **VIM : IMPROVEMENT : Special &amp; Non-text items now more visible**\n    Special characters such as trailing whitespace, tabs, newlines, when \n    displayed using \&quot;:set list\&quot; can be set to one of three levels depending on \n    your needs.\n\n            let g:solarized_visibility =  \&quot;normal\&quot;|   \&quot;high\&quot; or \&quot;low\&quot;\n\n    I'll be honest: I still prefer low visibility. I like them barely there.  \n    They show up in lines that are highlighted as by the cursor line, which \n    works for me. If you are with me on this, put the following in your .vimrc:\n\n            let g:solarized_visibility =  \&quot;low\&quot;\n\n### Non Critical Changes\n\nThese changes should not impact your usage of the Solarized.\n\n*   **PALETTES : IMPROVEMENT : Colorspace tagged and untagged versions**\n    Changed default OS X color picker palatte swatches to tagged colors (sRGB) \n    and included alternate palette with untagged color swatches for advanced \n    users (v1.0.0beta1 had untagged as default).\n\n*   **VIM : BUGFIX : Better display in Terminal.app, other emulators**\n    Terminal.app and other common terminal emulators that report 8 color mode \n    had display issues due to order of synt highlighting definitions and color \n    values specified. These have been conformed and reordered in such a way \n    that there is a more graceful degrading of the Solarized color palette on \n    8 color terminals. Infact, the experience should be almost identical to gui \n    other than lack of bold typeface.\n\n*   **VIM : BUGFIX : Better distinction between status bar and split windows**\n    Status bar was previously too similar to the cursor line and window splits.  \n    This has now been changed significantly to improve the clarity of what is \n    status, cursor line and window separator.\n\n*   **VIM : STREAMLINED : Removed simultaneous gui/cterm definitions**\n*   Refactored solarized.vim to eliminate simultaneous definition of gui and \n    cterm values.\n\n*   **VIM : BUGFIX : Removed italicized front in terminal mode**\n    Removed default italicized font in terminal mode in the Solarized Vim\n    colorscheme (many terminal emulators display Vim italics as reversed type).  \n    Italics still used in GUI mode by default and can still be turned off in \n    both modes by setting a variable: `let g:solarized_italic=0`.\n\n1.0.0beta1\n----------\n\nFirst public release. Included:\n\n* Adobe Photoshop Swatches\n* Apple Color Picker Palette\n* Gimp Palette\n* iTerm2 colorschemes\n* Mutt mail client colorschemes\n* OS X Terminal.app colors\n* Vim Colorscheme\n* Xresources colors\n\n\n\n***\n\nMODIFIED: 2011 Apr 16\n&quot;}</code></pre>
+<p>As is serialising them.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Byteable</span> <span class="dt">Blob</span> <span class="kw">where</span>
+    toBytes (<span class="dt">Blob</span> content) <span class="fu">=</span> content
+
+(parsed parseBlob <span class="fu">.</span> toBytes <span class="fu">$</span> parsedBlob) <span class="fu">==</span> parsedBlob</code></pre></div>
+<pre><code>True</code></pre>
+<p>Finally we move to Git tags, which are a way to associate a name with a reference. Git has a handy <code>show-ref --tags</code> command we can use to list them:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git show<span class="fu">-</span>ref <span class="co">--tags</span></code></pre></div>
+<pre><code>31ff7f5064824d2231648119feb6dfda1a3c89f5 refs/tags/v1.0.0beta1
+a3037b428f29f0c032aeeeedb4758501bc32444d refs/tags/v1.0beta</code></pre>
+<p>There are two types of tags: lightweight tags and annotated tags. Lightweight tags are just files very much like <code>refs/heads/master</code> containing a ref, and annotated tags have a message associated with them like a commit. Only annotated tags are Git objects.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p 31ff7f5064824d2231648119feb6dfda1a3c89f5</code></pre></div>
+<pre><code>object 90581c7bfbcd279768580eec595d0ab3c094cc02
+type commit
+tag v1.0.0beta1
+tagger Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700
+
+Initial public beta release 1.0.0beta1</code></pre>
+<p>Although tags are mostly used with commits, it’s possible to tag any Git object. You can even tag another tag, although I can’t see why you might want to.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">tag <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/31/ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span>
+tag</code></pre></div>
+<pre><code>tag 182 object 90581c7bfbcd279768580eec595d0ab3c094cc02
+type commit
+tag v1.0.0beta1
+tagger Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700
+
+Initial public beta release 1.0.0beta1</code></pre>
+<p>Our parser for these is very similar to our commit parser. I’ve taken a quick break from my ‘write the worst parser possible’ strategy to make sure that our tags can only tag objects of type ‘commit’, ‘tree’, ‘blob’, or ‘tag’.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Tag</span> <span class="fu">=</span> <span class="dt">Tag</span>
+    {<span class="ot"> tagObject     ::</span> <span class="dt">Ref</span>
+    ,<span class="ot"> tagType       ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> tagTag        ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> tagTagger     ::</span> <span class="dt">ByteString</span>
+    ,<span class="ot"> tagAnnotation ::</span> <span class="dt">ByteString</span>
+    } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="ot">parseTag ::</span> <span class="dt">Parser</span> <span class="dt">Tag</span>
+parseTag <span class="fu">=</span> <span class="kw">do</span>
+    tObject     <span class="ot">&lt;-</span> AC.string <span class="st">&quot;object&quot;</span> <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> parseHexRef                                                 <span class="fu">&lt;*</span> AC.endOfLine
+    tType       <span class="ot">&lt;-</span> AC.string <span class="st">&quot;type&quot;</span>   <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> AC.choice (map AC.string [<span class="st">&quot;commit&quot;</span>, <span class="st">&quot;tree&quot;</span>, <span class="st">&quot;blob&quot;</span>, <span class="st">&quot;tag&quot;</span>]) <span class="fu">&lt;*</span> AC.endOfLine
+    tTag        <span class="ot">&lt;-</span> AC.string <span class="st">&quot;tag&quot;</span>    <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> AC.takeTill (AC.inClass <span class="st">&quot;\n&quot;</span>)                               <span class="fu">&lt;*</span> AC.endOfLine
+    tTagger     <span class="ot">&lt;-</span> AC.string <span class="st">&quot;tagger&quot;</span> <span class="fu">*&gt;</span> AC.space <span class="fu">*&gt;</span> AC.takeTill (AC.inClass <span class="st">&quot;\n&quot;</span>)                               <span class="fu">&lt;*</span> AC.endOfLine
+    AC.endOfLine
+    tAnnotation <span class="ot">&lt;-</span> AC.takeByteString
+    return <span class="fu">$</span> <span class="dt">Tag</span> tObject tType tTag tTagger tAnnotation
+
+parsedTag <span class="fu">=</span> parsed (parseHeader <span class="fu">*&gt;</span> parseTag) tag
+parsedTag</code></pre></div>
+<pre><code>Tag {tagObject = &quot;90581c7bfbcd279768580eec595d0ab3c094cc02&quot;, tagType = &quot;commit&quot;, tagTag = &quot;v1.0.0beta1&quot;, tagTagger = &quot;Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700&quot;, tagAnnotation = &quot;Initial public beta release 1.0.0beta1\n&quot;}</code></pre>
+<p>Our last serialiser follows.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Byteable</span> <span class="dt">Tag</span> <span class="kw">where</span>
+    toBytes (<span class="dt">Tag</span> tObject tType tTag tTagger tAnnotation) <span class="fu">=</span> mconcat
+        [ <span class="st">&quot;object &quot;</span> <span class="fu">&lt;&gt;</span> tObject     <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        , <span class="st">&quot;type &quot;</span>   <span class="fu">&lt;&gt;</span> tType       <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        , <span class="st">&quot;tag &quot;</span>    <span class="fu">&lt;&gt;</span> tTag        <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        , <span class="st">&quot;tagger &quot;</span> <span class="fu">&lt;&gt;</span> tTagger     <span class="fu">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>
+        ,                             <span class="st">&quot;\n&quot;</span>
+        ,              tAnnotation
+        ]
+
+(parsed parseTag <span class="fu">.</span> toBytes <span class="fu">$</span> parsedTag) <span class="fu">==</span> parsedTag</code></pre></div>
+<pre><code>True</code></pre>
+<p>Okay, now to bring it all together. We can define an umbrella <code>GitObject</code> type and the associated parser, serialiser, and hasher for it.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">GitObject</span>
+    <span class="fu">=</span> <span class="dt">GitCommit</span> <span class="dt">Commit</span>
+    <span class="fu">|</span> <span class="dt">GitTree</span>   <span class="dt">Tree</span>
+    <span class="fu">|</span> <span class="dt">GitBlob</span>   <span class="dt">Blob</span>
+    <span class="fu">|</span> <span class="dt">GitTag</span>    <span class="dt">Tag</span>
+    <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="ot">parseGitObject ::</span> <span class="dt">Parser</span> <span class="dt">GitObject</span>
+parseGitObject <span class="fu">=</span> <span class="kw">do</span>
+    headerLen <span class="ot">&lt;-</span> parseHeader
+    <span class="kw">case</span> (fst headerLen) <span class="kw">of</span>
+        <span class="st">&quot;commit&quot;</span> <span class="ot">-&gt;</span> <span class="dt">GitCommit</span> <span class="fu">&lt;$&gt;</span> parseCommit
+        <span class="st">&quot;tree&quot;</span>   <span class="ot">-&gt;</span> <span class="dt">GitTree</span>   <span class="fu">&lt;$&gt;</span> parseTree
+        <span class="st">&quot;blob&quot;</span>   <span class="ot">-&gt;</span> <span class="dt">GitBlob</span>   <span class="fu">&lt;$&gt;</span> parseBlob
+        <span class="st">&quot;tag&quot;</span>    <span class="ot">-&gt;</span> <span class="dt">GitTag</span>    <span class="fu">&lt;$&gt;</span> parseTag
+        _        <span class="ot">-&gt;</span> error <span class="st">&quot;not a git object&quot;</span>
+
+<span class="kw">instance</span> <span class="dt">Byteable</span> <span class="dt">GitObject</span> <span class="kw">where</span>
+    toBytes obj <span class="fu">=</span> <span class="kw">case</span> obj <span class="kw">of</span>
+        <span class="dt">GitCommit</span> c <span class="ot">-&gt;</span> withHeader <span class="st">&quot;commit&quot;</span> (toBytes c)
+        <span class="dt">GitTree</span>   t <span class="ot">-&gt;</span> withHeader <span class="st">&quot;tree&quot;</span>   (toBytes t)
+        <span class="dt">GitBlob</span>   b <span class="ot">-&gt;</span> withHeader <span class="st">&quot;blob&quot;</span>   (toBytes b)
+        <span class="dt">GitTag</span>    t <span class="ot">-&gt;</span> withHeader <span class="st">&quot;tag&quot;</span>    (toBytes t)
+
+<span class="ot">hashObject ::</span> <span class="dt">GitObject</span> <span class="ot">-&gt;</span> <span class="dt">Ref</span>
+hashObject <span class="fu">=</span> hash <span class="fu">.</span> toBytes</code></pre></div>
+<p>Let’s do a quick test to check that our definitions work.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">hashObject <span class="fu">.</span> parsed parseGitObject <span class="fu">&lt;$&gt;</span> (decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/31/ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span>)</code></pre></div>
+<pre><code>31ff7f5064824d2231648119feb6dfda1a3c89f5</code></pre>
+<p>Excellent, although we are lacking a helper to turn a reference into a Git object filepath. Let’s define that.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">System.FilePath</span> ((&lt;/&gt;))
+
+<span class="ot">refPath ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Ref</span> <span class="ot">-&gt;</span> FilePath
+refPath gitDir ref <span class="fu">=</span> <span class="kw">let</span>
+   (dir,file) <span class="fu">=</span> splitAt <span class="dv">2</span> (toString ref)
+   <span class="kw">in</span> gitDir <span class="fu">&lt;/&gt;</span> <span class="st">&quot;objects&quot;</span> <span class="fu">&lt;/&gt;</span> dir <span class="fu">&lt;/&gt;</span> file
+
+refPath <span class="st">&quot;.git&quot;</span> <span class="st">&quot;31ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span></code></pre></div>
+<pre><code>&quot;.git/objects/31/ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</code></pre>
+<p>Now we can define a <code>readObject</code> action that takes a reference and returns a parsed Git object.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">readObject ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Ref</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">GitObject</span>
+readObject gitDir ref <span class="fu">=</span> <span class="kw">do</span>
+    <span class="kw">let</span> path <span class="fu">=</span> refPath gitDir ref
+    content <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile path
+    return <span class="fu">$</span> parsed parseGitObject content
+
+readObject <span class="st">&quot;.git&quot;</span> <span class="st">&quot;31ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span></code></pre></div>
+<pre><code>GitTag (Tag {tagObject = &quot;90581c7bfbcd279768580eec595d0ab3c094cc02&quot;, tagType = &quot;commit&quot;, tagTag = &quot;v1.0.0beta1&quot;, tagTagger = &quot;Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700&quot;, tagAnnotation = &quot;Initial public beta release 1.0.0beta1\n&quot;})</code></pre>
+<p>Next we define a <code>writeObject</code> action that takes a Git object and stores it under the right path if it doesn’t already exist. The “doesn’t already exist” bit is the magic of Git: we can safely assume that an object with the same hash is the same object. Every time a tree or blob changes, only the changed objects are written to the disk, and this is how Git manages to be space-efficient.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">System.Directory</span> (doesPathExist, createDirectoryIfMissing)
+<span class="kw">import </span><span class="dt">System.FilePath</span>  (takeDirectory)
+<span class="kw">import </span><span class="dt">Control.Monad</span>    (when, unless)
+
+<span class="ot">writeObject ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">GitObject</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Ref</span>
+writeObject gitDir object <span class="fu">=</span> <span class="kw">do</span>
+    <span class="kw">let</span> ref  <span class="fu">=</span>  hashObject object
+    <span class="kw">let</span> path <span class="fu">=</span>  refPath gitDir ref
+    exists   <span class="ot">&lt;-</span> doesPathExist path
+    unless exists <span class="fu">$</span> <span class="kw">do</span>
+        <span class="kw">let</span> dir <span class="fu">=</span> takeDirectory path
+        createDirectoryIfMissing <span class="dt">True</span> dir
+        B.writeFile path <span class="fu">.</span> compress <span class="fu">$</span> toBytes object
+    return ref</code></pre></div>
+<p>Okay, time for the grand finale! We’re going to read and then write every object in this Git repository. If we’ve implemented everything correctly, the number of references before and after will be unchanged, and they will be the same references.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>    (forM)
+<span class="kw">import </span><span class="dt">System.Directory</span> (listDirectory)
+
+allRefs <span class="ot">&lt;-</span> <span class="kw">do</span>
+    prefixes <span class="ot">&lt;-</span> filter (\d <span class="ot">-&gt;</span> length d <span class="fu">==</span> <span class="dv">2</span>) <span class="fu">&lt;$&gt;</span> listDirectory <span class="st">&quot;.git/objects/&quot;</span>
+    concat <span class="fu">&lt;$&gt;</span> forM prefixes (\p <span class="ot">-&gt;</span>
+        map (fromString <span class="fu">.</span> (p<span class="fu">++</span>)) <span class="fu">&lt;$&gt;</span> listDirectory (<span class="st">&quot;.git/objects&quot;</span> <span class="fu">&lt;/&gt;</span> p))
+
+print <span class="fu">$</span> length allRefs
+
+test <span class="ot">&lt;-</span> forM allRefs <span class="fu">$</span> \ref <span class="ot">-&gt;</span> <span class="kw">do</span>
+    obj  <span class="ot">&lt;-</span> readObject  <span class="st">&quot;.git&quot;</span> ref
+    ref' <span class="ot">&lt;-</span> writeObject <span class="st">&quot;.git&quot;</span> obj
+    return <span class="fu">$</span> ref <span class="fu">==</span> ref'
+
+and test
+
+allRefs' <span class="ot">&lt;-</span> <span class="kw">do</span>
+    prefixes <span class="ot">&lt;-</span> filter (\d <span class="ot">-&gt;</span> length d <span class="fu">==</span> <span class="dv">2</span>) <span class="fu">&lt;$&gt;</span> listDirectory <span class="st">&quot;.git/objects/&quot;</span>
+    concat <span class="fu">&lt;$&gt;</span> forM prefixes (\p <span class="ot">-&gt;</span>
+        map (fromString <span class="fu">.</span> (p<span class="fu">++</span>)) <span class="fu">&lt;$&gt;</span> listDirectory (<span class="st">&quot;.git/objects&quot;</span> <span class="fu">&lt;/&gt;</span> p))
+
+print <span class="fu">$</span> length allRefs'
+
+allRefs <span class="fu">==</span> allRefs'</code></pre></div>
+<pre><code>2186
+
+
+
+True
+
+
+
+2186
+
+
+
+True</code></pre>
+<p>And that’s essentially all there is to Git! I’ve skipped over most of the additional quirks, features, and optimisations but I hope I’ve established that even with the relatively small amount of code above you can implement a working and usable Git API.</p>
+<p>You’ll notice that one thing I haven’t mentioned at all is diffing or merging. That’s because Git doesn’t store diffs! They are computed on the fly when you ask for them. The packfile format does do diffing as a space optimisation, but I think it’s important to point out that you can have a perfectly cromulent implementation without them because that is what surprised me the most when I learned this for the first time.</p>
+<p>What can you do with this power? You can…</p>
+<ul>
+<li>Craft your own repositories!</li>
+<li>Run analytics on your commit graph when <code>git log</code> won’t cut it!</li>
+<li>Write a web API for your repository!</li>
+<li>Use Git as the backend of your application!</li>
+<li>Never be confused by what Git is doing ever again!</li>
+</ul>
+<p>The possibilities are endless!</p>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
+</html>
