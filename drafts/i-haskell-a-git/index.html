@@ -49,11 +49,12 @@
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span> .
 $ <span class="ex">result/bin/ihaskell-notebook</span></code></pre></div>
 <p>to open a Jupyter notebook environment with all the dependencies you’ll need to follow along.</p>
+<p>GHCi has a handy Vim-inspired feature where a command prefixed with <code>:!</code> is run in the shell, and IHaskell supports this as well, so I’ll be using that heavily to keep everything self-contained.</p>
 <p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s large, well-known, and was last updated in 2011, so the hashes here shouldn’t go out of date.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 
 <span class="fu">:!</span><span class="kw">if</span> [ <span class="fu">-</span>d solarized<span class="fu">/</span> ]; <span class="kw">then</span> rm <span class="fu">-</span>rf solarized; fi
-<span class="fu">:!</span>git clone <span class="fu">/</span>home<span class="fu">/</span>vaibhavsagar<span class="fu">/</span>repos<span class="fu">/</span>solarized
+<span class="fu">:!</span>git clone https<span class="fu">://</span>github<span class="fu">.</span>com<span class="fu">/</span>altercation<span class="fu">/</span>solarized
 <span class="fu">:!</span>cd solarized
 <span class="fu">:!</span>git show <span class="co">--format=raw -s</span></code></pre></div>
 <pre><code>Cloning into 'solarized'...
@@ -74,6 +75,7 @@ committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>mv <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>pack<span class="fu">/*</span> <span class="fu">.</span>
 <span class="fu">:!</span>cat <span class="fu">*.</span>pack <span class="fu">|</span> git unpack<span class="fu">-</span>objects
 <span class="fu">:!</span>rm <span class="fu">-</span>rf pack<span class="fu">-*</span></code></pre></div>
+<p>Okay, the packfiles are gone and there are only loose objects now.</p>
 <p><code>git show</code> is an example of a ‘porcelain’ command for users to interact with, as opposed to a ‘plumbing’ command that is more low-level and meant for Git itself to use under the hood. The latest commit on the current branch is known as the <code>HEAD</code> commit, and we should be able to use <code>git cat-file -p</code> to get essentially the same output as before (the <code>-p</code> flag means ‘pretty-print’).</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p <span class="dt">HEAD</span></code></pre></div>
 <pre><code>tree ecd0e58d6832566540a30dfd4878db518d5451d0
@@ -96,8 +98,8 @@ author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
 committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 
 add tmux by @seebi!</code></pre>
-<p>As expected, we get the same output as before. On to something different: <code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code> is a reference to an object stored at <code>.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110</code>. The first two characters of the hash are the directory name and the 38 remaining characters are the file name.</p>
-<p>This directory structure was chosen as a tradeoff between the number of directories and the number of objects under each directory. One approach might have been to put all objects under <code>.git/objects</code>, but then listing all the references in that directory would have gotten unwieldy quickly. Another approach would have been to use the first character of the hash as the directory name, which would lead to at most 16 directories but a still large number of possible objects in each directory. Git settled on the first two characters, which gives us at most 256 directories and a manageable number of objects in each.</p>
+<p>As expected, we get the same output as before. On to something different: <code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code> is a reference to an object stored at <code>.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110</code>. The first two characters of the hash are the directory name and the 38 remaining characters are the file name underneath that directory.</p>
+<p>This unusual directory structure was chosen as a tradeoff between the number of directories under <code>.git/objects</code> and the number of files under each of those directories. One approach might have been to use 40-character file names and put all objects under <code>.git/objects</code>, but then listing all the references in that directory would have gotten unwieldy quickly. Another approach would have been to use the first character of the hash as the directory name, which would lead to at most 16 directories under <code>.git/objects</code>. Git settled on the first two characters, which gives us at most 256 directories.</p>
 <p>Let’s confirm that the file does exist, and then look at its contents.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>ls <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110
 <span class="fu">:!</span>cat <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre></div>
@@ -127,13 +129,8 @@ compress   <span class="fu">=</span> toStrict <span class="fu">.</span> Z.compre
 decompress <span class="fu">=</span> toStrict <span class="fu">.</span> Z.decompress <span class="fu">.</span> fromStrict</code></pre></div>
 <p>Now to recreate the <code>zlib-flate</code> output from earlier, and demonstrate the presence of that null byte in the header:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">commit <span class="ot">&lt;-</span> B.readFile <span class="st">&quot;.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110&quot;</span>
-decompress commit</code></pre></div>
-<pre><code>commit 248 tree ecd0e58d6832566540a30dfd4878db518d5451d0
-parent ab3c5646b41de1b6d95782371289db585ba8aa85
-author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
-committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
-
-add tmux by @seebi!</code></pre>
+print <span class="fu">$</span> decompress commit</code></pre></div>
+<pre><code>&quot;commit 248\NULtree ecd0e58d6832566540a30dfd4878db518d5451d0\nparent ab3c5646b41de1b6d95782371289db585ba8aa85\nauthor Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700\ncommitter Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700\n\nadd tmux by @seebi!\n&quot;</code></pre>
 <p>Next, I want to make sense of this content, and by ‘make sense of’ I mean ‘write a parser for’, because I think of a parser as a function that turns a sequence of bytes into values that I can work with. I also want to define serialisers (or unparsers, as I like to think of them) that take those values and turn them back into the sequence of bytes we started with.</p>
 <p>Haskell has a couple of great options for this, and I’ve decided to go with <code>attoparsec</code>. It does the right thing and accounts for a parsing failure by default, but I’m pretty confident that my parsers won’t fail, so I’ll define a helper function that gets rid of that behaviour.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import           </span><span class="dt">Data.Attoparsec.ByteString</span> (<span class="dt">Parser</span>)
@@ -223,6 +220,7 @@ hash (withHeader <span class="st">&quot;commit&quot;</span> (toBytes parsedCommi
 <pre><code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre>
 <p>This is the same hash as the one we’ve been using to get at the commit so far, which is consistent with my explanation.</p>
 <p>Now that we’re done with commits, let’s look at trees. A tree is what Git calls a directory listing. I think the tree reference <code>ecd0e58d6832566540a30dfd4878db518d5451d0</code> in the above commit is a good one to start with.</p>
+<p>A tree object consists of some number of tree entries, and each tree entry represents a directory/file, with a reference to another Git object that stores the actual content of the directory/file.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>git cat<span class="fu">-</span>file <span class="fu">-</span>p ecd0e58d6832566540a30dfd4878db518d5451d0</code></pre></div>
 <pre><code>100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	.gitmodules
 100644 blob ec00a76061539cf774614788270214499696f871	CHANGELOG.mkd
@@ -253,15 +251,11 @@ hash (withHeader <span class="st">&quot;commit&quot;</span> (toBytes parsedCommi
 040000 tree 0a531826e913a4b11823ee1be6e1b367f826006f	xchat
 040000 tree 2870bdf394a6b6b3bd10c263ffe9396a0d3d3366	xfce4-terminal
 040000 tree 5d1a212e2fd9cdc2b678e3be56cf776b2f16cfe2	xresources</code></pre>
-<p>A tree object consists of some number of tree entries, and each tree entry represents a directory/file. Tree entries mostly reference either subtrees or blobs, which are what Git calls files.</p>
-<p>The number at the beginning of each entry represents the entry permissions, and is a subset of Unix file permissions. <code>100644</code> corresponds to a blob and <code>040000</code> corresponds to a tree. Other numbers exist but are uncommon. The rest of the tree entry is the entry reference and the entry name.</p>
+<p>The number at the beginning of each entry represents the entry permissions, and is a subset of Unix file permissions. <code>100644</code> corresponds to a blob, which is the Git object corresponding to a file, and <code>040000</code> corresponds to a tree. Other numbers exist but are uncommon. The rest of the tree entry is the entry reference and the entry name.</p>
 <p>As before, we should be able to decompress the file and get essentially the same output as before, right?</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/d0e58d6832566540a30dfd4878db518d5451d0&quot;</span></code></pre></div>
-<pre><code>tree 1282 100644 .gitmodules �⛲��CK�)�wZ���S�100644 CHANGELOG.mkd � �`aS��taG�'I���q100644 DEVELOPERS.mkd �Z�� }&quot;_ ����B�,.
-100644 LICENSE ���O��5�P9��U�[V�100644 README.md ю�EQ�������&quot;ߞ��40000 adobe-swatches-solarized ��h�ơN�g�BG�ѿk�:40000 apple-colorpalette-solarized �\s+�:b��Cʉj&amp;���&amp;40000 emacs-colors-solarized {�((�]�2b�!�H�ϋҩ�40000 files ���&gt; �Wr#�h:R��\�040000 gedit [`۳�V�6�
-��VX40000 gimp-palette-solarized `��=n��mr�a�&amp;9�=�VU40000 img ���7R�֘ǵ�|�fQB�t�340000 intellij-colors-solarized ?��10;f�P�[o��#���40000 iterm2-colors-solarized �8zSЏl�� {��d�M40000 mutt-colors-solarized 7Y.b�Y	�L^^�t�wvn�&quot;40000 netbeans-colors-solarized �2�p@����:��j�.�D40000 osx-terminal.app-colors-solarized @�e�&quot;���&gt;�'7_��x40000 putty-colors-solarized cߦ�!O�vӟz&quot;��S�
-40000 qtcreator E9!�g��^@��s��`�V?&gt;40000 seestyle-colors-solarized ]փ*2A���!��(��|�E�40000 textmate-colors-solarized &lt;�&gt;��}H��)�e���j40000 textwrangler-bbedit-colors-solarized M�R�jG��.w�Sx��K40000 tmux 	������f�~��Å�QR40000 utils c^�����o�X��S�?_�40000 vim-colors-solarized �z! ���$�K*NN�2t�0�40000 visualstudio-colors-solarized ��q���@J����|\fq�o�40000 xchat 
-S&amp;���#���g�&amp; o40000 xfce4-terminal (p�󔦶���c��9j=3f40000 xresources ]!./��¶x�V�wk/��</code></pre>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">tree <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/d0e58d6832566540a30dfd4878db518d5451d0&quot;</span>
+print tree</code></pre></div>
+<pre><code>&quot;tree 1282\NUL100644 .gitmodules\NUL\230\157\226\155\178\209\214CK\139)\174wZ\216\194\228\140S\145\&amp;100644 CHANGELOG.mkd\NUL\236\NUL\167`aS\156\247taG\136'\STX\DC4I\150\150\248q100644 DEVELOPERS.mkd\NUL\249Z\175\128\NUL}\&quot;_\NUL\211\DLE\153\135\238B\239,.\f\n100644 LICENSE\NUL\238\b\215\228O\NAK\DLE\142\245\&amp;5\149P9\157\173U\149[V\202\&amp;100644 README.md\NUL\209\142\233E\STXQ\234\ESC\154\STX\235\212\214\252\224\&quot;\223\158\181\228\&amp;40000 adobe-swatches-solarized\NUL\EM\129\199h\129\198\161N\DC4\208g\164BG\172\209\191k\188:40000 apple-colorpalette-solarized\NUL\130\\s+\221:b\174\181C\202\137\STXj&amp;\162\238\SI\186&amp;40000 emacs-colors-solarized\NUL{\171((\223]\226\&amp;2b\168!\204H\254\f\207\139\210\169\174\&amp;40000 files\NUL\245\254\140&gt; \178Wr#\246\ETBh:R\234\195\FS\\\159\&amp;040000 gedit\NUL[`\DC1\NAK\DLE\219\179\216V\f\245\138\&amp;6\162\n\153\252\ETBVX40000 gimp-palette-solarized\NUL`\201\223=n\EM\148\183mr\192a\160&amp;9\175=\146VU40000 img\NUL\151\156\244\&amp;7R\228\214\152\199\181\180|\255fQB\162t\193\&amp;340000 intellij-colors-solarized\NUL?\246\212\&amp;10;f\204P\228[o\171\215#\STX\242\DLE\174\188\&amp;40000 iterm2-colors-solarized\NUL\143\&amp;8zS\SUB\208\143\DC4l\134\228\182\NUL{\137\128d\173M\DEL40000 mutt-colors-solarized\NUL\RS7Y.b\200Y\t\190L^^\183t\241wvn\132\&quot;40000 netbeans-colors-solarized\NUL\143\&amp;2\US\145p@\217\ETX\247\SOH\162\179:\238\226j\237.\229D40000 osx-terminal.app-colors-solarized\NUL\r@\132e\130\b\&quot;\246\162\175\204\244&gt;\150'7_\237\194x40000 putty-colors-solarized\NULc\223\166\196\r!O\142\SIv\211\159z\&quot;\131\224S\148\n\EM40000 qtcreator\NULE9!\162g\211\235\133^@\199\222s\174\228`\136V?&gt;40000 seestyle-colors-solarized\NUL]\214\131*2A\135\248\245!\190\249(\137\US\184|\248E\246\&amp;40000 textmate-colors-solarized\NUL&lt;\NAK\151&gt;\209\a\231\179}\FSH\133\248)\132e\142\203\223j40000 textwrangler-bbedit-colors-solarized\NULM\177R\179jG\227\SUB\135.w\140\STX\SYN\USSx\136\228K40000 tmux\NUL\t\181\242\246\158\NAK\150\198\255f\251\CAN~\166\189\195\133\132QR40000 utils\NULc^\187\185\EM\252\187\175o\233X\153\133S\191?_\224\146\DLE40000 vim-colors-solarized\NUL\184z!\NUL\176\167\148$\205K*NN\240\&amp;2t\177\&amp;0\162\ACK40000 visualstudio-colors-solarized\NUL\141\234q\144\183\156\ENQ@J\166\161\240\214|\\fq\214o\225\&amp;40000 xchat\NUL\nS\CAN&amp;\233\DC3\164\177\CAN#\238\ESC\230\225\179g\248&amp;\NULo40000 xfce4-terminal\NUL(p\189\243\148\166\182\179\189\DLE\194c\255\233\&amp;9j\r=3f40000 xresources\NUL]\SUB!./\217\205\194\182x\227\190V\207wk/\SYN\207\226&quot;</code></pre>
 <p>Although this looks very much like gibberish, it is the same content as above with one big difference: instead of the 40-byte hexadecimal representation of a SHA1 hash, the 20-byte representation is used. The <code>tree &lt;length&gt;</code> header is present, as is the entry permission. Each entry name is followed by a <code>\NUL</code> to facilitate parsing.</p>
 <p>We are now able to define a parser for tree objects. Rabbit hole: the tree entries need to be sorted in a certain quirky order, and we would like to disallow duplicates. Use a different data structure and manual <code>Ord</code> definitions to ensure this.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.ByteString.Base16</span> (encode)
@@ -288,8 +282,6 @@ parseTreeEntry <span class="fu">=</span> <span class="kw">do</span>
 
 <span class="ot">parseTree ::</span> <span class="dt">Parser</span> <span class="dt">Tree</span>
 parseTree <span class="fu">=</span> <span class="dt">Tree</span> <span class="fu">&lt;$&gt;</span> AC.many' parseTreeEntry
-
-tree <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/d0e58d6832566540a30dfd4878db518d5451d0&quot;</span>
 
 parsedTree <span class="fu">=</span> parsed (parseHeader <span class="fu">*&gt;</span> parseTree) tree
 parsedTree</code></pre></div>
@@ -319,16 +311,8 @@ parsedTree</code></pre></div>
 <p>A blob is some bytes with a header.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">BC</span>
 blob <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/00a76061539cf774614788270214499696f871&quot;</span>
-BC.unlines <span class="fu">.</span> take <span class="dv">10</span> <span class="fu">.</span> BC.lines <span class="fu">$</span> blob</code></pre></div>
-<pre><code>blob 5549 Solarized Changelog
-===================
-
-## Current release 1.0.0beta2
-
-1.0.0beta2
-----------
-
-### Summary</code></pre>
+print <span class="fu">$</span> BC.unlines <span class="fu">.</span> take <span class="dv">10</span> <span class="fu">.</span> BC.lines <span class="fu">$</span> blob</code></pre></div>
+<pre><code>&quot;blob 5549\NULSolarized Changelog\n===================\n\n## Current release 1.0.0beta2\n\n1.0.0beta2\n----------\n\n### Summary\n\n&quot;</code></pre>
 <p>Parsing these is easy!</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Blob</span> <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot"> blobContent ::</span> <span class="dt">ByteString</span> } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
 
@@ -514,6 +498,7 @@ True</code></pre>
 <li>Never be confused by what Git is doing ever again!</li>
 </ul>
 <p>The possibilities are endless!</p>
+<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> for comments and feedback.</p>
 
         </div>
         <div id="footer">
