@@ -44,17 +44,17 @@
 
 <p>I struggled with Git for a long time, and every time I thought I had finally made sense of it, I would accidentally delete a repository or mess up a branch, causing me to question my grasp of what I was doing. I found it very difficult to form a mental model of the tool from the proliferation of seemingly endless command line flags that I had to use to achieve anything meaningful, and the cryptic errors that would inevitably result.</p>
 <p>When I finally thought I understood what was going on, I offered to give a talk on it to the local functional group, because Git is functional, right? The co-organisers explained that it wouldn’t be an interesting or useful talk, but a talk on implementing Git in Haskell would be very welcome.</p>
-<p>It turns out that understanding Git from the inside out is far, far easier than whatever I was trying to do earlier, and this blog post is my attempt to share that comfort and understanding with you.</p>
+<p>That was enough motivation to start working on a <a href="https://github.com/vaibhavsagar/duffer">Git library</a>, and it turns out that understanding Git from the inside out is far, far easier than whatever I was trying to do earlier. This blog post is my attempt to share that comfort and understanding with you.</p>
 <p>I’ve chosen to write this as an IHaskell notebook that is available <a href="https://github.com/vaibhavsagar/notebooks/tree/master/git-from-scratch">here</a>, and I’ve included a <code>default.nix</code> to make things easier if you have Nix installed. You should be able to run</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span> .
 $ <span class="ex">result/bin/ihaskell-notebook</span></code></pre></div>
 <p>to open a Jupyter notebook environment with all the dependencies you’ll need to follow along.</p>
 <p>GHCi has a handy Vim-inspired feature where a command prefixed with <code>:!</code> is run in the shell, and IHaskell supports this as well, so I’ll be using that heavily to keep everything self-contained.</p>
-<p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s large, well-known, and was last updated in 2011, so the hashes here shouldn’t go out of date.</p>
+<p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s large, well-known, and was last updated in 2011, so I’m confident that the hashes here won’t go out of date.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 
 <span class="fu">:!</span><span class="kw">if</span> [ <span class="fu">-</span>d solarized<span class="fu">/</span> ]; <span class="kw">then</span> rm <span class="fu">-</span>rf solarized; fi
-<span class="fu">:!</span>git clone https<span class="fu">://</span>github<span class="fu">.</span>com<span class="fu">/</span>altercation<span class="fu">/</span>solarized
+<span class="fu">:!</span>git clone <span class="fu">/</span>home<span class="fu">/</span>vaibhavsagar<span class="fu">/</span>repos<span class="fu">/</span>solarized
 <span class="fu">:!</span>cd solarized
 <span class="fu">:!</span>git show <span class="co">--format=raw -s</span></code></pre></div>
 <pre><code>Cloning into 'solarized'...
@@ -98,8 +98,8 @@ author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
 committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 
 add tmux by @seebi!</code></pre>
-<p>As expected, we get the same output as before. On to something different: <code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code> is a reference to an object stored at <code>.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110</code>. The first two characters of the hash are the directory name and the 38 remaining characters are the file name underneath that directory.</p>
-<p>This unusual directory structure was chosen as a tradeoff between the number of directories under <code>.git/objects</code> and the number of files under each of those directories. One approach might have been to use 40-character file names and put all objects under <code>.git/objects</code>, but then listing all the references in that directory would have gotten unwieldy quickly. Another approach would have been to use the first character of the hash as the directory name, which would lead to at most 16 directories under <code>.git/objects</code>. Git settled on the first two characters, which gives us at most 256 directories.</p>
+<p>As expected, we get the same output as before. On to something different: <code>e40cd4130e2a82f9b03ada1ca378b7701b1a9110</code> is a reference to an object stored at <code>.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110</code>. The first two characters of the hash are the directory name and the 38 remaining characters are the file name underneath that directory. It’s worth pointing out that all objects are stored in this format, and there’s no separation between object types or anything like that.</p>
+<p>This unusual directory structure was chosen as a tradeoff between the number of directories under <code>.git/objects</code> and the number of files under each of those directories. One approach might have been to use 40-character file names and put all objects under <code>.git/objects</code>. However, some filesystems have operations that are <code>O(n)</code> in the number of files in a directory, and working with large repositories would get very slow in this case. Another approach would have been to use the first character of the hash as the directory name, which would lead to at most 16 directories under <code>.git/objects</code>. Git settled on the first two characters, which gives us at most 256 directories.</p>
 <p>Let’s confirm that the file does exist, and then look at its contents.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>ls <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110
 <span class="fu">:!</span>cat <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre></div>
@@ -118,7 +118,7 @@ committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 
 add tmux by @seebi!</code></pre>
 <p>This is identical to the output of <code>git cat-file -p</code>, except for the <code>commit 248</code> at the beginning. That’s a header that Git uses to tell different types of objects apart, and <code>248</code> is the content length of this particular commit. There’s also a null byte after the content length that the shell is not displaying here, and this will become important when we write code to handle the header in a moment.</p>
-<p>I’m done playing with the shell for now, and I want to write some code. The first thing I’d like to do is import some libraries and define helper functions for compresssion and decompression. Haskell’s <code>zlib</code> library works with lazy bytestrings but I’d rather use strict bytestrings in the rest of my code, so I’ll define <code>compress</code> and <code>decompress</code> accordingly.</p>
+<p>I’m done playing with the shell for now, and I want to write some code. The first thing I’d like to do is import some libraries and define helper functions for compresssion and decompression. Haskell’s <code>zlib</code> library works with lazy bytestrings but I’d rather use strict bytestrings in the rest of my code because Attoparsec seems to prefer it, so I’ll define <code>compress</code> and <code>decompress</code> accordingly.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Codec.Compression.Zlib</span> <span class="kw">as</span> <span class="dt">Z</span> (compress, decompress)
 <span class="kw">import           </span><span class="dt">Data.ByteString.Lazy</span>        (fromStrict, toStrict)
 <span class="kw">import           </span><span class="dt">Data.ByteString</span>             (<span class="dt">ByteString</span>)
@@ -131,7 +131,7 @@ decompress <span class="fu">=</span> toStrict <span class="fu">.</span> Z.decomp
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">commit <span class="ot">&lt;-</span> B.readFile <span class="st">&quot;.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110&quot;</span>
 print <span class="fu">$</span> decompress commit</code></pre></div>
 <pre><code>&quot;commit 248\NULtree ecd0e58d6832566540a30dfd4878db518d5451d0\nparent ab3c5646b41de1b6d95782371289db585ba8aa85\nauthor Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700\ncommitter Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700\n\nadd tmux by @seebi!\n&quot;</code></pre>
-<p>Next, I want to make sense of this content, and by ‘make sense of’ I mean ‘write a parser for’, because I think of a parser as a function that turns a sequence of bytes into values that I can work with. I also want to define serialisers (or unparsers, as I like to think of them) that take those values and turn them back into the sequence of bytes we started with.</p>
+<p>Next, I want to make sense of this content, and by ‘make sense of’ I mean ‘write a parser for’, because a parser is a function that turns a sequence of bytes (or more generally tokens) into values that I can work with. I also want to define serialisers (or unparsers, as I like to think of them) that take those values and turn them back into the sequence of bytes we started with.</p>
 <p>Haskell has a couple of great options for this, and I’ve decided to go with <code>attoparsec</code>. It does the right thing and accounts for a parsing failure by default, but I’m pretty confident that my parsers won’t fail, so I’ll define a helper function that gets rid of that behaviour.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import           </span><span class="dt">Data.Attoparsec.ByteString</span> (<span class="dt">Parser</span>)
 <span class="kw">import qualified</span> <span class="dt">Data.Attoparsec.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">AC</span>
@@ -151,14 +151,14 @@ commit <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span
 
 parsed parseHeader commit</code></pre></div>
 <pre><code>(&quot;commit&quot;,248)</code></pre>
-<p>The next parser I want is one for references. The correct way to do this is to look for 40 characters that are in the range 0-9 or a-f, but I’m lazy and I’m going to just grab 40 characters instead. Rabbit hole: write a parser that only outputs valid <code>Ref</code>s.</p>
+<p>The next parser I want is one for references. The correct way to do this is to look for 40 characters that are in the range 0-9 or a-f, but I’m lazy and I’m going to just grab 40 characters instead. Rabbit hole: write a parser that only parses valid SHA1 hashes.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Ref</span> <span class="fu">=</span> <span class="dt">ByteString</span>
 
 <span class="ot">parseHexRef ::</span> <span class="dt">Parser</span> <span class="dt">Ref</span>
 parseHexRef <span class="fu">=</span> AC.take <span class="dv">40</span></code></pre></div>
 <p>We now have all the smaller parsers we’ll need to plug together in order to parse a commit. We want to parse the <code>tree</code>, any number of <code>parent</code>s, an <code>author</code>, a <code>committer</code>, and a message. Why any number of parents? The initial commit of a repository won’t have any parents, and merge commits will have at least two, although there can be more (this is known as an <a href="https://www.destroyallsoftware.com/blog/2017/the-biggest-and-weirdest-commits-in-linux-kernel-git-history">octopus merge</a>).</p>
 <p>The author and committer lines consist of a user’s name, their email, the unix timestamp, and the timezone. A better parser for this would validate each of those components, but to demonstrate I’m just going to grab the whole line. Rabbit hole: write the better person+time parser.</p>
-<p>One thing I really like about parser combinators is that I can write a parser whose form imitates the content I’m trying to parse. This is purely a cute stylistic quirk, but I enjoy it.</p>
+<p>One thing I really like about parser combinators is that I can write a parser whose form imitates the content I’m trying to parse. This is purely a cute stylistic quirk, but I enjoy doing it anyway.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Commit</span> <span class="fu">=</span> <span class="dt">Commit</span>
     {<span class="ot"> commitTree      ::</span> <span class="dt">Ref</span>
     ,<span class="ot"> commitParents   ::</span> [<span class="dt">Ref</span>]
@@ -210,7 +210,7 @@ committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 add tmux by @seebi!</code></pre>
 <p>Great, it looks like that does the right thing. We’ll test it more thoroughly later.</p>
 <p>So far I’ve avoided the question of where the hashes come from. Git is a content-addressable store (CAS) and the content of our Git objects uniquely determines their hash. This is very much like a hash table, and that’s a useful way to think about Git: a hashtable on the filesystem.</p>
-<p>More specifically, the SHA1 hash of a git object before compression is used as the reference. Let me demonstrate.</p>
+<p>More specifically, the SHA1 hash of a Git object before compression is used as the reference. Let me demonstrate.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Digest.Pure.SHA</span>
 
 <span class="ot">hash ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Ref</span>
@@ -489,16 +489,17 @@ True
 True</code></pre>
 <p>And that’s essentially all there is to Git! I’ve skipped over most of the additional quirks, features, and optimisations but I hope I’ve established that even with the relatively small amount of code above you can implement a working and usable Git API.</p>
 <p>You’ll notice that one thing I haven’t mentioned at all is diffing or merging. That’s because Git doesn’t store diffs! They are computed on the fly when you ask for them. The packfile format does do diffing as a space optimisation, but I think it’s important to point out that you can have a perfectly cromulent implementation without them because that is what surprised me the most when I learned this for the first time.</p>
-<p>What can you do with this power? You can…</p>
+<p>A good mental model of Git empowered me to use it better. I’d heard that binary files and Git don’t go well together, but I only understood why recently: Git stores every version of every file, and binary files don’t compress very well (unlike text files), so they take up huge amounts of space. I’d also read about <a href="https://github.com/CocoaPods/CocoaPods/issues/4989#issuecomment-193772935">CocoaPods causing issues for GitHub</a>, and now I know that this is because the tree objects representing the <code>Specs</code> directory were very large and constantly getting updated, leading to a lot of stress on GitHub’s servers.</p>
+<p>What else can you do with this power? You can…</p>
 <ul>
-<li>Craft your own repositories!</li>
+<li><a href="https://github.com/vaibhavsagar/git-internals-workshop">Craft your own repositories</a></li>
 <li>Run analytics on your commit graph when <code>git log</code> won’t cut it!</li>
-<li>Write a web API for your repository!</li>
-<li>Use Git as the backend of your application!</li>
-<li>Never be confused by what Git is doing ever again!</li>
+<li><a href="https://github.com/vaibhavsagar/suppandi">Write a web API for your repository!</a></li>
+<li><a href="https://github.com/mirage/irmin">Use Git as the backend of your application and get diffing/merging for free!</a></li>
 </ul>
 <p>The possibilities are endless!</p>
-<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> for comments and feedback.</p>
+<p>If you’d like to learn more, you’re in luck! writing on this topic is plentiful and of extremely high quality. I started with the Git Book’s <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">chapter on Git Internals</a> and referred frequently to Vincent Hanquez’s <a href="https://github.com/vincenthz/hs-git/">hs-git</a> and Stefan Saasen’s <a href="http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/">overwhelmingly thorough article</a> that implements enough of Git to do a <code>git clone</code>(!). Other resources include Mary Rose Cook’s excellent <a href="https://maryrosecook.com/blog/post/git-from-the-inside-out">Git from the inside out</a> and <a href="http://gitlet.maryrosecook.com/docs/gitlet.html">Gitlet</a> as well as John Wiegley’s <a href="https://jwiegley.github.io/git-from-the-bottom-up/">Git from the Bottom Up</a>. If nothing else, I hope the sheer proliferation of Git innards writing is enough to convince you that this is a useful and rewarding approach to learning about it.</p>
+<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, <a href="https://fineshambles.com/">Iain McCoy</a>, and <a href="http://krebsco.de/">Tomislav Viljetic</a> for comments, clarification, and suggestions.</p>
 
         </div>
         <div id="footer">
