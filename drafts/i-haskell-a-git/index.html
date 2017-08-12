@@ -123,7 +123,7 @@ committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 
 add tmux by @seebi!</code></pre>
 <p>This is identical to the output of <code>git cat-file -p</code>, except for the <code>commit 248</code> at the beginning. That’s a header that Git uses to tell different types of objects apart, and <code>248</code> is the content length of this particular commit. There’s also a null byte after the content length that the shell is not displaying here, and this will become important when we write code to handle the header in a moment.</p>
-<p>I’m done playing with the shell for now, and I want to write some code. The first thing I’d like to do is import some libraries and define helper functions for compresssion and decompression. Haskell’s <code>zlib</code> library works with lazy bytestrings but I’d rather use strict bytestrings in the rest of my code because Attoparsec seems to prefer it for my use case and I don’t want to keep converting back and forth, so I’ll define <code>compress</code> and <code>decompress</code> accordingly.</p>
+<p>I’m done playing with the shell for now, and I want to write some code. The first thing I’d like to do is import some libraries and define helper functions for compresssion and decompression. Haskell’s <code>zlib</code> library works with lazy bytestrings but I use strict bytestrings in the rest of this code and I don’t want to keep converting back and forth, so I’ll define <code>compress</code> and <code>decompress</code> accordingly.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Codec.Compression.Zlib</span> <span class="kw">as</span> <span class="dt">Z</span> (compress, decompress)
 <span class="kw">import           </span><span class="dt">Data.ByteString.Lazy</span>        (fromStrict, toStrict)
 <span class="kw">import           </span><span class="dt">Data.ByteString</span>             (<span class="dt">ByteString</span>)
@@ -136,8 +136,8 @@ decompress <span class="fu">=</span> toStrict <span class="fu">.</span> Z.decomp
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">commit <span class="ot">&lt;-</span> B.readFile <span class="st">&quot;.git/objects/e4/0cd4130e2a82f9b03ada1ca378b7701b1a9110&quot;</span>
 print <span class="fu">$</span> decompress commit</code></pre></div>
 <pre><code>&quot;commit 248\NULtree ecd0e58d6832566540a30dfd4878db518d5451d0\nparent ab3c5646b41de1b6d95782371289db585ba8aa85\nauthor Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700\ncommitter Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700\n\nadd tmux by @seebi!\n&quot;</code></pre>
-<p>Next, I want to make sense of this content, and by ‘make sense of’ I mean ‘write a parser for’, because a parser is a function that turns a sequence of bytes (or more generally tokens) into values that I can work with. I also want to define serialisers (or unparsers, as I like to think of them) that take those values and turn them back into the sequence of bytes we started with.</p>
-<p>Haskell has a couple of great options for this, and I’ve decided to go with <code>attoparsec</code>. It does the right thing and accounts for a parsing failure by default, but I’m pretty confident that my parsers won’t fail, so I’ll define a helper function that gets rid of that behaviour.</p>
+<p>Next, I want to make sense of this content by parsing it. I’ll write parsers that take a sequence of bytes and produce values I can work with. I also want to define serialisers (or unparsers, as I like to think of them) that take those values and turn them back into the sequence of bytes we started with.</p>
+<p>Haskell has a couple of great options for this, and I’ve decided to go with <code>attoparsec</code>. It does the right thing and accounts for a parsing failure by default instead of blowing up with a runtime error, but I’m pretty confident that my parsers won’t fail so I’ll define a helper function that gets rid of that behaviour.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import           </span><span class="dt">Data.Attoparsec.ByteString</span> (<span class="dt">Parser</span>)
 <span class="kw">import qualified</span> <span class="dt">Data.Attoparsec.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">AC</span>
 
@@ -318,7 +318,7 @@ parsedTree</code></pre></div>
 blob <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/ec/00a76061539cf774614788270214499696f871&quot;</span>
 print <span class="fu">$</span> BC.unlines <span class="fu">.</span> take <span class="dv">10</span> <span class="fu">.</span> BC.lines <span class="fu">$</span> blob</code></pre></div>
 <pre><code>&quot;blob 5549\NULSolarized Changelog\n===================\n\n## Current release 1.0.0beta2\n\n1.0.0beta2\n----------\n\n### Summary\n\n&quot;</code></pre>
-<p>Parsing these is easy!</p>
+<p>Parsing blobs is easy!</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Blob</span> <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot"> blobContent ::</span> <span class="dt">ByteString</span> } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
 
 <span class="ot">parseBlob ::</span> <span class="dt">Parser</span> <span class="dt">Blob</span>
@@ -499,7 +499,7 @@ True</code></pre>
 </ul>
 <p>The possibilities are endless!</p>
 <p>If you’d like to learn more, you’re in luck! writing on this topic is plentiful and of extremely high quality. I started with the Git Book’s <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">chapter on Git Internals</a> and referred frequently to Vincent Hanquez’s <a href="https://github.com/vincenthz/hs-git/">hs-git</a> and Stefan Saasen’s <a href="http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/">overwhelmingly thorough article</a> that implements enough of Git to do a <code>git clone</code> (!). Other resources include Mary Rose Cook’s excellent <a href="https://maryrosecook.com/blog/post/git-from-the-inside-out">Git from the inside out</a> and <a href="http://gitlet.maryrosecook.com/docs/gitlet.html">Gitlet</a> as well as John Wiegley’s <a href="https://jwiegley.github.io/git-from-the-bottom-up/">Git from the Bottom Up</a>. If nothing else, I hope the sheer proliferation of Git innards writing is enough to convince you that this is a useful and rewarding approach to learning about it.</p>
-<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, <a href="https://fineshambles.com/">Iain McCoy</a>, <a href="https://jaseemabid.github.io/">Jaseem Abid</a>, <a href="http://teh.id.au/">Tim Humphries</a>, and <a href="http://krebsco.de/">Tomislav Viljetic</a> for comments, clarification, and suggestions.</p>
+<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, <a href="https://fineshambles.com/">Iain McCoy</a>, <a href="https://jaseemabid.github.io/">Jaseem Abid</a>, <a href="https://jship.github.io/">Jason Shipman</a>, <a href="http://teh.id.au/">Tim Humphries</a>, and <a href="http://krebsco.de/">Tomislav Viljetic</a> for comments, clarification, and suggestions.</p>
 
         </div>
         <div id="footer">
