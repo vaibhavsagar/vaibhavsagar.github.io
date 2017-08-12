@@ -50,10 +50,13 @@
 $ <span class="ex">result/bin/ihaskell-notebook</span></code></pre></div>
 <p>to open a Jupyter notebook environment with all the dependencies you’ll need to follow along.</p>
 <p>GHCi has a handy Vim-inspired feature where a command prefixed with <code>:!</code> is run in the shell, and IHaskell supports this as well, so I’ll be using that heavily to keep everything self-contained.</p>
-<p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s large, well-known, and was last updated in 2011, so I’m confident that the hashes here won’t go out of date.</p>
+<p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s nontrivial, well-known, and was last updated in 2011, so I’m confident that the hashes here won’t go out of date.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 
+<span class="co">-- Start with a clean slate.</span>
 <span class="fu">:!</span><span class="kw">if</span> [ <span class="fu">-</span>d solarized<span class="fu">/</span> ]; <span class="kw">then</span> rm <span class="fu">-</span>rf solarized; fi
+
+<span class="co">-- If you end up rerunning this cell often, I would recommend cloning the solarized repo elsewhere and using `/path/to/local/copy` below</span>
 <span class="fu">:!</span>git clone https<span class="fu">://</span>github<span class="fu">.</span>com<span class="fu">/</span>altercation<span class="fu">/</span>solarized
 <span class="fu">:!</span>cd solarized
 <span class="fu">:!</span>git show <span class="co">--format=raw -s</span></code></pre></div>
@@ -70,10 +73,14 @@ committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
 
     add tmux by @seebi!</code></pre>
 <p><code>git show</code> displays the latest commit on the current branch, <code>--format=raw</code> shows it in raw format, and the <code>-s</code> flag suppresses the diff output, which (as we’ll see later) isn’t part of the commit.</p>
-<p>The first thing we have to address is the fact that Git has two storage formats: loose objects and packfiles. Loose objects are used below a certain size threshold as an on-disk format, and packfiles are used to transfer files over the network because transferring one large file has less overhead than transferring lots of small files. Loose objects are easier to work with, so I’m going to convert the packfiles into loose objects.</p>
+<p>The first thing we have to address is the fact that Git has two storage formats: loose objects and packfiles. In the loose object format, each Git object is stored in its own file under the <code>.git/objects</code> directory. In the packfile format, many Git objects are stored in a file under the <code>.git/objects/pack</code> directory with an associated pack index to make lookups feasible.</p>
+<p>Loose objects are used below a certain size threshold as an on-disk format, and packfiles are used as a space optimisation and to transfer files over the network because transferring one large file has less overhead than transferring lots of small files. Loose objects are easier to work with, so I’m going to convert the packfiles into loose objects.</p>
 <p>If you’d like to learn more about packfiles, my favourite resource is Aditya Mukerjee’s <a href="https://codewords.recurse.com/issues/three/unpacking-git-packfiles">Unpacking Git packfiles</a>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>mv <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>pack<span class="fu">/*</span> <span class="fu">.</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- `git unpack-objects` doesn't do any unpacking if the objects already exist in the repository</span>
+<span class="fu">:!</span>mv <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>pack<span class="fu">/*</span> <span class="fu">.</span>
+<span class="co">-- Stream the packfiles to `git unpack-objects`, which splits them into individual objects and stores them appropriately</span>
 <span class="fu">:!</span>cat <span class="fu">*.</span>pack <span class="fu">|</span> git unpack<span class="fu">-</span>objects
+<span class="co">-- We don't need the packfiles any more</span>
 <span class="fu">:!</span>rm <span class="fu">-</span>rf pack<span class="fu">-*</span></code></pre></div>
 <p>Okay, the packfiles are gone and there are only loose objects now.</p>
 <p><code>git show</code> is an example of a ‘porcelain’ command for users to interact with, as opposed to a ‘plumbing’ command that is more low-level and meant for Git itself to use under the hood. The latest commit on the current branch is known as the <code>HEAD</code> commit, and we should be able to use <code>git cat-file -p</code> to get essentially the same output as before (the <code>-p</code> flag means ‘pretty-print’).</p>
@@ -178,7 +185,7 @@ parseCommit <span class="fu">=</span> <span class="kw">do</span>
 
 parsed (parseHeader <span class="fu">*&gt;</span> parseCommit) commit</code></pre></div>
 <pre><code>Commit {commitTree = &quot;ecd0e58d6832566540a30dfd4878db518d5451d0&quot;, commitParents = [&quot;ab3c5646b41de1b6d95782371289db585ba8aa85&quot;], commitAuthor = &quot;Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700&quot;, commitCommitter = &quot;Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700&quot;, commitMessage = &quot;add tmux by @seebi!\n&quot;}</code></pre>
-<p>Now to write our first serialiser that takes values of the Commit type and turns them back into bytestrings. Again, with some formatting liberties I can make this look a lot like the content I want to output. I can quickly check the <a href="http://teh.id.au/posts/2017/06/07/round-trip-property/">roundtrip property</a> to see that both my parser and serialiser work properly.</p>
+<p>Now to write our first serialiser that takes values of the Commit type and turns them back into bytestrings. Again, with some formatting liberties I can make this look a lot like the content I want to output. I can quickly check the <a href="http://teh.id.au/posts/2017/06/07/round-trip-property/">round-trip property</a> to see that both my parser and serialiser work properly.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Monoid</span> ((&lt;&gt;), mappend, mconcat)
 <span class="kw">import </span><span class="dt">Data.Byteable</span>
 
@@ -342,13 +349,8 @@ tagger Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700
 Initial public beta release 1.0.0beta1</code></pre>
 <p>Although tags are mostly used with commits, it’s possible to tag any Git object. You can even tag another tag, although I can’t see why you might want to.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">tag <span class="ot">&lt;-</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/31/ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span>
-tag</code></pre></div>
-<pre><code>tag 182 object 90581c7bfbcd279768580eec595d0ab3c094cc02
-type commit
-tag v1.0.0beta1
-tagger Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700
-
-Initial public beta release 1.0.0beta1</code></pre>
+print tag</code></pre></div>
+<pre><code>&quot;tag 182\NULobject 90581c7bfbcd279768580eec595d0ab3c094cc02\ntype commit\ntag v1.0.0beta1\ntagger Ethan Schoonover &lt;es@ethanschoonover.com&gt; 1300994142 -0700\n\nInitial public beta release 1.0.0beta1\n&quot;</code></pre>
 <p>Our parser for these is very similar to our commit parser. I’ve taken a quick break from my ‘write the worst parser possible’ strategy to make sure that our tags can only tag objects of type ‘commit’, ‘tree’, ‘blob’, or ‘tag’.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Tag</span> <span class="fu">=</span> <span class="dt">Tag</span>
     {<span class="ot"> tagObject     ::</span> <span class="dt">Ref</span>
@@ -412,7 +414,7 @@ parseGitObject <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">hashObject ::</span> <span class="dt">GitObject</span> <span class="ot">-&gt;</span> <span class="dt">Ref</span>
 hashObject <span class="fu">=</span> hash <span class="fu">.</span> toBytes</code></pre></div>
 <p>Let’s do a quick test to check that our definitions work.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">hashObject <span class="fu">.</span> parsed parseGitObject <span class="fu">&lt;$&gt;</span> (decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/31/ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">hashObject <span class="fu">.</span> parsed parseGitObject <span class="fu">.</span> decompress <span class="fu">&lt;$&gt;</span> B.readFile <span class="st">&quot;.git/objects/31/ff7f5064824d2231648119feb6dfda1a3c89f5&quot;</span></code></pre></div>
 <pre><code>31ff7f5064824d2231648119feb6dfda1a3c89f5</code></pre>
 <p>Excellent, although we are lacking a helper to turn a reference into a Git object filepath. Let’s define that.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">System.FilePath</span> ((&lt;/&gt;))
@@ -449,17 +451,17 @@ writeObject gitDir object <span class="fu">=</span> <span class="kw">do</span>
         B.writeFile path <span class="fu">.</span> compress <span class="fu">$</span> toBytes object
     return ref</code></pre></div>
 <p>Okay, time for the grand finale! We’re going to read and then write every object in this Git repository. If we’ve implemented everything correctly, the number of references before and after will be unchanged, and they will be the same references.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>    (forM)
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Traversable</span> (for)
 <span class="kw">import </span><span class="dt">System.Directory</span> (listDirectory)
 
 allRefs <span class="ot">&lt;-</span> <span class="kw">do</span>
     prefixes <span class="ot">&lt;-</span> filter (\d <span class="ot">-&gt;</span> length d <span class="fu">==</span> <span class="dv">2</span>) <span class="fu">&lt;$&gt;</span> listDirectory <span class="st">&quot;.git/objects/&quot;</span>
-    concat <span class="fu">&lt;$&gt;</span> forM prefixes (\p <span class="ot">-&gt;</span>
+    concat <span class="fu">&lt;$&gt;</span> for prefixes (\p <span class="ot">-&gt;</span>
         map (fromString <span class="fu">.</span> (p<span class="fu">++</span>)) <span class="fu">&lt;$&gt;</span> listDirectory (<span class="st">&quot;.git/objects&quot;</span> <span class="fu">&lt;/&gt;</span> p))
 
 print <span class="fu">$</span> length allRefs
 
-test <span class="ot">&lt;-</span> forM allRefs <span class="fu">$</span> \ref <span class="ot">-&gt;</span> <span class="kw">do</span>
+test <span class="ot">&lt;-</span> for allRefs <span class="fu">$</span> \ref <span class="ot">-&gt;</span> <span class="kw">do</span>
     obj  <span class="ot">&lt;-</span> readObject  <span class="st">&quot;.git&quot;</span> ref
     ref' <span class="ot">&lt;-</span> writeObject <span class="st">&quot;.git&quot;</span> obj
     return <span class="fu">$</span> ref <span class="fu">==</span> ref'
@@ -468,7 +470,7 @@ and test
 
 allRefs' <span class="ot">&lt;-</span> <span class="kw">do</span>
     prefixes <span class="ot">&lt;-</span> filter (\d <span class="ot">-&gt;</span> length d <span class="fu">==</span> <span class="dv">2</span>) <span class="fu">&lt;$&gt;</span> listDirectory <span class="st">&quot;.git/objects/&quot;</span>
-    concat <span class="fu">&lt;$&gt;</span> forM prefixes (\p <span class="ot">-&gt;</span>
+    concat <span class="fu">&lt;$&gt;</span> for prefixes (\p <span class="ot">-&gt;</span>
         map (fromString <span class="fu">.</span> (p<span class="fu">++</span>)) <span class="fu">&lt;$&gt;</span> listDirectory (<span class="st">&quot;.git/objects&quot;</span> <span class="fu">&lt;/&gt;</span> p))
 
 print <span class="fu">$</span> length allRefs'
@@ -498,7 +500,7 @@ True</code></pre>
 <li><a href="https://github.com/mirage/irmin">Use Git as the backend of your application and get diffing/merging for free!</a></li>
 </ul>
 <p>The possibilities are endless!</p>
-<p>If you’d like to learn more, you’re in luck! writing on this topic is plentiful and of extremely high quality. I started with the Git Book’s <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">chapter on Git Internals</a> and referred frequently to Vincent Hanquez’s <a href="https://github.com/vincenthz/hs-git/">hs-git</a> and Stefan Saasen’s <a href="http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/">overwhelmingly thorough article</a> that implements enough of Git to do a <code>git clone</code>(!). Other resources include Mary Rose Cook’s excellent <a href="https://maryrosecook.com/blog/post/git-from-the-inside-out">Git from the inside out</a> and <a href="http://gitlet.maryrosecook.com/docs/gitlet.html">Gitlet</a> as well as John Wiegley’s <a href="https://jwiegley.github.io/git-from-the-bottom-up/">Git from the Bottom Up</a>. If nothing else, I hope the sheer proliferation of Git innards writing is enough to convince you that this is a useful and rewarding approach to learning about it.</p>
+<p>If you’d like to learn more, you’re in luck! writing on this topic is plentiful and of extremely high quality. I started with the Git Book’s <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">chapter on Git Internals</a> and referred frequently to Vincent Hanquez’s <a href="https://github.com/vincenthz/hs-git/">hs-git</a> and Stefan Saasen’s <a href="http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/">overwhelmingly thorough article</a> that implements enough of Git to do a <code>git clone</code> (!). Other resources include Mary Rose Cook’s excellent <a href="https://maryrosecook.com/blog/post/git-from-the-inside-out">Git from the inside out</a> and <a href="http://gitlet.maryrosecook.com/docs/gitlet.html">Gitlet</a> as well as John Wiegley’s <a href="https://jwiegley.github.io/git-from-the-bottom-up/">Git from the Bottom Up</a>. If nothing else, I hope the sheer proliferation of Git innards writing is enough to convince you that this is a useful and rewarding approach to learning about it.</p>
 <p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, <a href="https://fineshambles.com/">Iain McCoy</a>, <a href="https://jaseemabid.github.io/">Jaseem Abid</a> and <a href="http://krebsco.de/">Tomislav Viljetic</a> for comments, clarification, and suggestions.</p>
 
         </div>
