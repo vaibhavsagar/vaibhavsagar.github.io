@@ -46,8 +46,7 @@
 <p>When I finally thought I understood what was going on, I offered to give a talk on it to the local functional group, because Git is functional, right? The co-organisers explained that it wouldn’t be an interesting or useful talk, but a talk on implementing Git in Haskell would be very welcome.</p>
 <p>That was enough motivation to start working on a <a href="https://github.com/vaibhavsagar/duffer">Git library</a>, and it turns out that understanding Git from the inside out is far, far easier than whatever I was trying to do earlier. This blog post is my attempt to share that comfort and understanding with you.</p>
 <p>I’ve chosen to write this as an IHaskell notebook that is available <a href="https://github.com/vaibhavsagar/notebooks/tree/master/git-from-scratch">here</a>, and I’ve included a <code>default.nix</code> to make things easier if you have Nix installed. You should be able to run</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span> .
-$ <span class="ex">result/bin/ihaskell-notebook</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="va">$(</span><span class="ex">nix-build</span> --no-out-link<span class="va">)</span><span class="ex">/bin/ihaskell-notebook</span></code></pre></div>
 <p>to open a Jupyter notebook environment with all the dependencies you’ll need to follow along.</p>
 <p>GHCi has a handy Vim-inspired feature where a command prefixed with <code>:!</code> is run in the shell, and IHaskell supports this as well, so I’ll be using that heavily to keep everything self-contained.</p>
 <p>Let’s start by picking a Git repository. I picked Ethan Schoonover’s <a href="https://github.com/altercation/solarized/">solarized</a> because it’s nontrivial, well-known, and was last updated in 2011, so I’m confident that the hashes here won’t go out of date.</p>
@@ -59,7 +58,6 @@ $ <span class="ex">result/bin/ihaskell-notebook</span></code></pre></div>
 <span class="fu">:!</span>cd solarized
 <span class="fu">:!</span>git show <span class="co">--format=raw -s</span></code></pre></div>
 <pre><code>Cloning into 'solarized'...
-done.
 
 
 
