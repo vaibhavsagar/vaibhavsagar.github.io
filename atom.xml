@@ -106,7 +106,7 @@ add tmux by @seebi!</code></pre>
 000000a0: ed7a 03b9 c3f1 db4c b683 fb05 c805 4f81  .z.....L......O.</code></pre>
 <p>Git compresses these files with zlib before storing them, and we’ll need to handle this. Fortunately there’s a tool called <code>zlib-flate</code> (part of the <code>qpdf</code> package) that we can use.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:!</span>zlib<span class="fu">-</span>flate <span class="fu">-</span>uncompress <span class="fu">&lt;</span> <span class="fu">.</span>git<span class="fu">/</span>objects<span class="fu">/</span>e4<span class="fu">/</span>0cd4130e2a82f9b03ada1ca378b7701b1a9110</code></pre></div>
-<pre><code>commit 248 tree ecd0e58d6832566540a30dfd4878db518d5451d0
+<pre><code>commit 248tree ecd0e58d6832566540a30dfd4878db518d5451d0
 parent ab3c5646b41de1b6d95782371289db585ba8aa85
 author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
 committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
@@ -197,7 +197,7 @@ parsedCommit <span class="fu">=</span> parsed (parseHeader <span class="fu">*&gt
 withHeader oType content <span class="fu">=</span> mconcat [oType, <span class="st">&quot; &quot;</span>, fromString <span class="fu">.</span> show <span class="fu">$</span> B.length content, <span class="st">&quot;\NUL&quot;</span>, content]
 
 withHeader <span class="st">&quot;commit&quot;</span> (toBytes parsedCommit)</code></pre></div>
-<pre><code>commit 248 tree ecd0e58d6832566540a30dfd4878db518d5451d0
+<pre><code>commit 248tree ecd0e58d6832566540a30dfd4878db518d5451d0
 parent ab3c5646b41de1b6d95782371289db585ba8aa85
 author Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482098 -0700
 committer Trevor Bramble &lt;inbox@trevorbramble.com&gt; 1372482214 -0700
