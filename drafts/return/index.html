@@ -33,7 +33,7 @@
             <h1>return :: a -> RC a</h1>
 
             <div class="info">
-    Posted on 26 February 2017
+    Posted on 16 October 2017
     
 </div>
 <div class="info">
@@ -42,7 +42,14 @@
     
 </div>
 
-
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">RC</span> <span class="kw">where</span>
+<span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">RC</span> <span class="kw">where</span>
+<span class="ot">    pure  ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a
+<span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">RC</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">RC</span> <span class="kw">where</span>
+<span class="ot">    return ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a
+<span class="ot">    (&gt;&gt;=)  ::</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">RC</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> b</code></pre></div>
 
         </div>
         <div id="footer">
