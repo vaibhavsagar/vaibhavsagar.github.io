@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Functional Infrastructure in a Dysfunctional World - Vaibhav Sagar</title>
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Functional Infrastructure in a Dysfunctional World</h1>
+
+            <div class="info">
+    Posted on 10 November 2017
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../blog/tags/programming/">programming</a>
+    
+</div>
+
+<p>I’ve been using Nix and NixOS at work for the last couple of months, and I really like it! It’s made my job easier and less stressful. The website markets it as ‘declarative’, ‘reliable’, and ‘DevOps-friendly’, and I’d like to demonstrate what that means and make a case for using it in your infrastructure.</p>
+<p>To make things easier, I’m not assuming that you already run NixOS. Any Linux distro should do, as long as you’ve (installed Nix)[https://nixos.org/nix/download.html]. macOS users will be able to follow along until I get to the NixOps section.</p>
+<p>Suppose we are in ops, and have been given a small Haskell app to get up and running:</p>
+<p><em>Main.hs</em></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+
+<span class="kw">import </span><span class="dt">Web.Scotty</span>
+
+<span class="kw">import </span><span class="dt">Data.Monoid</span> (mconcat)
+
+main <span class="fu">=</span> scotty <span class="dv">3000</span> <span class="fu">$</span> <span class="kw">do</span>
+    get <span class="st">&quot;/:word&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span>
+        html <span class="fu">$</span> mconcat [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</code></pre></div>
+<p><em>blank-me-up.cabal</em></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">name<span class="fu">:</span>                blank<span class="fu">-</span>me<span class="fu">-</span>up
+version<span class="fu">:</span>             <span class="fl">0.1</span><span class="fu">.</span><span class="fl">0.0</span>
+license<span class="fu">:</span>             <span class="dt">BSD3</span>
+build<span class="fu">-</span><span class="kw">type</span><span class="fu">:</span>          <span class="dt">Simple</span>
+cabal<span class="fu">-</span>version<span class="fu">:</span>       <span class="fu">&gt;=</span><span class="fl">1.10</span>
+
+executable blank<span class="fu">-</span>me<span class="fu">-</span>up
+  main<span class="fu">-</span>is<span class="fu">:</span>             Main.hs
+  build<span class="fu">-</span>depends<span class="fu">:</span>       base <span class="fu">&gt;=</span><span class="fl">4.9</span> <span class="fu">&amp;&amp;</span> <span class="fu">&lt;</span><span class="dv">5</span>
+                     , scotty
+  default<span class="fu">-</span>language<span class="fu">:</span>    <span class="dt">Haskell2010</span></code></pre></div>
+<p>(Any resemblance to <a href="https://github.com/scotty-web/scotty/blob/306fee7121dc41a55bd4e9b785f8366198de7e3c/README.md#scotty-">the first example in Scotty’s README</a> is purely coincidental.)</p>
+<p>Our first step is to build this app and quickly check that it works. We’ll need Nix and <code>cabal2nix</code>, which turns <code>.cabal</code> files into configuration for the Nix package manager. Assuming we’ve</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-env</span> -i cabal2nix
+<span class="op">&lt;</span><span class="ex">a</span> lot of output<span class="op">&gt;</span>
+<span class="ex">created</span> <span class="op">&lt;</span>number<span class="op">&gt;</span> symlinks in user environment</code></pre></div>
+<p>How do we know it worked? Try <code>nix-env -q</code> (short for <code>--query</code>):</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-env</span> -q
+<span class="ex">cabal2nix</span></code></pre></div>
+<p>Okay, assuming the app is in the <code>app</code> subdirectory, let’s create a directory called <code>nix</code> to store our <code>.nix</code> files and begin:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="bu">cd</span> nix
+$ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span> default.nix</code></pre></div>
+<p><code>default.nix</code> should look something like</p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span> <span class="ex">nixpkgs</span> ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span>, compiler ? <span class="st">&quot;default&quot;</span> <span class="kw">}</span>:
+
+<span class="bu">let</span>
+
+  <span class="ex">inherit</span> (nixpkgs) <span class="ex">pkgs</span><span class="kw">;</span>
+
+  <span class="ex">f</span> = { mkDerivation, base, scotty, stdenv }:
+      <span class="ex">mkDerivation</span> {
+        <span class="ex">pname</span> = <span class="st">&quot;blank-me-up&quot;</span><span class="kw">;</span>
+        <span class="ex">version</span> = <span class="st">&quot;0.1.0.0&quot;</span><span class="kw">;</span>
+        <span class="ex">src</span> = ../app<span class="kw">;</span>
+        <span class="ex">isLibrary</span> = false<span class="kw">;</span>
+        <span class="ex">isExecutable</span> = true<span class="kw">;</span>
+        <span class="ex">executableHaskellDepends</span> = [ base scotty ]<span class="kw">;</span>
+        <span class="ex">license</span> = stdenv.lib.licenses.bsd3<span class="kw">;</span>
+      };
+
+  <span class="ex">haskellPackages</span> = if compiler == <span class="st">&quot;default&quot;</span>
+                       <span class="kw">then</span> <span class="ex">pkgs.haskellPackages</span>
+                       <span class="kw">else</span> <span class="ex">pkgs.haskell.packages.</span><span class="va">${compiler}</span><span class="kw">;</span>
+
+  <span class="ex">drv</span> = haskellPackages.callPackage f <span class="dt">{}</span><span class="kw">;</span>
+
+<span class="kw">in</span>
+
+  <span class="kw">if</span> <span class="ex">pkgs.lib.inNixShell</span> then drv.env else drv</code></pre></div>
+<p>Now we can build our project by running <code>nix-build</code>, which tries to build <code>default.nix</code> in the current directory if no arguments are provided:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span>
+<span class="op">&lt;</span><span class="ex">lots</span> of output<span class="op">&gt;</span>
+<span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</code></pre></div>
+<p>There should also be a new <code>result</code> symlink in the current directory, which points to the path above:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="fu">readlink</span> result
+<span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</code></pre></div>
+<p>What happens if we run <code>nix-build</code> again without changing anything?</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span>
+<span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</code></pre></div>
+<p>It should be nearly instantaneous and not require rebuilding anything. Nix tries to think of build outputs as a pure function of its inputs, and since our inputs are unchanged, it is able to give us back the same path that it did before. This is what we mean when we say Nix is declarative.</p>
+<p>Okay, now that we’re able to successfully build the app, let’s configure a service file so that <code>systemd</code> can manage our app. I don’t know of any tools that automatically generate this so I always find myself copying and pasting from an existing service file. Here’s one I prepared earlier.</p>
+<p><em>service.nix</em></p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:                                               #<span class="ex">1</span>
+
+<span class="bu">let</span>                                                                       #2
+  <span class="ex">cfg</span> = config.services.blank-me-up<span class="kw">;</span>
+  <span class="ex">blank-me-up</span> = pkgs.callPackage ./default.nix { nixpkgs = pkgs<span class="kw">;</span> };       #<span class="ex">3</span>
+<span class="kw">in</span> <span class="kw">{</span>
+  <span class="ex">options.services.blank-me-up.enable</span> = lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span> <span class="co">#4</span>
+
+  <span class="ex">config</span> = lib.mkIf cfg.enable {                                          #5
+    <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 3000 ]<span class="kw">;</span>                       #<span class="ex">6</span>
+
+    <span class="ex">systemd.services.blank-me-up</span> = {                                      #7
+      <span class="ex">description</span> = <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span>
+      <span class="ex">after</span> = [ <span class="st">&quot;network.target&quot;</span> ]<span class="kw">;</span>
+      <span class="ex">wantedBy</span> = [ <span class="st">&quot;multi-user.target&quot;</span> ]<span class="kw">;</span>
+      <span class="ex">serviceConfig</span> = {
+        <span class="ex">ExecStart</span> = <span class="st">&quot;</span><span class="va">${blank-</span>me-up<span class="va">}</span><span class="st">/bin/blank-me-up&quot;</span><span class="kw">;</span>
+        <span class="ex">Restart</span> = <span class="st">&quot;always&quot;</span><span class="kw">;</span>
+        <span class="ex">KillMode</span> = <span class="st">&quot;process&quot;</span><span class="kw">;</span>
+      <span class="kw">}</span>;
+    };
+  };
+}</code></pre></div>
+<p>This isn’t intended to be a Nix language tutorial, but there are a few interesting things that I want to point out. For a more comprehensive overview of the language, see <a href="https://medium.com/@MrJamesFisher/nix-by-example-a0063a1a4c55">here</a> or <a href="https://nixos.org/nix/manual/#ch-expression-language">here</a>.</p>
+<ol style="list-style-type: decimal">
+<li>These are the arguments to this expression that the caller will pass.</li>
+<li><code>let</code> expressions work similarly to Haskell.</li>
+<li>This is the equivalent of our <code>nix-build</code> from before.</li>
+<li>We define a single option that enables our service.</li>
+<li>The <code>config</code> attribute contains service configuration.</li>
+<li>We expose port 3000.</li>
+<li>If you squint this looks a lot like a regular unit file. More on this later.</li>
+</ol>
+
+        </div>
+        <div id="footer">
+            <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+        </div>
+    </body>
+</html>
