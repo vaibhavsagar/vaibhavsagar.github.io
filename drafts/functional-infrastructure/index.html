@@ -44,6 +44,7 @@
 
 <p>I’ve been using Nix and NixOS at work for the last couple of months, and I really like it! It’s made my job easier and less stressful. The website markets it as ‘declarative’, ‘reliable’, and ‘DevOps-friendly’, and I’d like to demonstrate what that means and make a case for using it in your infrastructure.</p>
 <p>To make things easier, I’m not assuming that you already run NixOS. Any Linux distro should do, as long as you’ve (installed Nix)[https://nixos.org/nix/download.html]. macOS users will be able to follow along until I get to the NixOps section.</p>
+<h2 id="packaging">Packaging</h2>
 <p>Suppose we are in ops, and have been given a small Haskell app to get up and running:</p>
 <p><em>Main.hs</em></p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
@@ -117,13 +118,14 @@ $ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-build</span>
 <span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</code></pre></div>
 <p>It should be nearly instantaneous and not require rebuilding anything. Nix tries to think of build outputs as a pure function of its inputs, and since our inputs are unchanged, it is able to give us back the same path that it did before. This is what we mean when we say Nix is declarative.</p>
+<h2 id="service-configuration">Service Configuration</h2>
 <p>Okay, now that we’re able to successfully build the app, let’s configure a service file so that <code>systemd</code> can manage our app. I don’t know of any tools that automatically generate this so I always find myself copying and pasting from an existing service file. Here’s one I prepared earlier.</p>
-<p><em>service.nix</em></p>
+<p><em>nix/service.nix</em></p>
 <div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:                                               #<span class="ex">1</span>
 
 <span class="bu">let</span>                                                                       #2
   <span class="ex">cfg</span> = config.services.blank-me-up<span class="kw">;</span>
-  <span class="ex">blank-me-up</span> = pkgs.callPackage ./default.nix { nixpkgs = pkgs<span class="kw">;</span> };       #<span class="ex">3</span>
+  <span class="ex">blank-me-up</span> = pkgs.callPackage ./default.nix <span class="dt">{}</span><span class="kw">;</span>                        #<span class="ex">3</span>
 <span class="kw">in</span> <span class="kw">{</span>
   <span class="ex">options.services.blank-me-up.enable</span> = lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span> <span class="co">#4</span>
 
@@ -150,8 +152,66 @@ $ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span>
 <li>We define a single option that enables our service.</li>
 <li>The <code>config</code> attribute contains service configuration.</li>
 <li>We expose port 3000.</li>
-<li>If you squint this looks a lot like a regular unit file. More on this later.</li>
+<li>If you squint this looks a lot like a regular unit file. More on this below.</li>
 </ol>
+<p>It would be useful to look at the systemd service file that gets generated from this configuraation. To do this, we’ll need one more file:</p>
+<p><em>ops/webserver.nix</em></p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span> <span class="ex">...</span> <span class="kw">}</span>: <span class="kw">{</span>
+  <span class="ex">imports</span> = [ ../nix/service.nix ]<span class="kw">;</span>
+  <span class="ex">services.blank-me-up.enable</span> = true<span class="kw">;</span>
+<span class="kw">}</span></code></pre></div>
+<p>This is a function that imports the above configuration and enables the <code>blank-me-up</code> service. With this in place, we can do</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-instantiate</span> --eval -E <span class="st">'(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text'</span></code></pre></div>
+<p>We’re using <code>nix-instantiate</code> to evaluate (<code>--eval</code>) an expression (<code>-E</code>) that uses <code>eval-config.nix</code> from the library to import the file we created and output the text of the final unit file. The output of this is pretty messy, but we can use <code>jq</code> to clean it up:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-instantiate</span> --eval -E <span class="st">'(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text'</span> <span class="kw">|</span> <span class="ex">jq</span> -r</code></pre></div>
+<p>Hopefully at this point you’re convinced that Nix can take some quasi-JSON and turn it into a binary and a systemd service file. Let’s deploy this!</p>
+<h2 id="deploying">Deploying</h2>
+<p>First, we install NixOps:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-env</span> -i nixops</code></pre></div>
+<p>We also have to set up VirtualBox, which I’ll be using as my deploy target. If you’re using NixOS this is as simple as adding the following lines to <code>configuration.nix</code>:</p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="ex">virtualisation.virtualbox.host.enable</span> = true<span class="kw">;</span>
+<span class="ex">virtualisation.virtualbox.guest.enable</span> = true<span class="kw">;</span></code></pre></div>
+<p>and running <code>sudo nixos-rebuild switch</code>. If you’re using another Linux distro, install VirtualBox and set up a host-only network called <code>vboxnet0</code>.</p>
+<p>We’ll be using the <a href="https://nixos.org/nixops/manual/#idm140737318606176">instructions from the manual</a> as our starting point. Create the two files indicated there:</p>
+<p><em>ops/trivial.nix</em></p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span>
+  <span class="ex">network.description</span> = <span class="st">&quot;Web server&quot;</span><span class="kw">;</span>
+
+  <span class="ex">webserver</span> =
+    <span class="kw">{</span> <span class="ex">config</span>, pkgs, ... <span class="kw">}</span>:
+    <span class="kw">{</span> <span class="ex">services.httpd.enable</span> = true<span class="kw">;</span>
+      <span class="ex">services.httpd.adminAddr</span> = <span class="st">&quot;alice@example.org&quot;</span><span class="kw">;</span>
+      <span class="ex">services.httpd.documentRoot</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.valgrind.doc</span><span class="va">}</span><span class="st">/share/doc/valgrind/html&quot;</span><span class="kw">;</span>
+      <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 80 ]<span class="kw">;</span>
+    <span class="kw">}</span>;
+<span class="kw">}</span></code></pre></div>
+<p><em>ops/trivial-vbox.nix</em></p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span>
+  <span class="ex">webserver</span> =
+    <span class="kw">{</span> <span class="ex">config</span>, pkgs, ... <span class="kw">}</span>:
+    <span class="kw">{</span> <span class="ex">deployment.targetEnv</span> = <span class="st">&quot;virtualbox&quot;</span><span class="kw">;</span>
+      <span class="ex">deployment.virtualbox.memorySize</span> = 1024<span class="kw">;</span> <span class="co"># megabytes</span>
+      <span class="ex">deployment.virtualbox.vcpu</span> = 2<span class="kw">;</span> <span class="co"># number of cpus</span>
+    <span class="kw">}</span>;
+<span class="kw">}</span></code></pre></div>
+<p>We need to make a small change to <code>ops/trivial.nix</code>: we already have the service configuration we want in <code>ops/webserver.nix</code> so we can import and use that:</p>
+<p><em>ops/trivial.nix</em></p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span>
+  <span class="ex">network.description</span> = <span class="st">&quot;Web server&quot;</span><span class="kw">;</span>
+
+  <span class="ex">webserver</span> = import ./webserver.nix<span class="kw">;</span>
+<span class="kw">}</span></code></pre></div>
+<p>We should now be able to create a new deployment:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nixops</span> create ops/trivial.nix ops/trivial-vbox.nix -d trivial</code></pre></div>
+<p>and deploy it:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nixops</span> deploy -d trivial</code></pre></div>
+<p>and assuming that everything goes well, we should see a lot of terminal output and at least one mention of <code>ssh://root@&lt;ip&gt;</code>, which is the IP of our target.</p>
+<p>We should then be able to go to <code>http://&lt;ip&gt;:3000</code> and see our web app in action!</p>
+<p>NixOps also allows us to SSH in for troubleshooting purposes or to view logs:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nixops</span> ssh -d trivial webserver
+<span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span>
+[<span class="ex">root@webserver</span>:~]# systemctl status blank-me-up</code></pre></div>
+<h2 id="responding-to-change">Responding to change</h2>
 
         </div>
         <div id="footer">
