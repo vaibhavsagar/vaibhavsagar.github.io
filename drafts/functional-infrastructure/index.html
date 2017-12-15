@@ -43,7 +43,8 @@
 </div>
 
 <p>I’ve been using Nix and NixOS at work for the last couple of months, and I really like it! It’s made my job easier and less stressful. The website markets it as ‘declarative’, ‘reliable’, and ‘DevOps-friendly’, and I’d like to demonstrate what that means and make a case for using it in your infrastructure.</p>
-<p>To make things easier, I’m not assuming that you already run NixOS. Any Linux distro should do, as long as you’ve (installed Nix)[https://nixos.org/nix/download.html]. macOS users will be able to follow along until I get to the NixOps section.</p>
+<p>To make things easier, I’m not assuming that you already run NixOS. Any Linux distro should do, as long as you’ve <a href="https://nixos.org/nix/download.html">installed Nix</a>. macOS users will be able to follow along until I get to the NixOps section.</p>
+<h1 id="shippping-it">Shippping it</h1>
 <h2 id="packaging">Packaging</h2>
 <p>Suppose we are in ops, and have been given a small Haskell app to get up and running:</p>
 <p><em>Main.hs</em></p>
@@ -212,6 +213,7 @@ $ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span>
 <span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span>
 [<span class="ex">root@webserver</span>:~]# systemctl status blank-me-up</code></pre></div>
 <h2 id="responding-to-change">Responding to change</h2>
+<p>This is fantastic, but deployments are rarely fire-and-forget. How does</p>
 
         </div>
         <div id="footer">
