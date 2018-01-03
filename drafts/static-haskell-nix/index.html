@@ -48,7 +48,7 @@
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal</span> install --only-dependencies
 $ <span class="ex">cabal</span> configure --disable-executable-dynamic --ghc-option=-optl=-static --ghc-option=-optl=-pthread
 $ <span class="ex">cabal</span> build</code></pre></div>
-<p>with the magic happening in the first step. On Nix, we do in fact have the necessary static libraries and we can provide them as build inputs but keeping track of the library paths gets hairy quickly. Fortunately Nix has an escape hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environment that <code>cabal</code> is more familiar with.</p>
+<p>with the magic happening in the second step. On Nix, we do in fact have the necessary static libraries and we can provide them as build inputs but keeping track of the library paths gets hairy quickly. Fortunately Nix has an escape hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environment that <code>cabal</code> is more familiar with.</p>
 <p>Let’s put it through its paces by building a simple Scotty web app:</p>
 <pre class="cabal"><code>name:                blank-me-up
 version:             0.1.0.0
