@@ -125,12 +125,11 @@ $ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span>
 <div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:                                               #<span class="ex">1</span>
 
 <span class="bu">let</span>                                                                       #2
-  <span class="ex">cfg</span> = config.services.blank-me-up<span class="kw">;</span>
   <span class="ex">blank-me-up</span> = pkgs.callPackage ./default.nix <span class="dt">{}</span><span class="kw">;</span>                        #<span class="ex">3</span>
 <span class="kw">in</span> <span class="kw">{</span>
   <span class="ex">options.services.blank-me-up.enable</span> = lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span> <span class="co">#4</span>
 
-  <span class="ex">config</span> = lib.mkIf cfg.enable {                                          #5
+  <span class="ex">config</span> = lib.mkIf config.services.blank-me-up.enable {                  #5
     <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 3000 ]<span class="kw">;</span>                       #<span class="ex">6</span>
 
     <span class="ex">systemd.services.blank-me-up</span> = {                                      #7
