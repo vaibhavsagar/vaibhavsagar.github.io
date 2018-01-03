@@ -42,7 +42,10 @@
     
 </div>
 
-<p>The section of the Nixpkgs manual that talks about <a href="https://nixos.org/nixpkgs/manual/#creating-statically-linked-binaries">creating statically linked binaries</a> with Haskell ends with the caveat: “It’s important to realize, however, that most system libraries in Nix are built as shared libraries only, i.e. there is just no static library available that Cabal could link!”</p>
+<p>The section of the Nixpkgs manual that talks about <a href="https://nixos.org/nixpkgs/manual/#creating-statically-linked-binaries">creating statically linked binaries</a> with Haskell ends with the caveat:</p>
+<blockquote>
+<p>It’s important to realize, however, that most system libraries in Nix are built as shared libraries only, i.e. there is just no static library available that Cabal could link!</p>
+</blockquote>
 <p>That sounds like a challenge.</p>
 <p>On other platforms, building a static binary is meant to be as simple as</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal</span> install --only-dependencies
