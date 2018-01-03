@@ -8,8 +8,87 @@
         <name>Vaibhav Sagar</name>
         <email>vaibhavsagar@gmail.com</email>
     </author>
-    <updated>2017-08-13T00:00:00Z</updated>
+    <updated>2018-01-03T00:00:00Z</updated>
     <entry>
+    <title>Building Static Haskell Binaries with Nix</title>
+    <link href="http://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/index.html" />
+    <id>http://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/index.html</id>
+    <published>2018-01-03T00:00:00Z</published>
+    <updated>2018-01-03T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on  3 January 2018
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/nix/index.html">nix</a>, <a href="/blog/tags/programming/index.html">programming</a>
+    
+</div>
+
+<p>The section of the Nixpkgs manual that talks about <a href="https://nixos.org/nixpkgs/manual/#creating-statically-linked-binaries">creating statically linked binaries</a> with Haskell ends with the caveat:</p>
+<blockquote>
+<p>It’s important to realize, however, that most system libraries in Nix are built as shared libraries only, i.e. there is just no static library available that Cabal could link!</p>
+</blockquote>
+<p>That sounds like a challenge.</p>
+<p>On other platforms, building a static binary is meant to be as simple as</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal</span> install --only-dependencies
+$ <span class="ex">cabal</span> configure --disable-executable-dynamic --ghc-option=-optl=-static --ghc-option=-optl=-pthread
+$ <span class="ex">cabal</span> build</code></pre></div>
+<p>with the magic happening in the second step. On Nix, we do in fact have the necessary static libraries and we can provide them as build inputs but keeping track of the library paths gets hairy quickly. Fortunately Nix has an escape hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environment that <code>cabal</code> is more familiar with.</p>
+<p>Let’s put it through its paces by building a simple Scotty web app:</p>
+<p><em>blank-me-up.cabal</em></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">name<span class="fu">:</span>                blank<span class="fu">-</span>me<span class="fu">-</span>up
+version<span class="fu">:</span>             <span class="fl">0.1</span><span class="fu">.</span><span class="fl">0.0</span>
+license<span class="fu">:</span>             <span class="dt">BSD3</span>
+build<span class="fu">-</span><span class="kw">type</span><span class="fu">:</span>          <span class="dt">Simple</span>
+cabal<span class="fu">-</span>version<span class="fu">:</span>       <span class="fu">&gt;=</span><span class="fl">1.10</span>
+
+executable blank<span class="fu">-</span>me<span class="fu">-</span>up
+  main<span class="fu">-</span>is<span class="fu">:</span>             Main.hs
+  build<span class="fu">-</span>depends<span class="fu">:</span>       base <span class="fu">&gt;=</span><span class="fl">4.9</span> <span class="fu">&amp;&amp;</span> <span class="fu">&lt;</span><span class="dv">5</span>
+                     , scotty
+  default<span class="fu">-</span>language<span class="fu">:</span>    <span class="dt">Haskell2010</span></code></pre></div>
+<p><em>Main.hs</em></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+
+<span class="kw">import </span><span class="dt">Web.Scotty</span>
+
+<span class="kw">import </span><span class="dt">Data.Monoid</span> (mconcat)
+
+main <span class="fu">=</span> scotty <span class="dv">3000</span> <span class="fu">$</span> <span class="kw">do</span>
+    get <span class="st">&quot;/:word&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span>
+        html <span class="fu">$</span> mconcat [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</code></pre></div>
+<p>We create <code>default.nix</code>:</p>
+<p><em>default.nix</em></p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="bu">let</span>
+  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span><span class="kw">;</span>
+<span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {
+  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span>
+  <span class="ex">targetPkgs</span> = pkgs: [
+    <span class="kw">(</span><span class="ex">pkgs.haskellPackages.ghcWithPackages</span> (p: with p<span class="kw">;</span><span class="bu"> [</span> cabal-install ]))
+    pkgs.gmp5.static
+    pkgs.glibc.static
+    pkgs.zlib.static
+    pkgs.zlib.dev
+  ];
+}</code></pre></div>
+<p>This defines a chroot where statically linked versions of <code>gmp</code>, <code>glibc</code>, and <code>zlib</code> are available, as well as <code>zlib.h</code>. We enter this environment by running</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="va">$(</span><span class="ex">nix-build</span><span class="va">)</span><span class="ex">/bin/fhs</span></code></pre></div>
+<p>and then we can run the commands above with only slight modifications:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal</span> install --only-dependencies --extra-include-dirs=/usr/include --extra-lib-dirs=/usr/lib
+$ <span class="ex">cabal</span> configure --disable-executable-dynamic --ghc-option=-optl=-static --ghc-option=-optl=-pthread --ghc-option=-optl=-L/usr/lib
+$ <span class="ex">cabal</span> build</code></pre></div>
+<p>The difference is the extra options passed to the linker. After the last command, I get a whole bunch of warnings about</p>
+<pre><code>&quot;Using &#39;&lt;function&gt;&#39; in statically linked applications requires at runtime the shared libraries from the glibc version used for linking&quot;</code></pre>
+<p>but these don’t seem to cause any issues in practice. You can confirm that the executable has been statically linked by running</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="fu">ldd</span> dist/build/blank-me-up/blank-me-up
+        <span class="ex">not</span> a dynamic executable</code></pre></div>
+<p>I’ve made this project available <a href="https://github.com/vaibhavsagar/experiments/tree/master/static-haskell-nix">here</a> if you’d like to tweak it. Since this was relatively straightforward, I think it might be possible to do this without <code>buildFHSUserEnv</code>. Maybe I will try that next.</p>
+<p>Happy static linking!</p>
+]]></summary>
+</entry>
+<entry>
     <title>I Haskell a Git</title>
     <link href="http://vaibhavsagar.com/blog/2017/08/13/i-haskell-a-git/index.html" />
     <id>http://vaibhavsagar.com/blog/2017/08/13/i-haskell-a-git/index.html</id>
@@ -2613,84 +2692,6 @@ snd   <span class="op">=</span> <span class="kw">lambda</span> p: p(false)</code
 <p>Our code is represented as bits in memory i.e. data, but our data can be represented as functions i.e. code. You might say that bits and bytes are the lowest level representation and therefore somehow more fundamental than code, but even our data is just an undistinguished pattern of 1s and 0s without some code to make sense of it. It really is turtles all the way down.</p>
 <p>There are much more comprehensive treatments of this material available online. I’m aware of <a href="http://matt.might.net/articles/js-church/">Matt Might’s</a> and <a href="http://jtauber.com/blog/2008/11/26/church_encoding_in_python/">James Tauber’s</a>.</p>
 <p>Many thanks to <a href="http://www.notesfromandy.com/">Andy Lee</a>, <a href="http://juansoto.me/">Juan Soto</a>, and <a href="http://sranso.com/">Sarah Ransohoff</a> for their excellent feedback on on this post.</p>
-]]></summary>
-</entry>
-<entry>
-    <title>Using The Writer Monad Outside Logging</title>
-    <link href="http://vaibhavsagar.com/blog/2016/07/24/writer-delta/index.html" />
-    <id>http://vaibhavsagar.com/blog/2016/07/24/writer-delta/index.html</id>
-    <published>2016-07-24T00:00:00Z</published>
-    <updated>2016-07-24T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
-    Posted on 24 July 2016
-    
-</div>
-<div class="info">
-    
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/monads/index.html">monads</a>
-    
-</div>
-
-<p>I hadn’t given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven’t had to do much logging in Haskell so far and so I incorrectly assumed that I didn’t need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:</p>
-<ol style="list-style-type: decimal">
-<li>The Writer monad’s output can be any Monoid, such as strings, lists, sets, etc.</li>
-<li>ByteString is a Monoid.</li>
-</ol>
-<p>Git Packfiles store some entries as deltas against other entries. The delta format is a bit hairy to parse, but it consists of a sequence of either copy or insert instructions. Copy instructions specify an offset in the source and a length of bytes to copy, whereas insert instructions specify a series of bytes to be copied as is.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.ByteString</span> <span class="kw">as</span> <span class="dt">B</span>
-
-<span class="kw">data</span> <span class="dt">DeltaInstruction</span>
-    <span class="fu">=</span> <span class="dt">CopyInstruction</span>   <span class="dt">Int</span> <span class="dt">Int</span>
-    <span class="fu">|</span> <span class="dt">InsertInstruction</span> <span class="dt">B.ByteString</span>
-    <span class="kw">deriving</span> (<span class="dt">Show</span>)</code></pre></div>
-<p>An instruction can be interpreted with reference to a source to result in a ByteString.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">substring ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-substring offset length bytestring <span class="fu">=</span> B.take length (B.drop offset bytestring)
-
-<span class="co">-- Under this interpretation, `InsertInstruction` corresponds to `const`</span>
-<span class="co">-- and `CopyInstruction` corresponds to `substring`.</span>
-<span class="ot">interpretInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-interpretInstruction instruction source <span class="fu">=</span> <span class="kw">case</span> instruction <span class="kw">of</span>
-    <span class="dt">InsertInstruction</span> string        <span class="ot">-&gt;</span> string
-    <span class="dt">CopyInstruction</span>   offset length <span class="ot">-&gt;</span> substring offset length source</code></pre></div>
-<p>The concatenation of a list of interpreted instructions is a resolved delta.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applyInstructions&#39; ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-applyInstructions&#39; source dest []     <span class="fu">=</span> dest
-applyInstructions&#39; source dest (i<span class="fu">:</span>is) <span class="fu">=</span> <span class="kw">let</span>
-    dest&#39; <span class="fu">=</span> B.append dest <span class="fu">$</span> interpretInstruction i source
-    <span class="kw">in</span> applyInstructions&#39; source dest&#39; is</code></pre></div>
-<p>For example:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span>
-testSource <span class="fu">=</span> <span class="st">&quot;tree 9977d7726a568347a513a6b061b87fd687322650\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467781641 +0800\n\nUse record wildcards.\n&quot;</span><span class="ot"> ::</span> <span class="dt">B.ByteString</span>
-testInstructions <span class="fu">=</span> [<span class="dt">InsertInstruction</span> <span class="st">&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">44</span> <span class="dv">167</span>,<span class="dt">InsertInstruction</span> <span class="st">&quot;60597&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">216</span> <span class="dv">30</span>]
-applyInstructions&#39; testSource B.empty testInstructions</code></pre></div>
-<pre><code>&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\n\nUse record wildcards.\n&quot;</code></pre>
-<p>Although this works, it isn’t particularly elegant and it would be nice to abstract away the details of the empty ByteString and the append. Luckily, these correspond to the <code>mempty</code> and <code>mappend</code> methods of a Monoid, and since the Writer monad works with monoids, we might be able to use it. Let’s start by defining a monadic action that appends an interpreted instruction and returns the source we fed it.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
-<span class="kw">import </span><span class="dt">Control.Monad.Trans.Writer</span>
-
-<span class="ot">applyInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">B.ByteString</span> <span class="dt">B.ByteString</span>
-applyInstruction instruction source <span class="fu">=</span> writer (source, interpretInstruction instruction source)</code></pre></div>
-<p>Our action takes two parameters and so we <code>map</code> it to our list of instructions. This gives us a list of actions expecting a source buffer to operate on.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:</span>t map applyInstruction testInstructions</code></pre></div>
-<pre><code>map applyInstruction testInstructions :: [ByteString -&gt; Writer ByteString ByteString]</code></pre>
-<p>We need to reduce this list to a single value while executing each action in sequence, which implies a fold. <code>foldM</code> looks like what we need; according to the documentation:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldM f a1 [x1, x2, <span class="fu">...</span>, xm] <span class="fu">==</span>
-<span class="kw">do</span>
-    a2 <span class="ot">&lt;-</span> f a1 x1
-    a3 <span class="ot">&lt;-</span> f a2 x2
-    <span class="fu">...</span>
-    f am xm</code></pre></div>
-<p>The only wrinkle is that <code>f</code> needs to take the argument first and the action second. We can accomplish this by defining</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f a b <span class="fu">=</span> b a</code></pre></div>
-<p>or</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">=</span> flip (<span class="fu">$</span>)</code></pre></div>
-<p>Putting it all together, we have</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applyInstructions ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-applyInstructions source instructions <span class="fu">=</span> execWriter <span class="fu">$</span> foldM (flip (<span class="fu">$</span>)) source <span class="fu">$</span> map applyInstruction instructions
-applyInstructions testSource testInstructions <span class="fu">==</span> applyInstructions&#39; testSource B.empty testInstructions</code></pre></div>
-<pre><code>True</code></pre>
-<p>And there you have it, a use of Writer that has absolutely nothing to do with logging!</p>
 ]]></summary>
 </entry>
 
