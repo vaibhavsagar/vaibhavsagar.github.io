@@ -53,17 +53,17 @@ $ <span class="ex">cabal</span> configure --disable-executable-dynamic --ghc-opt
 $ <span class="ex">cabal</span> build</code></pre></div>
 <p>with the magic happening in the second step. On Nix, we do in fact have the necessary static libraries and we can provide them as build inputs but keeping track of the library paths gets hairy quickly. Fortunately Nix has an escape hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environment that <code>cabal</code> is more familiar with.</p>
 <p>Let’s put it through its paces by building a simple Scotty web app:</p>
-<pre class="cabal"><code>name:                blank-me-up
-version:             0.1.0.0
-license:             BSD3
-build-type:          Simple
-cabal-version:       &gt;=1.10
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">name<span class="fu">:</span>                blank<span class="fu">-</span>me<span class="fu">-</span>up
+version<span class="fu">:</span>             <span class="fl">0.1</span><span class="fu">.</span><span class="fl">0.0</span>
+license<span class="fu">:</span>             <span class="dt">BSD3</span>
+build<span class="fu">-</span><span class="kw">type</span><span class="fu">:</span>          <span class="dt">Simple</span>
+cabal<span class="fu">-</span>version<span class="fu">:</span>       <span class="fu">&gt;=</span><span class="fl">1.10</span>
 
-executable blank-me-up
-  main-is:             Main.hs
-  build-depends:       base &gt;=4.9 &amp;&amp; &lt;5
+executable blank<span class="fu">-</span>me<span class="fu">-</span>up
+  main<span class="fu">-</span>is<span class="fu">:</span>             Main.hs
+  build<span class="fu">-</span>depends<span class="fu">:</span>       base <span class="fu">&gt;=</span><span class="fl">4.9</span> <span class="fu">&amp;&amp;</span> <span class="fu">&lt;</span><span class="dv">5</span>
                      , scotty
-  default-language:    Haskell2010</code></pre>
+  default<span class="fu">-</span>language<span class="fu">:</span>    <span class="dt">Haskell2010</span></code></pre></div>
 <p><em>blank-me-up.cabal</em></p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 
