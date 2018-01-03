@@ -59,8 +59,8 @@ main <span class="fu">=</span> scotty <span class="dv">3000</span> <span class="
     get <span class="st">&quot;/:word&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
         beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span>
         html <span class="fu">$</span> mconcat [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</code></pre></div>
-<p>We create <code>default.nix</code>:</p>
-<p><em>default.nix</em></p>
+<p>We create <code>static.nix</code>:</p>
+<p><em>static.nix</em></p>
 <div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="bu">let</span>
   <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span><span class="kw">;</span>
 <span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {
@@ -74,7 +74,7 @@ main <span class="fu">=</span> scotty <span class="dv">3000</span> <span class="
   ];
 }</code></pre></div>
 <p>This defines a chroot where statically linked versions of <code>gmp</code>, <code>glibc</code>, and <code>zlib</code> are available, as well as <code>zlib.h</code>. We enter this environment by running</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="va">$(</span><span class="ex">nix-build</span><span class="va">)</span><span class="ex">/bin/fhs</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="va">$(</span><span class="ex">nix-build</span> static.nix<span class="va">)</span><span class="ex">/bin/fhs</span></code></pre></div>
 <p>and then we can run the commands above with only slight modifications:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal</span> install --only-dependencies --extra-include-dirs=/usr/include --extra-lib-dirs=/usr/lib
 $ <span class="ex">cabal</span> configure --disable-executable-dynamic --ghc-option=-optl=-static --ghc-option=-optl=-pthread --ghc-option=-optl=-L/usr/lib
@@ -86,6 +86,18 @@ $ <span class="ex">cabal</span> build</code></pre></div>
         <span class="ex">not</span> a dynamic executable</code></pre></div>
 <p>I’ve made this project available <a href="https://github.com/vaibhavsagar/experiments/tree/master/static-haskell-nix">here</a> if you’d like to tweak it. Since this was relatively straightforward, I think it might be possible to do this without <code>buildFHSUserEnv</code>. Maybe I will try that next.</p>
 <p>Happy static linking!</p>
+<p><strong>Edit:</strong> This turned out to be fairly easy. I took the output of</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal2nix</span> --shell . <span class="op">&gt;</span> default.nix</code></pre></div>
+<p>and changed <code>enableSharedExecutables</code> and <code>configureFlags</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="ex">enableSharedExecutables</span> = false<span class="kw">;</span>
+<span class="ex">configureFlags</span> = [
+  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span>
+  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span>
+  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp5.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
+  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
+  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
+];</code></pre></div>
+<p>This is also available in the linked repository.</p>
 ]]></summary>
 </entry>
 <entry>
