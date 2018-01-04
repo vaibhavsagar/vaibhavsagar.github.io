@@ -29,7 +29,7 @@
 <blockquote>
 <p>It’s important to realize, however, that most system libraries in Nix are built as shared libraries only, i.e. there is just no static library available that Cabal could link!</p>
 </blockquote>
-<p>That sounds like a challenge.</p>
+<p>That sounds like a challenge. Especially when doing it on other platforms is <a href="http://www.kuznero.com/posts/haskell/building-statically-linked-binaries.html">so easy</a>.</p>
 <p>On other platforms, building a static binary is meant to be as simple as</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal</span> install --only-dependencies
 $ <span class="ex">cabal</span> configure --disable-executable-dynamic --ghc-option=-optl=-static --ghc-option=-optl=-pthread
