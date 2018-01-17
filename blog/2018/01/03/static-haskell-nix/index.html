@@ -42,6 +42,7 @@
     
 </div>
 
+<p><em>Skip to the end for a faster and easier way of getting this working.</em></p>
 <p>The section of the Nixpkgs manual that talks about <a href="https://nixos.org/nixpkgs/manual/#creating-statically-linked-binaries">creating statically linked binaries</a> with Haskell ends with the caveat:</p>
 <blockquote>
 <p>It’s important to realize, however, that most system libraries in Nix are built as shared libraries only, i.e. there is just no static library available that Cabal could link!</p>
@@ -103,9 +104,9 @@ $ <span class="ex">cabal</span> build</code></pre></div>
         <span class="ex">not</span> a dynamic executable</code></pre></div>
 <p>I’ve made this project available <a href="https://github.com/vaibhavsagar/experiments/tree/master/static-haskell-nix">here</a> if you’d like to tweak it. Since this was relatively straightforward, I think it might be possible to do this without <code>buildFHSUserEnv</code>. Maybe I will try that next.</p>
 <p>Happy static linking!</p>
-<p><strong>Edit:</strong> This turned out to be fairly easy. I took the output of</p>
+<p><strong>Edit 1:</strong> This turned out to be fairly easy. I took the output of</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cabal2nix</span> --shell . <span class="op">&gt;</span> default.nix</code></pre></div>
-<p>and changed <code>enableSharedExecutables</code> and <code>configureFlags</code> as follows:</p>
+<p>and changed <code>enableSharedExecutables</code>, <code>enableSharedLibraries</code>, and <code>configureFlags</code> as follows:</p>
 <div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="ex">enableSharedExecutables</span> = false<span class="kw">;</span>
 <span class="ex">enableSharedLibraries</span> = false<span class="kw">;</span>
 <span class="ex">configureFlags</span> = [
@@ -115,7 +116,7 @@ $ <span class="ex">cabal</span> build</code></pre></div>
   <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
 ];</code></pre></div>
 <p>This is also available in the linked repository.</p>
-<p><strong>Edit</strong>: <a href="https://github.com/angerman">Moritz Angermann</a> improved these instructions to be more robust. Thanks Moritz!</p>
+<p><strong>Edit 2</strong>: <a href="https://github.com/angerman">Moritz Angermann</a> improved these instructions to be more robust. Thanks Moritz!</p>
 
         </div>
         <div id="footer">
