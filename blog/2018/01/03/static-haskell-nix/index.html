@@ -111,7 +111,7 @@ $ <span class="ex">cabal</span> build</code></pre></div>
 <span class="ex">enableSharedLibraries</span> = false<span class="kw">;</span>
 <span class="ex">configureFlags</span> = [
   <span class="st">&quot;--ghc-option=-optl=-static&quot;</span>
-  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp5.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
+  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp6.override { withStatic </span><span class="va">=</span> true; <span class="va">}</span><span class="st">}/lib&quot;</span>
   <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
   <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span>
 ];</code></pre></div>
