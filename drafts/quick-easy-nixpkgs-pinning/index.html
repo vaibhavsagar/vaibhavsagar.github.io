@@ -45,7 +45,7 @@
 <p>I love Nix because it makes packaging and using software so easy. For example, here’s an expression that makes a recent version of Pandoc available in a <code>nix-shell</code> at the time of writing:</p>
 <div class="sourceCode"><pre class="sourceCode nix"><code class="sourceCode bash"><span class="bu">let</span>
   <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span><span class="kw">;</span>
-  <span class="ex">haskellPkgs</span> = pkgs.haskellPackages.override {
+  <span class="ex">haskellPkgs</span> = pkgs.haskell.packages.ghc802.override {
     <span class="ex">overrides</span> = self: super: {
       <span class="ex">doctemplates</span> = self.callHackage <span class="st">&quot;doctemplates&quot;</span> <span class="st">&quot;0.2.1&quot;</span> <span class="dt">{}</span><span class="kw">;</span>
       <span class="ex">hslua</span> = self.callHackage <span class="st">&quot;hslua&quot;</span> <span class="st">&quot;0.9.1&quot;</span> <span class="dt">{}</span><span class="kw">;</span>
@@ -82,7 +82,7 @@
     <span class="ex">sha256</span> = <span class="st">&quot;14m6krpv7iga96bjpb4xmdq1fpysryyfvkghn68k6g8gr9y61fqs&quot;</span><span class="kw">;</span>
   };
   <span class="ex">pkgs</span> = import nixpkgs <span class="dt">{}</span><span class="kw">;</span>
-  <span class="ex">haskellPkgs</span> = pkgs.haskellPackages.override {
+  <span class="ex">haskellPkgs</span> = pkgs.haskell.packages.ghc802.override {
     <span class="ex">overrides</span> = self: super: {
       <span class="ex">doctemplates</span> = self.callHackage <span class="st">&quot;doctemplates&quot;</span> <span class="st">&quot;0.2.1&quot;</span> <span class="dt">{}</span><span class="kw">;</span>
       <span class="ex">hslua</span> = self.callHackage <span class="st">&quot;hslua&quot;</span> <span class="st">&quot;0.9.1&quot;</span> <span class="dt">{}</span><span class="kw">;</span>
@@ -143,7 +143,7 @@
     <span class="kw">(</span><span class="ex">builtins.fromJSON</span> (builtins.readFile ./versions.json<span class="kw">)</span>);
   <span class="co"># ./updater versions.json nixpkgs nixos-17.09</span>
   <span class="ex">pkgs</span> = import versions.nixpkgs <span class="dt">{}</span><span class="kw">;</span>
-  <span class="ex">haskellPkgs</span> = pkgs.haskellPackages.override {
+  <span class="ex">haskellPkgs</span> = pkgs.haskell.packages.ghc802.override {
     <span class="ex">overrides</span> = self: super: {
       <span class="ex">doctemplates</span> = self.callHackage <span class="st">&quot;doctemplates&quot;</span> <span class="st">&quot;0.2.1&quot;</span> <span class="dt">{}</span><span class="kw">;</span>
       <span class="ex">hslua</span> = self.callHackage <span class="st">&quot;hslua&quot;</span> <span class="st">&quot;0.9.1&quot;</span> <span class="dt">{}</span><span class="kw">;</span>
