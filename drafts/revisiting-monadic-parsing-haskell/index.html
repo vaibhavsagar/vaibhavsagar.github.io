@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Revisiting 'Monadic Parsing in Haskell' - Vaibhav Sagar</title>
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Revisiting 'Monadic Parsing in Haskell'</h1>
+
+            <div class="info">
+    Posted on  2 February 2018
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../blog/tags/haskell/">haskell</a>, <a href="../../blog/tags/programming/">programming</a>, <a href="../../blog/tags/monads/">monads</a>
+    
+</div>
+
+<p>Monadic parsing in Haskell is what sold me on all three. Before Haskell my experiences with parsing had involved buggy regexes for lexers and wrangling tools like <code>bison</code> and <code>flex</code>, and although I’d heard that Haskell was good for parsing I couldn’t see how this could be the case when I couldn’t find any robust regex libraries! An aside in some documentation pointed me to Attoparsec and when I saw the <a href="https://github.com/bos/attoparsec/blob/master/examples/RFC2616.hs">example RFC2616 parser</a> it seemed like a magic trick. How could it be so small? After a few weeks of trying it myself I was convinced. This was the first application of monads I encountered that actually made my life simpler, and I started to realise that there was more to monads than smugness and being inaccessible to newcomers.</p>
+<p><a href="http://www.cs.nott.ac.uk/~pszgmh/pearl.pdf">‘Monadic Parsing in Haskell’</a> laid the groundwork for libraries like Attoparsec, and after using these libraries for a while I found it quite approachable. Although it was published in 1998 (almost 20 years ago!) it has aged gracefully and the code samples will run with almost no changes. However, the state of the art has advanced since then and I think the use of modern Haskell can make this material simpler to follow and implement. I’m assuming you have the original paper nearby to compare this with.</p>
+<p>The first change I want to make is the type definition. The paper uses the type</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Parser</span> a <span class="fu">=</span> <span class="dt">Parser</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> [(a,<span class="dt">String</span>)])</code></pre></div>
+<p>and although this is a famous enough definition that it has <a href="http://www.willamette.edu/~fruehr/haskell/seuss.html">its own rhyme</a>, I think the flexibility of lists is unnecessary. The authors don’t use it, and instead define a ‘deterministic choice’ operator that gives at most one result and use that everywhere instead. There is already a perfectly good datatype in Haskell for this, <code>Maybe</code>, so I’ll use that:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Parser</span> a <span class="fu">=</span> <span class="dt">Parser</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, <span class="dt">String</span>))</code></pre></div>
+<p>Renaming <code>String</code> to <code>s</code> and <code>Maybe</code> to <code>m</code> reveals a more interesting pattern:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Parser</span> s m a <span class="fu">=</span> <span class="dt">Parser</span> (s <span class="ot">-&gt;</span> m (a, s))</code></pre></div>
+<p>This is <a href="https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-State-Strict.html#t:StateT"><code>StateT</code></a>! Recognising this pattern makes instance definitions much easier, so much easier in fact that GHC can do it for us automatically with <code>-XGeneralizedNewtypeDeriving</code>! For completeness I will resist the temptation to do this, but you can try it yourself with</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span>
+<span class="kw">newtype</span> <span class="dt">Parser</span> a <span class="fu">=</span> <span class="dt">Parser</span> (<span class="dt">StateT</span> <span class="dt">String</span> <span class="dt">Maybe</span> a) <span class="kw">deriving</span> (<span class="dt">Functor</span>, <span class="dt">Applicative</span>, <span class="dt">Alternative</span>, <span class="dt">Monad</span>)</code></pre></div>
+<p>The second change is also for completeness: the authors jump straight into the <code>Monad</code> instance without defining <code>Functor</code> and <code>Applicative</code> first. To be fair, the <code>Applicative</code> abstraction hadn’t been discovered yet, and this is also the reason why the authors define <code>mzero</code> and <code>mplus</code> (which they call <code>(++)</code>) instead of <code>Alternative</code>. Because of our <code>Maybe</code> change, I’ll be able to get away with defining just <code>Alternative</code> and won’t need to bother with their <code>(++)</code></p>
+<p>Finally, I’ll try to avoid do-notation where possible in favour of a more Applicative style using e.g. <code>&lt;*&gt;</code> because a lot of the benefits of these parsers don’t require it.</p>
+<p>Let’s begin!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE InstanceSigs #-}</span>
+
+<span class="kw">import </span><span class="dt">Control.Applicative</span> (<span class="dt">Alternative</span>(..))
+<span class="kw">import </span><span class="dt">Control.Monad.Trans.State.Strict</span>
+<span class="kw">import </span><span class="dt">Control.Monad.Trans</span> (lift)
+<span class="kw">import </span><span class="dt">Control.Monad</span> (guard)
+<span class="kw">import </span><span class="dt">Data.Char</span> (isSpace, isDigit, ord)</code></pre></div>
+<p>For convenience I’ve defined an <code>unParser</code> that unwraps a <code>Parser a</code> to its underlying <code>StateT String Maybe a</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Parser</span> a <span class="fu">=</span> <span class="dt">Parser</span> {<span class="ot"> unParser ::</span> <span class="dt">StateT</span> <span class="dt">String</span> <span class="dt">Maybe</span> a }
+runParser <span class="fu">=</span> runStateT <span class="fu">.</span> unParser</code></pre></div>
+<p><code>fmap</code> is as simple as unwrapping the <code>Parser</code> and using the underlying <code>StateT</code>’s <code>fmap</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Parser</span> <span class="kw">where</span>
+<span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> b
+    fmap f p <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> f <span class="fu">&lt;$&gt;</span> unParser p</code></pre></div>
+<p>More unwrapping for <code>Applicative</code> and <code>Alternative</code>. The <code>Alternative</code> definition matches <code>(+++)</code> from the paper which means we don’t need to define it separately and can just use <code>(&lt;|&gt;)</code> everywhere instead.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Parser</span> <span class="kw">where</span>
+<span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+    pure a  <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> pure a
+<span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">Parser</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> b
+    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> (unParser f) <span class="fu">&lt;*&gt;</span> (unParser a)
+
+<span class="kw">instance</span> <span class="dt">Alternative</span> <span class="dt">Parser</span> <span class="kw">where</span>
+<span class="ot">    empty ::</span> <span class="dt">Parser</span> a
+    empty   <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> lift empty
+<span class="ot">    (&lt;|&gt;) ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+    a <span class="fu">&lt;|&gt;</span> b <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> (unParser a) <span class="fu">&lt;|&gt;</span> (unParser b)</code></pre></div>
+<p>The <code>Monad</code> definition is slightly more interesting, because we have to manually construct the <code>StateT</code> value, but this also boils down to unwrapping and rewrapping.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Parser</span> <span class="kw">where</span>
+<span class="ot">    (&gt;&gt;=) ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Parser</span> b) <span class="ot">-&gt;</span> <span class="dt">Parser</span> b
+    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> <span class="dt">StateT</span> <span class="fu">$</span> \s <span class="ot">-&gt;</span> <span class="kw">do</span>
+        (a', s') <span class="ot">&lt;-</span> runStateT (unParser a) s
+        runStateT (unParser (f a')) s'</code></pre></div>
+<p>Notice that <code>anyChar</code> is the only function below that manually constructs a <code>Parser</code>, and <code>satisfy</code> is the only one that requires the <code>Monad</code> interface.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">anyChar ::</span> <span class="dt">Parser</span> <span class="dt">Char</span>
+anyChar <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> <span class="dt">StateT</span> <span class="fu">$</span> \s <span class="ot">-&gt;</span> <span class="kw">case</span> s <span class="kw">of</span>
+    []     <span class="ot">-&gt;</span> <span class="dt">Nothing</span>
+    (c<span class="fu">:</span>cs) <span class="ot">-&gt;</span> <span class="dt">Just</span> (c, cs)
+
+<span class="ot">satisfy ::</span> (<span class="dt">Char</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> <span class="dt">Parser</span> <span class="dt">Char</span>
+satisfy pred <span class="fu">=</span> <span class="kw">do</span>
+    c <span class="ot">&lt;-</span> anyChar
+    guard <span class="fu">$</span> pred c
+    pure c
+
+<span class="ot">char ::</span> <span class="dt">Char</span> <span class="ot">-&gt;</span> <span class="dt">Parser</span> <span class="dt">Char</span>
+char <span class="fu">=</span> satisfy <span class="fu">.</span> (<span class="fu">==</span>)
+
+<span class="ot">string ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Parser</span> <span class="dt">String</span>
+string []     <span class="fu">=</span> pure []
+string (c<span class="fu">:</span>cs) <span class="fu">=</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> char c <span class="fu">&lt;*&gt;</span> string cs</code></pre></div>
+<p>I haven’t defined <code>many</code> and <code>many1</code>, because they are provided for free by <code>Applicative</code> as <code>many</code> and <code>some</code> after I defined <code>(&lt;|&gt;)</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">sepBy ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> b <span class="ot">-&gt;</span> <span class="dt">Parser</span> [a]
+sepBy p sep <span class="fu">=</span> (p <span class="ot">`sepBy1`</span> sep) <span class="fu">&lt;|&gt;</span> pure []
+
+<span class="ot">sepBy1 ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> b <span class="ot">-&gt;</span> <span class="dt">Parser</span> [a]
+sepBy1 p sep <span class="fu">=</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> p <span class="fu">&lt;*&gt;</span> many (sep <span class="fu">*&gt;</span> p)</code></pre></div>
+<p>These are almost identical to the definitions in the paper. I’ve included <code>chainr</code> for completeness.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">chainl ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+chainl p op a <span class="fu">=</span> (p <span class="ot">`chainl1`</span> op) <span class="fu">&lt;|&gt;</span> pure a
+
+<span class="ot">chainl1 ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+chainl1 p op <span class="fu">=</span> p <span class="fu">&gt;&gt;=</span> rest
+    <span class="kw">where</span> 
+        rest a <span class="fu">=</span> (<span class="kw">do</span>
+            f <span class="ot">&lt;-</span> op
+            b <span class="ot">&lt;-</span> p
+            rest (f a b)) <span class="fu">&lt;|&gt;</span> pure a
+
+<span class="ot">chainr ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+chainr p op a <span class="fu">=</span> (p <span class="ot">`chainr1`</span> op) <span class="fu">&lt;|&gt;</span> pure a
+
+<span class="ot">chainr1 ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+chainr1 p op <span class="fu">=</span> scan
+    <span class="kw">where</span>
+        scan   <span class="fu">=</span> p <span class="fu">&gt;&gt;=</span> rest
+        rest a <span class="fu">=</span> (<span class="kw">do</span>
+            f <span class="ot">&lt;-</span> op
+            b <span class="ot">&lt;-</span> scan
+            rest (f a b)) <span class="fu">&lt;|&gt;</span> pure a</code></pre></div>
+<p>The only difference here is the replacement of <code>(&gt;&gt;)</code> with <code>(*&gt;)</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">space ::</span> <span class="dt">Parser</span> <span class="dt">String</span>
+space <span class="fu">=</span> many (satisfy isSpace)
+
+<span class="ot">token ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
+token p <span class="fu">=</span> p <span class="fu">&lt;*</span> space
+
+<span class="ot">symbol ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Parser</span> <span class="dt">String</span>
+symbol <span class="fu">=</span> token <span class="fu">.</span> string
+
+<span class="ot">apply ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, <span class="dt">String</span>)
+apply p <span class="fu">=</span> runParser (space <span class="fu">*&gt;</span> p)</code></pre></div>
+<p>The calculator example is almost unchanged.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">expr, term, factor,<span class="ot"> digit ::</span> <span class="dt">Parser</span> <span class="dt">Int</span>
+expr   <span class="fu">=</span> term   <span class="ot">`chainl1`</span> addop
+term   <span class="fu">=</span> factor <span class="ot">`chainl1`</span> mulop
+factor <span class="fu">=</span> digit <span class="fu">&lt;|&gt;</span> (symbol <span class="st">&quot;(&quot;</span> <span class="fu">*&gt;</span> expr <span class="fu">&lt;*</span> symbol <span class="st">&quot;)&quot;</span>)
+digit  <span class="fu">=</span> subtract (ord <span class="ch">'0'</span>) <span class="fu">.</span> ord <span class="fu">&lt;$&gt;</span> token (satisfy isDigit)
+
+addop,<span class="ot"> mulop ::</span> <span class="dt">Parser</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>)
+addop <span class="fu">=</span> (symbol <span class="st">&quot;+&quot;</span> <span class="fu">*&gt;</span> pure (<span class="fu">+</span>)) <span class="fu">&lt;|&gt;</span> (symbol <span class="st">&quot;-&quot;</span> <span class="fu">*&gt;</span> pure (<span class="fu">-</span>))
+mulop <span class="fu">=</span> (symbol <span class="st">&quot;*&quot;</span> <span class="fu">*&gt;</span> pure (<span class="fu">*</span>)) <span class="fu">&lt;|&gt;</span> (symbol <span class="st">&quot;/&quot;</span> <span class="fu">*&gt;</span> pure (div))</code></pre></div>
+<p>Finally, the payoff!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">runParser expr <span class="st">&quot;(1 + 2 * 4) / 3 + 5&quot;</span></code></pre></div>
+<pre><code>Just (8,&quot;&quot;)</code></pre>
+<p>What have we gained in 20 years? With only minor changes, the code is more composable and uses finer-grained abstractions. For example, if we change our minds about replacing <code>[]</code> with <code>Maybe</code>, we can switch it back and would only have to update <code>anyChar</code> and <code>apply</code>! If we want better error messages, we could use a type such as <code>Either String</code> to keep track of locations and error messages.</p>
+<p>Another big difference is the <code>Applicative</code> family of functions, which we can leverage whenever we don’t have to branch on a previously parsed value (which turns out to be surprisingly often). I’m a huge fan of the <code>x &lt;$&gt; y &lt;*&gt; z</code> idiom and I think it’s useful to be able to parse this way.</p>
+<p>Otherwise, the code is largely the same and I think it’s pretty incredible that so little has changed in 20 years!</p>
+
+        </div>
+        <div id="footer">
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+    </body>
+</html>
