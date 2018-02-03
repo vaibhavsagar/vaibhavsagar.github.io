@@ -72,8 +72,9 @@ runParser <span class="fu">=</span> runStateT <span class="fu">.</span> unParser
     fmap f p <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> f <span class="fu">&lt;$&gt;</span> unParser p</code></pre></div>
 <p>More unwrapping for <code>Applicative</code> and <code>Alternative</code>.</p>
 <p>The <a href="https://hackage.haskell.org/package/base/docs/Control-Applicative.html#t:Alternative"><code>Alternative</code></a> typeclass allows us to express the idea of running one parser or another parser, resulting in the first successful parse. <code>empty</code> handles the case where both parsers fail, and <code>(&lt;|&gt;)</code> (which can be pronounced ‘alt’) performs the alternation. This is convenient enough on its own, but <code>Alternative</code> also provides <code>many</code> and <code>some</code> which correspond exactly to <code>many</code> and <code>many1</code> from the paper:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">many v <span class="fu">=</span> some v <span class="fu">&lt;|&gt;</span> pure []
-some v <span class="fu">=</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> v <span class="fu">&lt;*&gt;</span> many v</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- many v = some v &lt;|&gt; pure []</span>
+<span class="co">-- some v = (:) &lt;$&gt; v &lt;*&gt; many v</span></code></pre></div>
+<p>but only after replacing <code>[]</code> with <code>Maybe</code> like I’ve done here so that <code>(&lt;|&gt;)</code> corresponds to <code>(+++)</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Parser</span> <span class="kw">where</span>
 <span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
     pure a  <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> pure a
