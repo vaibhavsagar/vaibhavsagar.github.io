@@ -43,7 +43,6 @@
 
 <span class="kw">import </span><span class="dt">Control.Applicative</span> (<span class="dt">Alternative</span>(..))
 <span class="kw">import </span><span class="dt">Control.Monad.Trans.State.Strict</span>
-<span class="kw">import </span><span class="dt">Control.Monad.Trans</span> (lift)
 <span class="kw">import </span><span class="dt">Control.Monad</span> (guard)
 <span class="kw">import </span><span class="dt">Data.Char</span> (isSpace, isDigit, ord)</code></pre></div>
 <p>For convenience I’ve defined an <code>unParser</code> that unwraps a <code>Parser a</code> to its underlying <code>StateT String Maybe a</code>.</p>
@@ -66,7 +65,7 @@ runParser <span class="fu">=</span> runStateT <span class="fu">.</span> unParser
 
 <span class="kw">instance</span> <span class="dt">Alternative</span> <span class="dt">Parser</span> <span class="kw">where</span>
 <span class="ot">    empty ::</span> <span class="dt">Parser</span> a
-    empty   <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> lift empty
+    empty   <span class="fu">=</span> <span class="dt">Parser</span> empty
 <span class="ot">    (&lt;|&gt;) ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a
     a <span class="fu">&lt;|&gt;</span> b <span class="fu">=</span> <span class="dt">Parser</span> <span class="fu">$</span> unParser a <span class="fu">&lt;|&gt;</span> unParser b</code></pre></div>
 <p>The <code>Monad</code> definition is slightly more interesting, because we have to manually construct the <code>StateT</code> value, but this also boils down to unwrapping and rewrapping.</p>
@@ -153,7 +152,7 @@ apply p <span class="fu">=</span> runParser (space <span class="fu">*&gt;</span>
 <p>If we want better error messages, we could use a type such as <code>Either String</code> to keep track of locations and error messages. The <a href="http://hackage.haskell.org/package/yoctoparsec"><code>yoctoparsec</code></a> library takes this even further, allowing to you to choose your own stream type.</p>
 <p>Another big difference is the <code>Applicative</code> family of functions, which we can leverage whenever we don’t have to branch on a previously parsed value (which turns out to be surprisingly often). I’m a huge fan of the <code>x &lt;$&gt; y &lt;*&gt; z</code> and the <code>ignored *&gt; value &lt;* ignored</code> idioms and I think it’s useful to be able to parse this way.</p>
 <p>Otherwise, the code is largely the same and I think it’s pretty incredible that so little has changed in 20 years! This code is available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/revisiting-monadic-parsing-haskell/Parser.ipynb">IHaskell notebook</a> if you would like to experiment with it yourself.</p>
-<p>Thanks to <a href="https://github.com/cqfd">Alan O’Donnell</a>, <a href="https://blogs.ncl.ac.uk/andreymokhov/">Andrey Mokhov</a>, <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, and <a href="https://jvns.ca/">Julia Evans</a> for comments and feedback!</p>
+<p>Thanks to <a href="https://github.com/cqfd">Alan O’Donnell</a>, <a href="https://blogs.ncl.ac.uk/andreymokhov/">Andrey Mokhov</a>, <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="https://github.com/rampion/">Noah Luck Easterly</a> for comments and feedback!</p>
 ]]></summary>
 </entry>
 <entry>
