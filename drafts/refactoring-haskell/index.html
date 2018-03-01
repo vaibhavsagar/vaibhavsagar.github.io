@@ -52,6 +52,7 @@
 <span class="kw">import qualified</span> <span class="dt">Data.Map.Strict</span> <span class="kw">as</span> <span class="dt">M</span>
 <span class="kw">import qualified</span> <span class="dt">Data.Set</span>        <span class="kw">as</span> <span class="dt">S</span>
 <span class="kw">import qualified</span> <span class="dt">Data.Array</span>      <span class="kw">as</span> <span class="dt">A</span>
+<span class="kw">import qualified</span> <span class="dt">Prelude</span>         <span class="kw">as</span> <span class="dt">P</span>
 
 <span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup)
 
@@ -62,7 +63,7 @@
 
 <span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [<span class="dt">S.Set</span> <span class="dt">Int</span>]
 tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span>
-    index    <span class="ot">&lt;-</span> newSTRef (<span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>)
+    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span>
     stack    <span class="ot">&lt;-</span> newSTRef []
     stackSet <span class="ot">&lt;-</span> newSTRef S.empty
     indices  <span class="ot">&lt;-</span> newSTRef M.empty
@@ -75,7 +76,6 @@ tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span c
             strongConnect n v graph index stack stackSet indices lowlinks output
 
     readSTRef output
-
 
 strongConnect
 <span class="ot">    ::</span> <span class="dt">Int</span>
@@ -92,7 +92,7 @@ strongConnect n v graph index stack stackSet indices lowlinks output <span class
     i <span class="ot">&lt;-</span> readSTRef index
     insert v i indices
     insert v i lowlinks
-    increment index
+    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)
     push stack stackSet v
 
     forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> lookup w indices <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span>
@@ -115,7 +115,6 @@ strongConnect n v graph index stack stackSet indices lowlinks output <span class
     <span class="kw">where</span>
         lookup value hashMap     <span class="fu">=</span> M.lookup value <span class="fu">&lt;$&gt;</span> readSTRef hashMap
         insert key value hashMap <span class="fu">=</span> modifySTRef' hashMap (M.insert key value)
-        increment counter        <span class="fu">=</span> modifySTRef' counter (<span class="fu">+</span><span class="dv">1</span>)
 
 <span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">S.Set</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> (<span class="dt">S.Set</span> <span class="dt">Int</span>))
 addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`S.member`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span>
@@ -141,7 +140,7 @@ clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]
 
 <span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span>
 checkSat name <span class="fu">=</span> <span class="kw">do</span>
-    p <span class="ot">&lt;-</span> map (map read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name
+    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name
     <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p
         pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p
         pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn
