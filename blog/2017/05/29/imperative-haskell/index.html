@@ -239,68 +239,67 @@ quicksort' vector partitionMedian</code></pre></div>
     end if
   end function</code></pre></div>
 <p>and here’s what that looks like in Haskell:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE LambdaCase #-}</span>
+
+<span class="kw">import qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span>
+<span class="kw">import qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span>
+
+<span class="kw">import </span><span class="dt">Control.Monad</span>       (forM_, when)
 <span class="kw">import </span><span class="dt">Control.Monad.ST</span>
 <span class="kw">import </span><span class="dt">Data.STRef</span>
-
-<span class="kw">import qualified</span> <span class="dt">Data.Map.Strict</span>    <span class="kw">as</span> <span class="dt">M</span>
-<span class="kw">import qualified</span> <span class="dt">Data.Set</span>           <span class="kw">as</span> <span class="dt">S</span>
-<span class="kw">import qualified</span> <span class="dt">Data.IntMap.Strict</span> <span class="kw">as</span> <span class="dt">I</span>
-<span class="kw">import qualified</span> <span class="dt">Data.Array</span>         <span class="kw">as</span> <span class="dt">A</span>
-
-<span class="kw">import </span><span class="dt">Control.Monad</span> (forM_, when)
-<span class="kw">import </span><span class="dt">Data.Maybe</span> (isNothing, fromJust)
+<span class="kw">import </span><span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)
+<span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span>      (read, replicate)
 
 tarjan graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span>
     index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span>
     stack    <span class="ot">&lt;-</span> newSTRef []
-    indices  <span class="ot">&lt;-</span> newSTRef I.empty
-    lowlinks <span class="ot">&lt;-</span> newSTRef I.empty
+    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span>
+    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span>
+    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span>
     output   <span class="ot">&lt;-</span> newSTRef []
 
     forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span>
-        vIndex <span class="ot">&lt;-</span> I.lookup v <span class="fu">&lt;$&gt;</span> readSTRef indices
-        when (isNothing vIndex) <span class="fu">$</span> strongConnect v graph index stack indices lowlinks output
+        vIndex <span class="ot">&lt;-</span> read indices v
+        when (vIndex <span class="fu">==</span> <span class="dt">Nothing</span>) <span class="fu">$</span>
+            strongConnect v graph index stack stackSet indices lowlinks output
 
     reverse <span class="fu">&lt;$&gt;</span> readSTRef output
+    <span class="kw">where</span> size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span>
 
-strongConnect v graph index stack indices lowlinks output <span class="fu">=</span> <span class="kw">do</span>
+strongConnect v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span>
     i <span class="ot">&lt;-</span> readSTRef index
-    modifySTRef' indices  (I.insert v i)
-    modifySTRef' lowlinks (I.insert v i)
+    write indices  v (<span class="dt">Just</span> i)
+    write lowlinks v (<span class="dt">Just</span> i)
     modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)
-    push stack v
+    push v
 
-    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> <span class="kw">do</span>
-        wIndex <span class="ot">&lt;-</span> I.lookup w <span class="fu">&lt;$&gt;</span> readSTRef indices
-        <span class="kw">if</span> isNothing wIndex
-            <span class="kw">then</span> <span class="kw">do</span>
-                strongConnect w graph index stack indices lowlinks output
-                vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">.</span> I.lookup v <span class="fu">&lt;$&gt;</span> readSTRef lowlinks
-                wLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">.</span> I.lookup w <span class="fu">&lt;$&gt;</span> readSTRef lowlinks
-                modifySTRef' lowlinks (I.insert v <span class="fu">$</span> min vLowLink wLowLink)
-            <span class="kw">else</span> <span class="kw">do</span>
-                wOnStack <span class="ot">&lt;-</span> elem w <span class="fu">&lt;$&gt;</span> readSTRef stack
-                when wOnStack <span class="fu">$</span> <span class="kw">do</span>
-                    vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">.</span> I.lookup v <span class="fu">&lt;$&gt;</span> readSTRef lowlinks
-                    modifySTRef' lowlinks (I.insert v <span class="fu">$</span> min vLowLink (fromJust wIndex))
+    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span>
+        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span>
+            strongConnect w graph index stack stackSet indices lowlinks output
+            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)
+        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> read stackSet w <span class="fu">&gt;&gt;=</span> \wOnStack <span class="ot">-&gt;</span> when wOnStack <span class="fu">$</span>
+            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)
 
-    vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">.</span> I.lookup v <span class="fu">&lt;$&gt;</span> readSTRef lowlinks
-    vIndex   <span class="ot">&lt;-</span> fromJust <span class="fu">.</span> I.lookup v <span class="fu">&lt;$&gt;</span> readSTRef indices
+    vLowLink <span class="ot">&lt;-</span> read lowlinks v
+    vIndex   <span class="ot">&lt;-</span> read indices  v
     when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> <span class="kw">do</span>
-        scc <span class="ot">&lt;-</span> addSCC v [] stack
+        scc <span class="ot">&lt;-</span> addSCC v []
         modifySTRef' output (scc<span class="fu">:</span>)
+    <span class="kw">where</span>
+        addSCC v scc <span class="fu">=</span> <span class="kw">do</span>
+            w <span class="ot">&lt;-</span> pop
+            <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc
+            <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return scc' <span class="kw">else</span> addSCC v scc'
 
-addSCC v scc stack <span class="fu">=</span> <span class="kw">do</span>
-    w <span class="ot">&lt;-</span> pop stack
-    <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc
-    <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return scc' <span class="kw">else</span> addSCC v scc' stack
+        push e <span class="fu">=</span> <span class="kw">do</span>
+            modifySTRef' stack (e<span class="fu">:</span>)
+            write stackSet e <span class="dt">True</span>
 
-push stack e <span class="fu">=</span> modifySTRef' stack (e<span class="fu">:</span>)
-pop  stack   <span class="fu">=</span> <span class="kw">do</span>
-    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack
-    modifySTRef' stack tail
-    return e</code></pre></div>
+        pop <span class="fu">=</span> <span class="kw">do</span>
+            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack
+            modifySTRef' stack tail
+            write stackSet e <span class="dt">False</span>
+            return e</code></pre></div>
 <p>Aside from explicitly declaring our variables and passing them around, I think this looks pretty close.</p>
 <p>How do we square this with Haskell’s reputation for purity and referential transparency? That’s the subject of <a href="https://www.microsoft.com/en-us/research/publication/lazy-functional-state-threads/">the paper mentioned above</a> that you don’t have to read (but totally can if you want)! They figured out a way to provide a principled pure interface to mutable state by passing the references as arguments into each function that makes use of them and leveraging the type system to make sure any impurity is well contained. The correctness of this approach was <a href="http://iris-project.org/pdfs/2017-icfp-runST-submission.pdf">very recently verified</a>. If desired, we can replace any of the functions with purer and more idiomatic definitions without changing the output, and that satisfies the definition of referential transparency!</p>
 <p>Why don’t we do this all the time, when Haskell is at least a serviceable imperative language? Because writing imperative programs is hard! They don’t compose as well, have less useful type signatures, and are harder to reason about. Getting away from those things is why we have Haskell to begin with! The real question should be: how can we avoid doing things this way as much as possible?</p>
