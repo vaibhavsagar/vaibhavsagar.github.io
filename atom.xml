@@ -1092,9 +1092,7 @@ quicksort&#39; vector partitionMedian</code></pre></div>
     end if
   end function</code></pre></div>
 <p>and here’s what that looks like in Haskell:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE LambdaCase #-}</span>
-
-<span class="kw">import qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span>
 <span class="kw">import qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span>
 
 <span class="kw">import </span><span class="dt">Control.Monad</span>       (forM_, when)
@@ -1126,7 +1124,7 @@ strongConnect v graph index stack stackSet indices lowlinks output <span class="
     modifySTRef&#39; index (<span class="fu">+</span><span class="dv">1</span>)
     push v
 
-    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span>
+    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \found <span class="ot">-&gt;</span> <span class="kw">case</span> found <span class="kw">of</span>
         <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span>
             strongConnect w graph index stack stackSet indices lowlinks output
             write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)
@@ -1135,9 +1133,7 @@ strongConnect v graph index stack stackSet indices lowlinks output <span class="
 
     vLowLink <span class="ot">&lt;-</span> read lowlinks v
     vIndex   <span class="ot">&lt;-</span> read indices  v
-    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> <span class="kw">do</span>
-        scc <span class="ot">&lt;-</span> addSCC v []
-        modifySTRef&#39; output (scc<span class="fu">:</span>)
+    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> modifySTRef&#39; output <span class="fu">.</span> (<span class="fu">:</span>) <span class="fu">=&lt;&lt;</span> addSCC v []
     <span class="kw">where</span>
         addSCC v scc <span class="fu">=</span> <span class="kw">do</span>
             w <span class="ot">&lt;-</span> pop
