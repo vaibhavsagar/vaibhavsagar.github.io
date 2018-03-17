@@ -90,13 +90,13 @@
   <span class="ex">targetPkgs</span> = pkgs: [
     <span class="ex">pkgs.blas</span>
     <span class="ex">pkgs.cairo.dev</span>
-    <span class="ex">pkgs.iana-etc</span>
     <span class="ex">pkgs.file</span>
-    <span class="ex">pkgs.haskellPackages.stack</span>
     <span class="ex">pkgs.gcc</span>
     <span class="ex">pkgs.glib.dev</span>
     <span class="ex">pkgs.gmp</span>
     <span class="ex">pkgs.gnumake</span>
+    <span class="ex">pkgs.haskellPackages.stack</span>
+    <span class="ex">pkgs.iana-etc</span>
     <span class="ex">pkgs.liblapack</span>
     <span class="ex">pkgs.pango.dev</span>
     <span class="ex">pkgs.perl</span>
@@ -117,13 +117,13 @@
   <span class="ex">targetPkgs</span> = pkgs: [
     <span class="ex">pkgs.blas</span>
     <span class="ex">pkgs.cairo.dev</span>
-    <span class="ex">pkgs.iana-etc</span>
     <span class="ex">pkgs.file</span>
-    <span class="ex">pkgs.haskellPackages.stack</span>
     <span class="ex">pkgs.gcc</span>
     <span class="ex">pkgs.glib.dev</span>
     <span class="ex">pkgs.gmp</span>
     <span class="ex">pkgs.gnumake</span>
+    <span class="ex">pkgs.haskellPackages.stack</span>
+    <span class="ex">pkgs.iana-etc</span>
     <span class="ex">pkgs.liblapack</span>
     <span class="ex">pkgs.pango.dev</span>
     <span class="ex">pkgs.perl</span>
