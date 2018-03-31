@@ -8,8 +8,34 @@
         <name>Vaibhav Sagar</name>
         <email>vaibhavsagar@gmail.com</email>
     </author>
-    <updated>2018-03-17T00:00:00Z</updated>
+    <updated>2018-03-31T00:00:00Z</updated>
     <entry>
+    <title>IHaskell on mybinder.org</title>
+    <link href="http://vaibhavsagar.com/blog/2018/03/31/ihaskell-mybinder/index.html" />
+    <id>http://vaibhavsagar.com/blog/2018/03/31/ihaskell-mybinder/index.html</id>
+    <published>2018-03-31T00:00:00Z</published>
+    <updated>2018-03-31T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on 31 March 2018
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/programming/index.html">programming</a>
+    
+</div>
+
+<p><a href="https://mybinder.org/">mybinder.org</a> is a website that will freely host a GitHub repository as a collection of interactive Jupyter notebooks. It has excellent built-in support for some of the more popular Jupyter kernels such as Python and Julia, but it also has support for building a <code>Dockerfile</code> of your choosing.</p>
+<p>This means that getting an IHaskell installation up and running can be as simple as clicking a link, and I’m happy to report that I’ve gotten this working! You can <a href="https://mybinder.org/v2/gh/gibiansky/IHaskell/4cd40d186c800b3360761e312d8e9ddacc83c994">try it here</a>.</p>
+<p>I started with the simplest thing I could think of, which was to install system dependencies and Jupyter to an Ubuntu container and then run <code>stack install ihaskell</code>. You can see the Dockerfile for that <a href="https://github.com/vaibhavsagar/ihaskell-mybinder/blob/6d093c5cd06cde77e13a5a98ae8ce093ba51fee9/Dockerfile">here</a>.</p>
+<p>Once I had that working, my next step was to roll these changes into <a href="https://github.com/gibiansky/IHaskell/pull/848">IHaskell’s <code>Dockerfile</code></a> and now everyone can use IHaskell on mybinder.org!</p>
+<p>I’ve also <a href="https://hub.docker.com/r/vaibhavsagar/ihaskell/">pushed an image to Docker Hub</a> that you can use as a base for your own repositories. A minimal example of a valid <code>Dockerfile</code> looks something like this:</p>
+<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">FROM</span> vaibhavsagar/ihaskell:4afa0aee339e</code></pre></div>
+<p>Ideally I would also like to get this running with Nix, because that approach results in a much smaller image and is easily extensible just by editing <code>default.nix</code>. I have a small repo that <a href="https://github.com/vaibhavsagar/ihaskell-mybinder-nix">builds but doesn’t run on mybinder.org</a>, and I’ve <a href="https://github.com/jupyterhub/binder/issues/87">opened an issue</a>.</p>
+<p>I’m pretty excited about what this means for the Jupyter ecosystem and IHaskell in particular, and I’m looking forward to seeing what other people do with this!</p>
+]]></summary>
+</entry>
+<entry>
     <title>Faking Non-NixOS for Stack</title>
     <link href="http://vaibhavsagar.com/blog/2018/03/17/faking-non-nixos-stack/index.html" />
     <id>http://vaibhavsagar.com/blog/2018/03/17/faking-non-nixos-stack/index.html</id>
@@ -2678,85 +2704,6 @@ callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu
 <p>Both my parents <a href="http://infotech.co.id/">work in IT</a> so their hope was that I would be able to help them with some projects they were working on until I left for my batch. Instead, what I ended up doing was showing up at work and ignoring them for the rest of the day in favour of my project. This was not the best idea for my relationship with my parents, but I definitely got a lot better at Haskell. Fortunately for me my parents are incredibly supportive :).</p>
 <p>My mum celebrated her birthday in Bali, and I insisted on bringing my laptop so I could keep my Github commit streak going. This turned out to a good decision because that day the RC mailing list thread welcoming new batchlings was started. I ducked out of celebrations and spent a while agonising over the perfect introduction.</p>
 <p>Two weeks later I was in New York.</p>
-]]></summary>
-</entry>
-<entry>
-    <title>A Simple Key-Value Store with Servant</title>
-    <link href="http://vaibhavsagar.com/blog/2017/01/24/simple-kv-store/index.html" />
-    <id>http://vaibhavsagar.com/blog/2017/01/24/simple-kv-store/index.html</id>
-    <published>2017-01-24T00:00:00Z</published>
-    <updated>2017-01-24T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
-    Posted on 24 January 2017
-    
-</div>
-<div class="info">
-    
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>
-    
-</div>
-
-<p>The <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis">meat of the Servant tutorial</a> starts with an imposing list of language extensions and imports and only gets more confusing from there. I don’t think this gives newbies (i.e. me) the best first impression of Servant. Let’s build the simplest possible key-value store with it instead.</p>
-<p>We’re going to write this as a <code>stack</code> script so everything is in one file.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/usr/bin/env stack</span></code></pre></div>
-<p>Let’s import the modules we need.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">{- stack --resolver lts-7 --install-ghc runghc</span>
-<span class="co">    --package aeson</span>
-<span class="co">    --package servant-server</span>
-<span class="co">    --package text</span>
-<span class="co">    --package transformers</span>
-<span class="co">    --package unordered-containers</span>
-<span class="co">    --package warp</span>
-<span class="co">    -}</span></code></pre></div>
-<p>At minimum we need <code>servant-server</code> for Servant goodness and <code>warp</code> to actually run our web service. The plan is to create an <code>IORef</code> holding a <code>HashMap</code> and use that as our store, which is why we need <code>unordered-containers</code>. I’d like to store arbitrary JSON, therefore <code>aeson</code>, and I think our keys should be <code>Text</code>, because <code>aeson</code> and <code>Text</code> are great together. That leaves <code>transformers</code>, which we need because of <code>liftIO</code>.</p>
-<p>It turns out that we only need two language extensions for this example.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds #-}</span>
-<span class="ot">{-# LANGUAGE TypeOperators #-}</span></code></pre></div>
-<p>As far as I can tell, both these extensions are needed for Servant’s cute API specification EDSL. We’ll let you have this one, Servant.</p>
-<p>Time for a (hopefully manageable) list of imports!</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
-
-<span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span>   (liftIO)
-<span class="kw">import </span><span class="dt">Data.Aeson</span>               (<span class="dt">Value</span>)
-<span class="kw">import </span><span class="dt">Data.IORef</span>               (<span class="dt">IORef</span>, newIORef, readIORef, atomicModifyIORef&#39;)
-<span class="kw">import </span><span class="dt">Data.HashMap.Strict</span>      (<span class="dt">HashMap</span>, lookup, insert, empty)
-<span class="kw">import </span><span class="dt">Data.Text</span>                (<span class="dt">Text</span>)
-<span class="kw">import </span><span class="dt">Network.Wai.Handler.Warp</span> (run)
-<span class="kw">import </span><span class="dt">System.Environment</span>       (getArgs)
-<span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span>           (lookup)
-<span class="kw">import </span><span class="dt">Servant</span></code></pre></div>
-<p>All imports are explicit except <code>Servant</code>’s.</p>
-<p>Speaking of the EDSL:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">API</span>
-    <span class="fu">=</span>    <span class="st">&quot;get&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[JSON] (Maybe Value)</span>
-    <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;put&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span>
-        <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">&#39;[JSON] Value     :&gt; Put &#39;</span>[<span class="dt">JSON</span>] <span class="dt">Text</span></code></pre></div>
-<p>This API has two endpoints: a “/get/:key” endpoint that provides the value associated with a key if the key exists in our store, or a “put/:key” endpoint that allows us to associate some JSON with a key, returning the key used. How this fits together is still a bit magical to me, but <a href="http://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html">this blog post</a> provides the best explanation I’ve read so far. The section of the Servant tutorial <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/ApiType.html">on the API specification EDSL</a> is also quite good.</p>
-<p>Let’s define a type synonym so we don’t have to keep writing <code>IORef (HashMap Text Value)</code> over and over again:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Store</span> <span class="fu">=</span> <span class="dt">IORef</span> (<span class="dt">HashMap</span> <span class="dt">Text</span> <span class="dt">Value</span>)</code></pre></div>
-<p>Servant uses the same operator to define the type and the serving action:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span>
-server store <span class="fu">=</span> getValue store <span class="fu">:&lt;|&gt;</span> putValue store</code></pre></div>
-<p>The order in which these actions are composed needs to match the order used in the API definition.</p>
-<p>Next we define <code>getValue</code> and <code>putValue</code>. We need actions of type <code>Handler</code>, which is <code>ExceptT ServantErr IO</code>, so we <code>liftIO</code> as necessary:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">getValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> (<span class="dt">Maybe</span> <span class="dt">Value</span>)
-getValue store key <span class="fu">=</span> liftIO <span class="fu">$</span> lookup key <span class="fu">&lt;$&gt;</span> readIORef store
-
-<span class="ot">putValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Text</span>
-putValue store key value <span class="fu">=</span> liftIO <span class="fu">$</span> atomicModifyIORef&#39; store modify
-    <span class="kw">where</span> modify kv <span class="fu">=</span> (insert key value kv, key)</code></pre></div>
-<p>Almost there. We declare the API we want to serve:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">kvAPI ::</span> <span class="dt">Proxy</span> <span class="dt">API</span>
-kvAPI <span class="fu">=</span> <span class="dt">Proxy</span></code></pre></div>
-<p>Once again, Kwang Yul Seo has <a href="http://kseo.github.io/posts/2017-01-15-data-proxy.html">a great blog post</a> on this.</p>
-<p>Finally, we define our entry point:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> <span class="kw">do</span>
-    port <span class="ot">&lt;-</span> read <span class="fu">.</span> head <span class="fu">&lt;$&gt;</span><span class="ot"> getArgs ::</span> <span class="dt">IO</span> <span class="dt">Int</span>
-    run port <span class="fu">.</span> serve kvAPI <span class="fu">.</span> server <span class="fu">=&lt;&lt;</span> newIORef empty</code></pre></div>
-<p>To recap: we define our API as a type, our handlers, and the type we want to serve, and then we plug it all together.</p>
-<p>And we’re done! We can now <code>chmod +x KVStore.hs</code> (or whatever you called the file) and run it: <code>./KVStore.hs 8081</code>.</p>
-<p>I hope this provides a better starting point for learning Servant. If desired, the full script is available <a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d">here</a>.</p>
 ]]></summary>
 </entry>
 
