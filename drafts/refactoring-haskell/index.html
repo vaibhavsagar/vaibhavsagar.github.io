@@ -45,107 +45,108 @@
 <p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a joy</a>. I’ve certainly found this to be the case, but what does that mean in practice? I thought it might be useful to demonstrate by refactoring some of my own code from when I was less familiar with Haskell.</p>
 <p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given 2SAT problem is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="http://vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
 <p>The initial version of the code is as follows:</p>
-<p><details> <summary>Initial 2SAT.hs</summary></p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE LambdaCase #-}</span>
-
-<span class="kw">import qualified</span> <span class="dt">Data.Graph</span>      <span class="kw">as</span> <span class="dt">G</span>
-<span class="kw">import qualified</span> <span class="dt">Data.Map.Strict</span> <span class="kw">as</span> <span class="dt">M</span>
-<span class="kw">import qualified</span> <span class="dt">Data.Set</span>        <span class="kw">as</span> <span class="dt">S</span>
-<span class="kw">import qualified</span> <span class="dt">Data.Array</span>      <span class="kw">as</span> <span class="dt">A</span>
-<span class="kw">import qualified</span> <span class="dt">Prelude</span>         <span class="kw">as</span> <span class="dt">P</span>
-
-<span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup)
-
-<span class="kw">import </span><span class="dt">Control.Monad.ST</span>
-<span class="kw">import </span><span class="dt">Data.STRef</span>
-<span class="kw">import </span><span class="dt">Control.Monad</span> (forM_, when)
-<span class="kw">import </span><span class="dt">Data.Maybe</span> (isJust, isNothing, fromJust)
-
-<span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [<span class="dt">S.Set</span> <span class="dt">Int</span>]
-tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span>
-    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span>
-    stack    <span class="ot">&lt;-</span> newSTRef []
-    stackSet <span class="ot">&lt;-</span> newSTRef S.empty
-    indices  <span class="ot">&lt;-</span> newSTRef M.empty
-    lowlinks <span class="ot">&lt;-</span> newSTRef M.empty
-    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])
-
-    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span>
-        vIndex <span class="ot">&lt;-</span> M.lookup v <span class="fu">&lt;$&gt;</span> readSTRef indices
-        when (isNothing vIndex) <span class="fu">$</span>
-            strongConnect n v graph index stack stackSet indices lowlinks output
-
-    readSTRef output
-
-strongConnect
-<span class="ot">    ::</span> <span class="dt">Int</span>
-    <span class="ot">-&gt;</span> <span class="dt">Int</span>
-    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span>
-    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span>
-    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]
-    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>)
-    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">M.Map</span> <span class="dt">Int</span> <span class="dt">Int</span>)
-    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">M.Map</span> <span class="dt">Int</span> <span class="dt">Int</span>)
-    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [<span class="dt">S.Set</span> <span class="dt">Int</span>])
-    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()
-strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span>
-    i <span class="ot">&lt;-</span> readSTRef index
-    insert v i indices
-    insert v i lowlinks
-    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)
-    push stack stackSet v
-
-    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> lookup w indices <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span>
-        <span class="dt">Nothing</span>     <span class="ot">-&gt;</span> <span class="kw">do</span>
-            strongConnect n w graph index stack stackSet indices lowlinks output
-            vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v lowlinks
-            wLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup w lowlinks
-            insert v (min vLowLink wLowLink) lowlinks
-        <span class="dt">Just</span> wIndex <span class="ot">-&gt;</span> <span class="kw">do</span>
-            wOnStack <span class="ot">&lt;-</span> S.member w <span class="fu">&lt;$&gt;</span> readSTRef stackSet
-            when wOnStack <span class="fu">$</span> <span class="kw">do</span>
-                vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v lowlinks
-                insert v (min vLowLink wIndex) lowlinks
-
-    vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v lowlinks
-    vIndex   <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v indices
-    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> <span class="kw">do</span>
-        scc <span class="ot">&lt;-</span> addSCC n v S.empty stack stackSet
-        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs
-    <span class="kw">where</span>
-        lookup value hashMap     <span class="fu">=</span> M.lookup value <span class="fu">&lt;$&gt;</span> readSTRef hashMap
-        insert key value hashMap <span class="fu">=</span> modifySTRef' hashMap (M.insert key value)
-
-<span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">S.Set</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> (<span class="dt">S.Set</span> <span class="dt">Int</span>))
-addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`S.member`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span>
-    <span class="kw">let</span> scc' <span class="fu">=</span> S.insert w scc
-    <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc' stack stackSet
-
-<span class="ot">push ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()
-push stack stackSet e <span class="fu">=</span> <span class="kw">do</span>
-    modifySTRef' stack    (e<span class="fu">:</span>)
-    modifySTRef' stackSet (S.insert e)
-
-<span class="ot">pop ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span>
-pop stack stackSet <span class="fu">=</span> <span class="kw">do</span>
-    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack
-    modifySTRef' stack tail
-    modifySTRef' stackSet (S.delete e)
-    return e
-
-denormalise     <span class="fu">=</span> subtract
-normalise       <span class="fu">=</span> (<span class="fu">+</span>)
-other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v
-clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]
-
-<span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span>
-checkSat name <span class="fu">=</span> <span class="kw">do</span>
-    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name
-    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p
-        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p
-        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn
-    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</code></pre></div>
-<p></details></p>
+<details>
+<p><summary>Initial 2SAT.hs</summary></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span>      <span class="kw">as</span> <span class="dt">G</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Map.Strict</span> <span class="kw">as</span> <span class="dt">M</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Set</span>        <span class="kw">as</span> <span class="dt">S</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span>      <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>         <span class="kw">as</span> <span class="dt">P</span></a>
+<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup)</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
+<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
+<a class="sourceLine" id="cb1-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Control.Monad</span> (forM_, when)</a>
+<a class="sourceLine" id="cb1-14" data-line-number="14"><span class="kw">import</span> <span class="dt">Data.Maybe</span> (isJust, isNothing, fromJust)</a>
+<a class="sourceLine" id="cb1-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb1-16" data-line-number="16"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [<span class="dt">S.Set</span> <span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb1-17" data-line-number="17">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-18" data-line-number="18">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
+<a class="sourceLine" id="cb1-19" data-line-number="19">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
+<a class="sourceLine" id="cb1-20" data-line-number="20">    stackSet <span class="ot">&lt;-</span> newSTRef S.empty</a>
+<a class="sourceLine" id="cb1-21" data-line-number="21">    indices  <span class="ot">&lt;-</span> newSTRef M.empty</a>
+<a class="sourceLine" id="cb1-22" data-line-number="22">    lowlinks <span class="ot">&lt;-</span> newSTRef M.empty</a>
+<a class="sourceLine" id="cb1-23" data-line-number="23">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
+<a class="sourceLine" id="cb1-24" data-line-number="24"></a>
+<a class="sourceLine" id="cb1-25" data-line-number="25">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-26" data-line-number="26">        vIndex <span class="ot">&lt;-</span> M.lookup v <span class="fu">&lt;$&gt;</span> readSTRef indices</a>
+<a class="sourceLine" id="cb1-27" data-line-number="27">        when (isNothing vIndex) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb1-28" data-line-number="28">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb1-29" data-line-number="29"></a>
+<a class="sourceLine" id="cb1-30" data-line-number="30">    readSTRef output</a>
+<a class="sourceLine" id="cb1-31" data-line-number="31"></a>
+<a class="sourceLine" id="cb1-32" data-line-number="32">strongConnect</a>
+<a class="sourceLine" id="cb1-33" data-line-number="33"><span class="ot">    ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-34" data-line-number="34">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-35" data-line-number="35">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
+<a class="sourceLine" id="cb1-36" data-line-number="36">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-37" data-line-number="37">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb1-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb1-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">M.Map</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb1-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">M.Map</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb1-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [<span class="dt">S.Set</span> <span class="dt">Int</span>])</a>
+<a class="sourceLine" id="cb1-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
+<a class="sourceLine" id="cb1-43" data-line-number="43">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-44" data-line-number="44">    i <span class="ot">&lt;-</span> readSTRef index</a>
+<a class="sourceLine" id="cb1-45" data-line-number="45">    insert v i indices</a>
+<a class="sourceLine" id="cb1-46" data-line-number="46">    insert v i lowlinks</a>
+<a class="sourceLine" id="cb1-47" data-line-number="47">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb1-48" data-line-number="48">    push stack stackSet v</a>
+<a class="sourceLine" id="cb1-49" data-line-number="49"></a>
+<a class="sourceLine" id="cb1-50" data-line-number="50">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> lookup w indices <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb1-51" data-line-number="51">        <span class="dt">Nothing</span>     <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-52" data-line-number="52">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb1-53" data-line-number="53">            vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v lowlinks</a>
+<a class="sourceLine" id="cb1-54" data-line-number="54">            wLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup w lowlinks</a>
+<a class="sourceLine" id="cb1-55" data-line-number="55">            insert v (min vLowLink wLowLink) lowlinks</a>
+<a class="sourceLine" id="cb1-56" data-line-number="56">        <span class="dt">Just</span> wIndex <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-57" data-line-number="57">            wOnStack <span class="ot">&lt;-</span> S.member w <span class="fu">&lt;$&gt;</span> readSTRef stackSet</a>
+<a class="sourceLine" id="cb1-58" data-line-number="58">            when wOnStack <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-59" data-line-number="59">                vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v lowlinks</a>
+<a class="sourceLine" id="cb1-60" data-line-number="60">                insert v (min vLowLink wIndex) lowlinks</a>
+<a class="sourceLine" id="cb1-61" data-line-number="61"></a>
+<a class="sourceLine" id="cb1-62" data-line-number="62">    vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v lowlinks</a>
+<a class="sourceLine" id="cb1-63" data-line-number="63">    vIndex   <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup v indices</a>
+<a class="sourceLine" id="cb1-64" data-line-number="64">    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-65" data-line-number="65">        scc <span class="ot">&lt;-</span> addSCC n v S.empty stack stackSet</a>
+<a class="sourceLine" id="cb1-66" data-line-number="66">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
+<a class="sourceLine" id="cb1-67" data-line-number="67">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-68" data-line-number="68">        lookup value hashMap     <span class="fu">=</span> M.lookup value <span class="fu">&lt;$&gt;</span> readSTRef hashMap</a>
+<a class="sourceLine" id="cb1-69" data-line-number="69">        insert key value hashMap <span class="fu">=</span> modifySTRef' hashMap (M.insert key value)</a>
+<a class="sourceLine" id="cb1-70" data-line-number="70"></a>
+<a class="sourceLine" id="cb1-71" data-line-number="71"><span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">S.Set</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> (<span class="dt">S.Set</span> <span class="dt">Int</span>))</a>
+<a class="sourceLine" id="cb1-72" data-line-number="72">addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`S.member`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
+<a class="sourceLine" id="cb1-73" data-line-number="73">    <span class="kw">let</span> scc' <span class="fu">=</span> S.insert w scc</a>
+<a class="sourceLine" id="cb1-74" data-line-number="74">    <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc' stack stackSet</a>
+<a class="sourceLine" id="cb1-75" data-line-number="75"></a>
+<a class="sourceLine" id="cb1-76" data-line-number="76"><span class="ot">push ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb1-77" data-line-number="77">push stack stackSet e <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-78" data-line-number="78">    modifySTRef' stack    (e<span class="fu">:</span>)</a>
+<a class="sourceLine" id="cb1-79" data-line-number="79">    modifySTRef' stackSet (S.insert e)</a>
+<a class="sourceLine" id="cb1-80" data-line-number="80"></a>
+<a class="sourceLine" id="cb1-81" data-line-number="81"><span class="ot">pop ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">S.Set</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-82" data-line-number="82">pop stack stackSet <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-83" data-line-number="83">    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
+<a class="sourceLine" id="cb1-84" data-line-number="84">    modifySTRef' stack tail</a>
+<a class="sourceLine" id="cb1-85" data-line-number="85">    modifySTRef' stackSet (S.delete e)</a>
+<a class="sourceLine" id="cb1-86" data-line-number="86">    return e</a>
+<a class="sourceLine" id="cb1-87" data-line-number="87"></a>
+<a class="sourceLine" id="cb1-88" data-line-number="88">denormalise     <span class="fu">=</span> subtract</a>
+<a class="sourceLine" id="cb1-89" data-line-number="89">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
+<a class="sourceLine" id="cb1-90" data-line-number="90">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
+<a class="sourceLine" id="cb1-91" data-line-number="91">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
+<a class="sourceLine" id="cb1-92" data-line-number="92"></a>
+<a class="sourceLine" id="cb1-93" data-line-number="93"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb1-94" data-line-number="94">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-95" data-line-number="95">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
+<a class="sourceLine" id="cb1-96" data-line-number="96">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
+<a class="sourceLine" id="cb1-97" data-line-number="97">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
+<a class="sourceLine" id="cb1-98" data-line-number="98">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
+<a class="sourceLine" id="cb1-99" data-line-number="99">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
+</details>
 <p>I’ve included 2SAT-specific functionality for completeness, but I’ll omit this in future listings as I’ll only be changing the <code>tarjan</code> function and the functions it depends on (<code>strongConnect</code>, <code>addSCC</code>, <code>push</code>, and <code>pop</code>).</p>
 <p>The first change is using more suitable data structures. Tarjan’s algorithm is only linear in the size of the graph when operations such as checking if <code>w</code> is on the stack and looking up indices happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees and are <span class="math inline"><em>O</em>(log <em>n</em>)</span> in these operations.</p>
 

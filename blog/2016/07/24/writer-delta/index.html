@@ -43,63 +43,63 @@
 </div>
 
 <p>I hadn’t given much thought to the Writer monad before today, unlike the Reader and State monads, and part of the reason is that all the tutorials I encountered online focused on using it for logging. Although this is an obvious use case, I haven’t had to do much logging in Haskell so far and so I incorrectly assumed that I didn’t need to know about the Writer monad at all. However, I found a use for it outside logging and thought this might be worth sharing. This usage depends on two facts about Haskell:</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>The Writer monad’s output can be any Monoid, such as strings, lists, sets, etc.</li>
 <li>ByteString is a Monoid.</li>
 </ol>
 <p>Git Packfiles store some entries as deltas against other entries. The delta format is a bit hairy to parse, but it consists of a sequence of either copy or insert instructions. Copy instructions specify an offset in the source and a length of bytes to copy, whereas insert instructions specify a series of bytes to be copied as is.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.ByteString</span> <span class="kw">as</span> <span class="dt">B</span>
-
-<span class="kw">data</span> <span class="dt">DeltaInstruction</span>
-    <span class="fu">=</span> <span class="dt">CopyInstruction</span>   <span class="dt">Int</span> <span class="dt">Int</span>
-    <span class="fu">|</span> <span class="dt">InsertInstruction</span> <span class="dt">B.ByteString</span>
-    <span class="kw">deriving</span> (<span class="dt">Show</span>)</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.ByteString</span> <span class="kw">as</span> <span class="dt">B</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">data</span> <span class="dt">DeltaInstruction</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">    <span class="fu">=</span> <span class="dt">CopyInstruction</span>   <span class="dt">Int</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">InsertInstruction</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
 <p>An instruction can be interpreted with reference to a source to result in a ByteString.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">substring ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-substring offset length bytestring <span class="fu">=</span> B.take length (B.drop offset bytestring)
-
-<span class="co">-- Under this interpretation, `InsertInstruction` corresponds to `const`</span>
-<span class="co">-- and `CopyInstruction` corresponds to `substring`.</span>
-<span class="ot">interpretInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-interpretInstruction instruction source <span class="fu">=</span> <span class="kw">case</span> instruction <span class="kw">of</span>
-    <span class="dt">InsertInstruction</span> string        <span class="ot">-&gt;</span> string
-    <span class="dt">CopyInstruction</span>   offset length <span class="ot">-&gt;</span> substring offset length source</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">substring ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">substring offset length bytestring <span class="fu">=</span> B.take length (B.drop offset bytestring)</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="co">-- Under this interpretation, `InsertInstruction` corresponds to `const`</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5"><span class="co">-- and `CopyInstruction` corresponds to `substring`.</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="ot">interpretInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">interpretInstruction instruction source <span class="fu">=</span> <span class="kw">case</span> instruction <span class="kw">of</span></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8">    <span class="dt">InsertInstruction</span> string        <span class="ot">-&gt;</span> string</a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">    <span class="dt">CopyInstruction</span>   offset length <span class="ot">-&gt;</span> substring offset length source</a></code></pre></div>
 <p>The concatenation of a list of interpreted instructions is a resolved delta.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applyInstructions' ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-applyInstructions' source dest []     <span class="fu">=</span> dest
-applyInstructions' source dest (i<span class="fu">:</span>is) <span class="fu">=</span> <span class="kw">let</span>
-    dest' <span class="fu">=</span> B.append dest <span class="fu">$</span> interpretInstruction i source
-    <span class="kw">in</span> applyInstructions' source dest' is</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">applyInstructions' ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">applyInstructions' source dest []     <span class="fu">=</span> dest</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">applyInstructions' source dest (i<span class="fu">:</span>is) <span class="fu">=</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">    dest' <span class="fu">=</span> B.append dest <span class="fu">$</span> interpretInstruction i source</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">    <span class="kw">in</span> applyInstructions' source dest' is</a></code></pre></div>
 <p>For example:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span>
-testSource <span class="fu">=</span> <span class="st">&quot;tree 9977d7726a568347a513a6b061b87fd687322650\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467781641 +0800\n\nUse record wildcards.\n&quot;</span><span class="ot"> ::</span> <span class="dt">B.ByteString</span>
-testInstructions <span class="fu">=</span> [<span class="dt">InsertInstruction</span> <span class="st">&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">44</span> <span class="dv">167</span>,<span class="dt">InsertInstruction</span> <span class="st">&quot;60597&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">216</span> <span class="dv">30</span>]
-applyInstructions' testSource B.empty testInstructions</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">testSource <span class="fu">=</span> <span class="st">&quot;tree 9977d7726a568347a513a6b061b87fd687322650\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467781641 +0800\n\nUse record wildcards.\n&quot;</span><span class="ot"> ::</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">testInstructions <span class="fu">=</span> [<span class="dt">InsertInstruction</span> <span class="st">&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">44</span> <span class="dv">167</span>,<span class="dt">InsertInstruction</span> <span class="st">&quot;60597&quot;</span>,<span class="dt">CopyInstruction</span> <span class="dv">216</span> <span class="dv">30</span>]</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">applyInstructions' testSource B.empty testInstructions</a></code></pre></div>
 <pre><code>&quot;tree d8dce7c53feb5fcaca4bef87106d3f9e4e50e6e0\nparent e05bba28b796e7af7e5d981955327621a6c43a5f\nauthor Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\ncommitter Vaibhav Sagar &lt;EMAILADDRESS@gmail.com&gt; 1467760597 +0800\n\nUse record wildcards.\n&quot;</code></pre>
 <p>Although this works, it isn’t particularly elegant and it would be nice to abstract away the details of the empty ByteString and the append. Luckily, these correspond to the <code>mempty</code> and <code>mappend</code> methods of a Monoid, and since the Writer monad works with monoids, we might be able to use it. Let’s start by defining a monadic action that appends an interpreted instruction and returns the source we fed it.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
-<span class="kw">import </span><span class="dt">Control.Monad.Trans.Writer</span>
-
-<span class="ot">applyInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">B.ByteString</span> <span class="dt">B.ByteString</span>
-applyInstruction instruction source <span class="fu">=</span> writer (source, interpretInstruction instruction source)</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Monad</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Control.Monad.Trans.Writer</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="ot">applyInstruction ::</span> <span class="dt">DeltaInstruction</span> <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">B.ByteString</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">applyInstruction instruction source <span class="fu">=</span> writer (source, interpretInstruction instruction source)</a></code></pre></div>
 <p>Our action takes two parameters and so we <code>map</code> it to our list of instructions. This gives us a list of actions expecting a source buffer to operate on.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">:</span>t map applyInstruction testInstructions</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">:</span>t map applyInstruction testInstructions</a></code></pre></div>
 <pre><code>map applyInstruction testInstructions :: [ByteString -&gt; Writer ByteString ByteString]</code></pre>
 <p>We need to reduce this list to a single value while executing each action in sequence, which implies a fold. <code>foldM</code> looks like what we need; according to the documentation:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldM f a1 [x1, x2, <span class="fu">...</span>, xm] <span class="fu">==</span>
-<span class="kw">do</span>
-    a2 <span class="ot">&lt;-</span> f a1 x1
-    a3 <span class="ot">&lt;-</span> f a2 x2
-    <span class="fu">...</span>
-    f am xm</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1">foldM f a1 [x1, x2, <span class="fu">...</span>, xm] <span class="fu">==</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">    a2 <span class="ot">&lt;-</span> f a1 x1</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">    a3 <span class="ot">&lt;-</span> f a2 x2</a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">    <span class="fu">...</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">    f am xm</a></code></pre></div>
 <p>The only wrinkle is that <code>f</code> needs to take the argument first and the action second. We can accomplish this by defining</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f a b <span class="fu">=</span> b a</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1">f a b <span class="fu">=</span> b a</a></code></pre></div>
 <p>or</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">=</span> flip (<span class="fu">$</span>)</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1">f <span class="fu">=</span> flip (<span class="fu">$</span>)</a></code></pre></div>
 <p>Putting it all together, we have</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applyInstructions ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span>
-applyInstructions source instructions <span class="fu">=</span> execWriter <span class="fu">$</span> foldM (flip (<span class="fu">$</span>)) source <span class="fu">$</span> map applyInstruction instructions
-applyInstructions testSource testInstructions <span class="fu">==</span> applyInstructions' testSource B.empty testInstructions</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">applyInstructions ::</span> <span class="dt">B.ByteString</span> <span class="ot">-&gt;</span> [<span class="dt">DeltaInstruction</span>] <span class="ot">-&gt;</span> <span class="dt">B.ByteString</span></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">applyInstructions source instructions <span class="fu">=</span> execWriter <span class="fu">$</span> foldM (flip (<span class="fu">$</span>)) source <span class="fu">$</span> map applyInstruction instructions</a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">applyInstructions testSource testInstructions <span class="fu">==</span> applyInstructions' testSource B.empty testInstructions</a></code></pre></div>
 <pre><code>True</code></pre>
 <p>And there you have it, a use of Writer that has absolutely nothing to do with logging!</p>
 
