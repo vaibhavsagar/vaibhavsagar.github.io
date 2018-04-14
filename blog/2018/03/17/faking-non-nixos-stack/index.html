@@ -43,7 +43,7 @@
 </div>
 
 <p>I like most things about NixOS, but one thing I do not like is the way it integrates with <code>stack</code>. Nix’s own Haskell infrastructure works well enough that this is not an issue for my own projects, but sometimes I want to test that the Stack workflow is fine for people using less opinionated distros like Ubuntu.</p>
-<p>Fortunately, Nixpkgs includes a handy tool called <code>buildFHSUserEnv</code> which will build a chroot wherein everything is laid out according to the <a href="https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard">Filesystem Hierarcy Standard</a> that most software is accustomed to. This means we can provide an environment with Stack and any dependencies and it will happily run.</p>
+<p>Fortunately, Nixpkgs includes a handy tool called <code>buildFHSUserEnv</code> which will build a chroot wherein everything is laid out according to the <a href="https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard">Filesystem Hierarchy Standard</a> that most software is accustomed to. This means we can provide an environment with Stack and any dependencies and it will happily run.</p>
 <p>Let’s walk through doing this for a package like <a href="https://github.com/gibiansky/IHaskell">IHaskell</a>. We begin by cloning the IHaskell repository and creating a <code>fhsenv.nix</code> with only <code>stack</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="bu">let</span></a>
 <a class="sourceLine" id="cb1-2" data-line-number="2">  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span><span class="kw">;</span></a>
