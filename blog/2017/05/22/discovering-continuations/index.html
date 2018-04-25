@@ -44,183 +44,16 @@
 
 <p>I’ve been trying to wrap my head around continuations for a while. I was reading <a href="https://github.com/quchen/articles/blob/master/cont_monad.md">David Luposchainsky’s excellent article</a> on them and playing with his definitions in an IHaskell notebook when I found that typed holes are an excellent hammer to attack this particular nail with.</p>
 <p>If you haven’t encountered them before, <a href="https://wiki.haskell.org/GHC/Typed_holes">typed holes</a> are a feature where you put one or more variables starting with <code>_</code> on the right hand side of a definition to get GHC to tell you the type of the value that fits in that hole, and you can narrow the hole as necessary to get the type of a subexpression until you have enough information to complete the definition. I like to think of this as a way of collaboratively filling in a definition with the compiler, instead of my usual approach which is to write a definition, listen carefully to GHC’s complaints, and amend my definition accordingly. Typed holes are fully supported by GHCi and the full suite of editor integrations, but I personally find the edit/reload/squint cycle more tedious than coming up with the definition in IHaskell and then moving it to a module and adding type signatures after I’m satisfied that it works.</p>
+<p>IHaskell has HLint integration and will suggest corrections for my intermediate cells unless I turn that off:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="fu">:</span>option no<span class="fu">-</span>lint</a></code></pre></div>
+<p>There’s a useful GHC extension called <code>InstanceSigs</code> that will allow me to annotate my typeclass instances with their type signatures, so I’ll turn that on:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE InstanceSigs #-}</span></a></code></pre></div>
 <p>I think his type definition makes an excellent starting point:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">newtype</span> <span class="dt">Cont</span> r a <span class="fu">=</span> <span class="dt">Cont</span> {<span class="ot"> (&gt;&gt;-) ::</span> (a <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r }</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">newtype</span> <span class="dt">Cont</span> r a <span class="fu">=</span> <span class="dt">Cont</span> {<span class="ot"> (&gt;&gt;-) ::</span> (a <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r }</a></code></pre></div>
 <p>This defines a type <code>Cont</code> with an infix constructor <code>&gt;&gt;-</code> (that looks suspiciously similar to <code>&gt;&gt;=</code>) that takes a function from <code>a</code> to <code>r</code> and provides an <code>r</code>. One intuition for what this means is that a value of this type knows about an <code>a</code> but for whatever reason refuses to be upfront about it and demands to know what you’re going to do with it and then does it for you, providing you with a final result <code>r</code>. Another intuition is that this is a generalisation of callbacks: a value of this type expects a callback to utilise the <code>a</code>. Anyway, on to my favourite part of working with mysterious data types: defining <code>Functor</code>, <code>Applicative</code>, and <code>Monad</code> instances for them! If you’ve done this before, you’ll know that these typeclasses have certain laws that their instances are meant to obey, and it turns out that this type is polymorphic enough that we can just follow the typed holes and the resulting definitions will be lawful. You don’t have to take my word for it and should verify this for yourself, but I won’t be discussing the laws here. Let’s begin!</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">    fmap f cont <span class="fu">=</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:19: error:<br />    • Found hole: _ :: Cont r b<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />             ‘b’ is a rigid type variable bound by<br />               the type signature for:<br />                 fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br />               at &lt;interactive&gt;:2:5<br />    • In the expression: _<br />      In an equation for ‘fmap’: fmap f cont = _<br />      In the instance declaration for ‘Functor (Cont r)’<br />    • Relevant bindings include<br />        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br />        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br />        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>We didn’t really need a typed hole to tell us this, but at least we know what we have to work with. We know we have to provide a <code>Cont</code> value, so let’s narrow our typed hole that way.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:26: error:<br />    • Found hole: _ :: (b -&gt; r) -&gt; r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />             ‘b’ is a rigid type variable bound by<br />               the type signature for:<br />                 fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br />               at &lt;interactive&gt;:2:5<br />    • In the second argument of ‘(<span>&dollar;</span>)’, namely ‘_’<br />      In the expression: Cont <span>&dollar;</span> _<br />      In an equation for ‘fmap’: fmap f cont = Cont <span>&dollar;</span> _<br />    • Relevant bindings include<br />        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br />        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br />        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>The type of our hole is more helpful here. Now we know (if we were previously uncertain) that we somehow need to use <code>f</code> to turn the <code>a</code> into a <code>b</code>. We also know that <code>Cont</code> takes a parameter, let’s add that in and see if it helps.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">    fmap f cont <span class="fu">=</span> _</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -291,11 +124,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -303,10 +136,11 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:2:32: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; _’<br />      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:27)<br />        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br />        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br />        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>In general, we know all of our definitions will be of the form <code>Cont $ \k -&gt; _</code> and that’s a safe starting point. We now know that we need to use <code>k</code> on the result of applying <code>f</code> to some <code>a</code> to finally result in an <code>r</code>, but where does the <code>a</code> come from? The only thing we can do at this point is ‘unwrap’ the <code>cont</code> using <code>&gt;&gt;-</code>. What happens when we do that?</p>
+<p><span class="err-msg">&lt;interactive&gt;:3:19: error:<br /> • Found hole: _ :: Cont r b<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-25<br /> ‘b’ is a rigid type variable bound by<br /> the type signature for:<br /> fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br /> at &lt;interactive&gt;:2:13-44<br /> • In the expression: <em><br /> In an equation for ‘fmap’: fmap f cont = </em><br /> In the instance declaration for ‘Functor (Cont r)’<br /> • Relevant bindings include<br /> cont :: Cont r a (bound at &lt;interactive&gt;:3:12)<br /> f :: a -&gt; b (bound at &lt;interactive&gt;:3:10)<br /> fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>We didn’t really need a typed hole to tell us this, but at least we know what we have to work with. We know we have to provide a <code>Cont</code> value, so let’s narrow our typed hole that way.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> cont <span class="fu">&gt;&gt;-</span> _</a></code></pre></div>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> _</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -377,11 +211,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -389,103 +223,189 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:2:41: error:<br />    • Found hole: _ :: a -&gt; r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />             ‘a’ is a rigid type variable bound by<br />               the type signature for:<br />                 fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br />               at &lt;interactive&gt;:2:5<br />    • In the second argument of ‘&gt;&gt;-’, namely ‘_’<br />      In the expression: cont &gt;&gt;- _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; cont &gt;&gt;- _’<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:27)<br />        cont :: Cont r a (bound at &lt;interactive&gt;:2:12)<br />        f :: a -&gt; b (bound at &lt;interactive&gt;:2:10)<br />        fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>It looks like we might have everything we need to complete this definition! We can create a function of type <code>a -&gt; r</code> by composing <code>k</code> and <code>f</code>.</p>
+<p><span class="err-msg">&lt;interactive&gt;:3:26: error:<br /> • Found hole: _ :: (b -&gt; r) -&gt; r<br /> Where: ‘b’ is a rigid type variable bound by<br /> the type signature for:<br /> fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br /> at &lt;interactive&gt;:2:13-44<br /> ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-25<br /> • In the second argument of ‘(<span>$</span>)’, namely ‘<em>’<br /> In the expression: Cont <span>$</span> </em><br /> In an equation for ‘fmap’: fmap f cont = Cont <span>$</span> _<br /> • Relevant bindings include<br /> cont :: Cont r a (bound at &lt;interactive&gt;:3:12)<br /> f :: a -&gt; b (bound at &lt;interactive&gt;:3:10)<br /> fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>The type of our hole is more helpful here. Now we know (if we were previously uncertain) that we somehow need to use <code>f</code> to turn the <code>a</code> into a <code>b</code>. We also know that <code>Cont</code> takes a parameter, let’s add that in and see if it helps.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> cont <span class="fu">&gt;&gt;-</span> (k <span class="fu">.</span> f)</a></code></pre></div>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:3:32: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-25<br /> • In the expression: <em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; </em>’<br /> In the expression: Cont <span>$</span>  k -&gt; _<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:3:27)<br /> cont :: Cont r a (bound at &lt;interactive&gt;:3:12)<br /> f :: a -&gt; b (bound at &lt;interactive&gt;:3:10)<br /> fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>In general, we know all of our definitions will be of the form <code>Cont $ \k -&gt; _</code> and that’s a safe starting point. We now know that we need to use <code>k</code> on the result of applying <code>f</code> to some <code>a</code> to finally result in an <code>r</code>, but where does the <code>a</code> come from? The only thing we can do at this point is ‘unwrap’ the <code>cont</code> using <code>&gt;&gt;-</code>. What happens when we do that?</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> cont <span class="fu">&gt;&gt;-</span> _</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:3:41: error:<br /> • Found hole: _ :: a -&gt; r<br /> Where: ‘a’ is a rigid type variable bound by<br /> the type signature for:<br /> fmap :: forall a b. (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br /> at &lt;interactive&gt;:2:13-44<br /> ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-25<br /> • In the second argument of ‘&gt;&gt;-’, namely ‘<em>’<br /> In the expression: cont &gt;&gt;- </em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; cont &gt;&gt;- _’<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:3:27)<br /> cont :: Cont r a (bound at &lt;interactive&gt;:3:12)<br /> f :: a -&gt; b (bound at &lt;interactive&gt;:3:10)<br /> fmap :: (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>It looks like we might have everything we need to complete this definition! We can create a function of type <code>a -&gt; r</code> by composing <code>k</code> and <code>f</code>.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">    fmap f cont <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> cont <span class="fu">&gt;&gt;-</span> (k <span class="fu">.</span> f)</a></code></pre></div>
 <p>It worked! This definition states that <code>fmap</code> works by creating a continuation that expects a callback of the new type. This is pretty exciting! Let’s continue to <code>Applicative</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">    pure a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:27: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; _’<br />      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br />    • Relevant bindings include<br />        k :: a -&gt; r (bound at &lt;interactive&gt;:2:22)<br />        a :: a (bound at &lt;interactive&gt;:2:10)<br />        pure :: a -&gt; Cont r a (bound at &lt;interactive&gt;:2:5)</pre>
-<p>That was pretty easy. We need an <code>r</code> and we have an <code>a</code> and a <code>k</code> that takes an <code>a</code> to an <code>r</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">    pure a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a></code></pre></div>
-<p>This matches our intuition from above: creating a continuation involves hiding a value behind a function that can access it. On to <code>&lt;*&gt;</code>!</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">    pure a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -556,11 +476,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -568,98 +488,17 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:3:28: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; _’<br />      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br />        a :: Cont r a (bound at &lt;interactive&gt;:3:11)<br />        f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:3:5)<br />        (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</pre>
-<p>From above, we know we can ‘unwrap’ <code>Cont</code> values using <code>&gt;&gt;-</code>.</p>
+<p><span class="err-msg">&lt;interactive&gt;:3:27: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-29<br /> • In the expression: <em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; </em>’<br /> In the expression: Cont <span>$</span>  k -&gt; _<br /> • Relevant bindings include<br /> k :: a -&gt; r (bound at &lt;interactive&gt;:3:22)<br /> a :: a (bound at &lt;interactive&gt;:3:10)<br /> pure :: a -&gt; Cont r a (bound at &lt;interactive&gt;:3:5)</span></p>
+<p>That was pretty easy. We need an <code>r</code> and we have an <code>a</code> and a <code>k</code> that takes an <code>a</code> to an <code>r</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
-<a class="sourceLine" id="cb10-3" data-line-number="3">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:3:34: error:<br />    • Found hole: _ :: (a -&gt; b) -&gt; r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />             ‘b’ is a rigid type variable bound by<br />               the type signature for:<br />                 (&lt;*&gt;) :: forall a b. Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br />               at &lt;interactive&gt;:3:7<br />             ‘a’ is a rigid type variable bound by<br />               the type signature for:<br />                 (&lt;*&gt;) :: forall a b. Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br />               at &lt;interactive&gt;:3:7<br />    • In the second argument of ‘&gt;&gt;-’, namely ‘_’<br />      In the expression: f &gt;&gt;- _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; f &gt;&gt;- _’<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br />        a :: Cont r a (bound at &lt;interactive&gt;:3:11)<br />        f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:3:5)<br />        (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</pre>
-<p>Let’s keep going.</p>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a</a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">    pure a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a></code></pre></div>
+<p>This matches our intuition from above: creating a continuation involves hiding a value behind a function that can access it. On to <code>&lt;*&gt;</code>!</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
-<a class="sourceLine" id="cb11-3" data-line-number="3">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> _</a></code></pre></div>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">Cont</span> r (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -730,11 +569,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -742,7 +581,185 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:3:54: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘&gt;&gt;-’, namely ‘\ a' -&gt; _’<br />      In the expression: a &gt;&gt;- \ a' -&gt; _<br />    • Relevant bindings include<br />        a' :: a (bound at &lt;interactive&gt;:3:48)<br />        f' :: a -&gt; b (bound at &lt;interactive&gt;:3:35)<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br />        a :: Cont r a (bound at &lt;interactive&gt;:3:11)<br />        f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:3:5)<br />        (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:3:5)</pre>
+<p><span class="err-msg">&lt;interactive&gt;:5:28: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-29<br /> • In the expression: <em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; </em>’<br /> In the expression: Cont <span>$</span>  k -&gt; _<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:5:23)<br /> a :: Cont r a (bound at &lt;interactive&gt;:5:11)<br /> f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:5:5)<br /> (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:5:7)</span></p>
+<p>From above, we know we can ‘unwrap’ <code>Cont</code> values using <code>&gt;&gt;-</code>.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a</a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
+<a class="sourceLine" id="cb12-4" data-line-number="4"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">Cont</span> r (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> _</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:5:34: error:<br /> • Found hole: _ :: (a -&gt; b) -&gt; r<br /> Where: ‘a’ is a rigid type variable bound by<br /> the type signature for:<br /> (&lt;<em>&gt;) :: forall a b. Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br /> at &lt;interactive&gt;:4:14-52<br /> ‘b’ is a rigid type variable bound by<br /> the type signature for:<br /> (&lt;</em>&gt;) :: forall a b. Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b<br /> at &lt;interactive&gt;:4:14-52<br /> ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-29<br /> • In the second argument of ‘&gt;&gt;-’, namely ‘<em>’<br /> In the expression: f &gt;&gt;- </em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; f &gt;&gt;- _’<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:5:23)<br /> a :: Cont r a (bound at &lt;interactive&gt;:5:11)<br /> f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:5:5)<br /> (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:5:7)</span></p>
+<p>Let’s keep going.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a</a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
+<a class="sourceLine" id="cb13-4" data-line-number="4"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">Cont</span> r (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> _</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:5:54: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-29<br /> • In the expression: <em><br /> In the second argument of ‘&gt;&gt;-’, namely ‘ a’ -&gt; </em>’<br /> In the expression: a &gt;&gt;-  a’ -&gt; _<br /> • Relevant bindings include<br /> a’ :: a (bound at &lt;interactive&gt;:5:48)<br /> f’ :: a -&gt; b (bound at &lt;interactive&gt;:5:35)<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:5:23)<br /> a :: Cont r a (bound at &lt;interactive&gt;:5:11)<br /> f :: Cont r (a -&gt; b) (bound at &lt;interactive&gt;:5:5)<br /> (&lt;*&gt;) :: Cont r (a -&gt; b) -&gt; Cont r a -&gt; Cont r b (bound at &lt;interactive&gt;:5:7)</span></p>
 <p>Perfect, we want an <code>r</code> and we have</p>
 <ul>
 <li>an <code>a</code> (<code>a'</code>)</li>
@@ -750,184 +767,15 @@ font-weight: bold;
 <li>a function from <code>b</code> to <code>r</code> (<code>k</code>)</li>
 </ul>
 <p>Let’s put them together.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> k (f' a')</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a</a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">    pure a  <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">Cont</span> r (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> k (f' a')</a></code></pre></div>
 <p>Okay, we unwrap the function and the argument and rewrap them in a fresh continuation, not too differently from how we defined <code>fmap</code>. Sweet! On to the big M!</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:28: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; _’<br />      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:23)<br />        f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:2:11)<br />        a :: Cont r a (bound at &lt;interactive&gt;:2:5)<br />        (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>As before, our first order of business is to unwrap the <code>a</code>.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:41: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘&gt;&gt;-’, namely ‘\ a' -&gt; _’<br />      In the expression: a &gt;&gt;- \ a' -&gt; _<br />    • Relevant bindings include<br />        a' :: a (bound at &lt;interactive&gt;:2:35)<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:23)<br />        f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:2:11)<br />        a :: Cont r a (bound at &lt;interactive&gt;:2:5)<br />        (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>We can apply <code>f</code> to this unwrapped value to get a continuation that we can unwrap again.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> _</a></code></pre></div>
+<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="ot">    (&gt;&gt;=) ::</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb15-3" data-line-number="3">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -998,11 +846,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -1010,186 +858,189 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:2:57: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10<br />    • In the expression: _<br />      In the second argument of ‘&gt;&gt;-’, namely ‘\ f' -&gt; _’<br />      In the expression: f a' &gt;&gt;- \ f' -&gt; _<br />    • Relevant bindings include<br />        f' :: b (bound at &lt;interactive&gt;:2:51)<br />        a' :: a (bound at &lt;interactive&gt;:2:35)<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:23)<br />        f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:2:11)<br />        a :: Cont r a (bound at &lt;interactive&gt;:2:5)<br />        (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:5)</pre>
-<p>We want an <code>r</code> and we have <code>k</code> and <code>f'</code>. Let’s put them together!</p>
+<p><span class="err-msg">&lt;interactive&gt;:3:28: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-23<br /> • In the expression: <em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; </em>’<br /> In the expression: Cont <span>$</span>  k -&gt; _<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br /> f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:3:11)<br /> a :: Cont r a (bound at &lt;interactive&gt;:3:5)<br /> (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:3:7)</span></p>
+<p>As before, our first order of business is to unwrap the <code>a</code>.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> k f'</a></code></pre></div>
+<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="ot">    (&gt;&gt;=) ::</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> _</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:3:41: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-23<br /> • In the expression: <em><br /> In the second argument of ‘&gt;&gt;-’, namely ‘ a’ -&gt; </em>’<br /> In the expression: a &gt;&gt;-  a’ -&gt; _<br /> • Relevant bindings include<br /> a’ :: a (bound at &lt;interactive&gt;:3:35)<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br /> f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:3:11)<br /> a :: Cont r a (bound at &lt;interactive&gt;:3:5)<br /> (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:3:7)</span></p>
+<p>We can apply <code>f</code> to this unwrapped value to get a continuation that we can unwrap again.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2"><span class="ot">    (&gt;&gt;=) ::</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> _</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:3:57: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by the instance declaration at &lt;interactive&gt;:1:10-23<br /> • In the expression: <em><br /> In the second argument of ‘&gt;&gt;-’, namely ‘ f’ -&gt; </em>’<br /> In the expression: f a’ &gt;&gt;-  f’ -&gt; _<br /> • Relevant bindings include<br /> f’ :: b (bound at &lt;interactive&gt;:3:51)<br /> a’ :: a (bound at &lt;interactive&gt;:3:35)<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:3:23)<br /> f :: a -&gt; Cont r b (bound at &lt;interactive&gt;:3:11)<br /> a :: Cont r a (bound at &lt;interactive&gt;:3:5)<br /> (&gt;&gt;=) :: Cont r a -&gt; (a -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:3:7)</span></p>
+<p>We want an <code>r</code> and we have <code>k</code> and <code>f'</code>. Let’s put them together!</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Cont</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-2" data-line-number="2"><span class="ot">    (&gt;&gt;=) ::</span> <span class="dt">Cont</span> r a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> k f'</a></code></pre></div>
 <p>And that’s it! The <a href="http://blog.sigfpe.com/2008/12/mother-of-all-monads.html">mother of all monads</a> boils down to some tedious and almost mechanical wrapping and unwrapping. I think it’s cool how mundane it is.</p>
 <p>Let’s have a crack at something more involved. A lot of the magic in continuations is accessed via <code>callCC</code>, which takes a function and calls it with the current continuation, hence the name. How would we define it?</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
-<a class="sourceLine" id="cb17-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:25: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />    • In the expression: _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; _’<br />      In the expression: Cont <span>&dollar;</span> \ k -&gt; _<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br />        f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br />        callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</pre>
-<p>Our definition involves <code>b</code>, but the only <code>b</code> we have available is wrapped up in <code>f</code>. We need to provide an argument of a certain type to <code>f</code>, and then unwrap the result of that? Time to bring out the big guns: multiple typed holes!</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
-<a class="sourceLine" id="cb18-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f _1 <span class="fu">&gt;&gt;-</span> _2</a></code></pre></div>
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning {
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error {
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style>
-<pre class="err-msg">&lt;interactive&gt;:2:27: error:<br />    • Found hole: _1 :: b -&gt; Cont r a<br />      Where: ‘r’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />             ‘a’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />             ‘b’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />      Or perhaps ‘_1’ is mis-spelled, or not in scope<br />    • In the first argument of ‘f’, namely ‘_1’<br />      In the first argument of ‘&gt;&gt;-’, namely ‘f _1’<br />      In the expression: f _1 &gt;&gt;- _2<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br />        f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br />        callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)<br />&lt;interactive&gt;:2:34: error:<br />    • Found hole: _2 :: b -&gt; r<br />      Where: ‘r’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />             ‘b’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />      Or perhaps ‘_2’ is mis-spelled, or not in scope<br />    • In the second argument of ‘&gt;&gt;-’, namely ‘_2’<br />      In the expression: f _1 &gt;&gt;- _2<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k -&gt; f _1 &gt;&gt;- _2’<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br />        f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br />        callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</pre>
-<p>Great, <code>k</code> fits perfectly into the second hole. That was easy.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
-<a class="sourceLine" id="cb19-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f _ <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
+<a class="sourceLine" id="cb19-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> _</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -1260,11 +1111,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -1272,10 +1123,10 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:2:27: error:<br />    • Found hole: _ :: b -&gt; Cont r a<br />      Where: ‘r’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />             ‘a’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />             ‘b’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />    • In the first argument of ‘f’, namely ‘_’<br />      In the first argument of ‘&gt;&gt;-’, namely ‘f _’<br />      In the expression: f _ &gt;&gt;- k<br />    • Relevant bindings include<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br />        f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br />        callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</pre>
-<p>We’re being asked to provide a function that takes one argument and returns a continuation. Let’s fill in the boilerplate and see where that takes us.</p>
+<p><span class="err-msg">&lt;interactive&gt;:2:25: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> • In the expression: <em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; </em>’<br /> In the expression: Cont <span>$</span>  k -&gt; _<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br /> f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br /> callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</span></p>
+<p>Our definition involves <code>b</code>, but the only <code>b</code> we have available is wrapped up in <code>f</code>. We need to provide an argument of a certain type to <code>f</code>, and then unwrap the result of that? Time to bring out the big guns: multiple typed holes!</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
-<a class="sourceLine" id="cb20-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> _) <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
+<a class="sourceLine" id="cb20-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f _1 <span class="fu">&gt;&gt;-</span> _2</a></code></pre></div>
 <style>/* Styles used for the Hoogle display in the pager */
 .hoogle-doc {
 display: block;
@@ -1346,11 +1197,11 @@ padding-top: 0.7em;
 white-space: pre;
 font-family: monospace;
 }
-.suggestion-warning {
+.suggestion-warning { 
 font-weight: bold;
 color: rgb(200, 130, 0);
 }
-.suggestion-error {
+.suggestion-error { 
 font-weight: bold;
 color: red;
 }
@@ -1358,27 +1209,203 @@ color: red;
 font-weight: bold;
 }
 </style>
-<pre class="err-msg">&lt;interactive&gt;:2:48: error:<br />    • Found hole: _ :: r<br />      Where: ‘r’ is a rigid type variable bound by<br />               the type signature for:<br />                 callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br />               at &lt;interactive&gt;:1:11<br />    • In the expression: _<br />      In the second argument of ‘(<span>&dollar;</span>)’, namely ‘\ k' -&gt; _’<br />      In the expression: Cont <span>&dollar;</span> \ k' -&gt; _<br />    • Relevant bindings include<br />        k' :: a -&gt; r (bound at &lt;interactive&gt;:2:42)<br />        b :: b (bound at &lt;interactive&gt;:2:29)<br />        k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br />        f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br />        callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</pre>
-<p>And we’re done! We can get an <code>r</code> by applying <code>k</code> to <code>b</code>.</p>
+<p><span class="err-msg">&lt;interactive&gt;:2:27: error:<br /> • Found hole: _1 :: b -&gt; Cont r a<br /> Where: ‘b’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> ‘r’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> ‘a’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> Or perhaps ‘_1’ is mis-spelled, or not in scope<br /> • In the first argument of ‘f’, namely ‘_1’<br /> In the first argument of ‘&gt;&gt;-’, namely ‘f _1’<br /> In the expression: f _1 &gt;&gt;- _2<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br /> f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br /> callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)<br />&lt;interactive&gt;:2:34: error:<br /> • Found hole: _2 :: b -&gt; r<br /> Where: ‘b’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> ‘r’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> Or perhaps ‘_2’ is mis-spelled, or not in scope<br /> • In the second argument of ‘&gt;&gt;-’, namely ‘_2’<br /> In the expression: f _1 &gt;&gt;- _2<br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k -&gt; f _1 &gt;&gt;- _2’<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br /> f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br /> callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</span></p>
+<p>Great, <code>k</code> fits perfectly into the second hole. That was easy.</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb21-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
-<a class="sourceLine" id="cb21-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> k b) <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
+<a class="sourceLine" id="cb21-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f _ <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:2:27: error:<br /> • Found hole: _ :: b -&gt; Cont r a<br /> Where: ‘b’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> ‘r’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> ‘a’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> • In the first argument of ‘f’, namely ‘<em>’<br /> In the first argument of ‘&gt;&gt;-’, namely ‘f </em>’<br /> In the expression: f _ &gt;&gt;- k<br /> • Relevant bindings include<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br /> f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br /> callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</span></p>
+<p>We’re being asked to provide a function that takes one argument and returns a continuation. Let’s fill in the boilerplate and see where that takes us.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb22-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> _) <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
+<style>/* Styles used for the Hoogle display in the pager */
+.hoogle-doc {
+display: block;
+padding-bottom: 1.3em;
+padding-left: 0.4em;
+}
+.hoogle-code {
+display: block;
+font-family: monospace;
+white-space: pre;
+}
+.hoogle-text {
+display: block;
+}
+.hoogle-name {
+color: green;
+font-weight: bold;
+}
+.hoogle-head {
+font-weight: bold;
+}
+.hoogle-sub {
+display: block;
+margin-left: 0.4em;
+}
+.hoogle-package {
+font-weight: bold;
+font-style: italic;
+}
+.hoogle-module {
+font-weight: bold;
+}
+.hoogle-class {
+font-weight: bold;
+}
+.get-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+display: block;
+white-space: pre-wrap;
+}
+.show-type {
+color: green;
+font-weight: bold;
+font-family: monospace;
+margin-left: 1em;
+}
+.mono {
+font-family: monospace;
+display: block;
+}
+.err-msg {
+color: red;
+font-style: italic;
+font-family: monospace;
+white-space: pre;
+display: block;
+}
+#unshowable {
+color: red;
+font-weight: bold;
+}
+.err-msg.in.collapse {
+padding-top: 0.7em;
+}
+.highlight-code {
+white-space: pre;
+font-family: monospace;
+}
+.suggestion-warning { 
+font-weight: bold;
+color: rgb(200, 130, 0);
+}
+.suggestion-error { 
+font-weight: bold;
+color: red;
+}
+.suggestion-name {
+font-weight: bold;
+}
+</style>
+<p><span class="err-msg">&lt;interactive&gt;:2:48: error:<br /> • Found hole: _ :: r<br /> Where: ‘r’ is a rigid type variable bound by<br /> the type signature for:<br /> callCC :: forall b r a. ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b<br /> at &lt;interactive&gt;:1:1-51<br /> • In the expression: <em><br /> In the second argument of ‘(<span>$</span>)’, namely ‘ k’ -&gt; </em>’<br /> In the expression: Cont <span>$</span>  k’ -&gt; _<br /> • Relevant bindings include<br /> k’ :: a -&gt; r (bound at &lt;interactive&gt;:2:42)<br /> b :: b (bound at &lt;interactive&gt;:2:29)<br /> k :: b -&gt; r (bound at &lt;interactive&gt;:2:20)<br /> f :: (b -&gt; Cont r a) -&gt; Cont r b (bound at &lt;interactive&gt;:2:8)<br /> callCC :: ((b -&gt; Cont r a) -&gt; Cont r b) -&gt; Cont r b (bound at &lt;interactive&gt;:2:1)</span></p>
+<p>And we’re done! We can get an <code>r</code> by applying <code>k</code> to <code>b</code>.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb23-1" data-line-number="1"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">Cont</span> r a) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b) <span class="ot">-&gt;</span> <span class="dt">Cont</span> r b</a>
+<a class="sourceLine" id="cb23-2" data-line-number="2">callCC f <span class="fu">=</span> <span class="dt">Cont</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> k b) <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
 <p>A closer look at the definition reveals that <code>k'</code> is unused, and this function provides <code>f</code> with the option to exit early if desired, or continue as normal. There’s a good explanation of why and how this works at <a href="https://github.com/quchen/articles/blob/master/cont_monad.md#special-api-function-callcc">the aforementioned article</a>.</p>
 <p>Still a bit wary? That’s fair. I like to poke at the definitions, <a href="https://hackage.haskell.org/package/transformers-0.4.3.0/docs/src/Control-Monad-Trans-Cont.html">read the source</a>, look at how Gabriel Gonzales <a href="http://www.haskellforall.com/2014/04/how-continuation-monad-works.html">explains it</a>, and have a cup of tea and think about life for a while. Whatever works for you!</p>
 <p>If you looked at the source, you might have noticed something interesting: The definition for the ContT monad transformer is identical! Here it is below.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="kw">newtype</span> <span class="dt">ContT</span> r m a <span class="fu">=</span> <span class="dt">ContT</span> {<span class="ot"> (&gt;&gt;-) ::</span> (a <span class="ot">-&gt;</span> m r) <span class="ot">-&gt;</span> m r }</a>
-<a class="sourceLine" id="cb22-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb22-3" data-line-number="3"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Functor</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb22-4" data-line-number="4">    fmap f cont <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> cont <span class="fu">&gt;&gt;-</span> (k <span class="fu">.</span> f)</a>
-<a class="sourceLine" id="cb22-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb22-6" data-line-number="6"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb22-7" data-line-number="7">    pure a  <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
-<a class="sourceLine" id="cb22-8" data-line-number="8">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> k (f' a')</a>
-<a class="sourceLine" id="cb22-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb22-10" data-line-number="10"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb22-11" data-line-number="11">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> k f'</a>
-<a class="sourceLine" id="cb22-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb22-13" data-line-number="13"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m a) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b</a>
-<a class="sourceLine" id="cb22-14" data-line-number="14">callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">ContT</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> k b) <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" data-line-number="1"><span class="kw">newtype</span> <span class="dt">ContT</span> r m a <span class="fu">=</span> <span class="dt">ContT</span> {<span class="ot"> (&gt;&gt;-) ::</span> (a <span class="ot">-&gt;</span> m r) <span class="ot">-&gt;</span> m r }</a>
+<a class="sourceLine" id="cb24-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb24-3" data-line-number="3"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Functor</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-4" data-line-number="4"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m a <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b</a>
+<a class="sourceLine" id="cb24-5" data-line-number="5">    fmap f cont <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> cont <span class="fu">&gt;&gt;-</span> (k <span class="fu">.</span> f)</a>
+<a class="sourceLine" id="cb24-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb24-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-8" data-line-number="8"><span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m a</a>
+<a class="sourceLine" id="cb24-9" data-line-number="9">    pure a  <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> k a</a>
+<a class="sourceLine" id="cb24-10" data-line-number="10"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">ContT</span> r m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m a <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b</a>
+<a class="sourceLine" id="cb24-11" data-line-number="11">    f <span class="fu">&lt;*&gt;</span> a <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> k (f' a')</a>
+<a class="sourceLine" id="cb24-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb24-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> (<span class="dt">ContT</span> r m) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-14" data-line-number="14"><span class="ot">    (&gt;&gt;=) ::</span> <span class="dt">ContT</span> r m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b</a>
+<a class="sourceLine" id="cb24-15" data-line-number="15">    a <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> a <span class="fu">&gt;&gt;-</span> \a' <span class="ot">-&gt;</span> f a' <span class="fu">&gt;&gt;-</span> \f' <span class="ot">-&gt;</span> k f'</a>
+<a class="sourceLine" id="cb24-16" data-line-number="16">    </a>
+<a class="sourceLine" id="cb24-17" data-line-number="17"><span class="ot">callCC ::</span> ((b <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m a) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b) <span class="ot">-&gt;</span> <span class="dt">ContT</span> r m b</a>
+<a class="sourceLine" id="cb24-18" data-line-number="18">callCC f <span class="fu">=</span> <span class="dt">ContT</span> <span class="fu">$</span> \k <span class="ot">-&gt;</span> f (\b <span class="ot">-&gt;</span> <span class="dt">ContT</span> <span class="fu">$</span> \k' <span class="ot">-&gt;</span> k b) <span class="fu">&gt;&gt;-</span> k</a></code></pre></div>
 <p>I love being able to interact with these definitions like this. This is really how I want to program, and I’d encourage you to try it! The notebook is <a href="https://github.com/vaibhavsagar/notebooks/blob/master/continuations/Continuation.ipynb">here</a> for you to play with if you have IHaskell set up. IHaskell isn’t just useful for programming: I even used it to <a href="https://github.com/vaibhavsagar/notebooks/blob/master/continuations/DiscoveringContinuationsWithTypedHoles.ipynb">write this blog post</a>!</p>
 <p>I feel like I should end with something profound about continuations, but I’ll instead link you to <a href="http://teh.id.au/posts/2017/05/10/lambdajam-slides/">this presentation by Tim Humphries</a> and once again nudge you to try typed holes the next time you’re in a Haskell bind (pun very much intended).</p>
 <p>Thanks to <a href="https://twitter.com/imccoy">Iain McCoy</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="https://ivanthetricourne.github.io/">Carl Factora</a> for their feedback and suggestions on this post.</p>
