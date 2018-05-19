@@ -58,7 +58,7 @@
 <a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</a>
 <a class="sourceLine" id="cb1-13" data-line-number="13">  <span class="ex">buildInputs</span> = [ haskellPkgs.pandoc ]<span class="kw">;</span></a>
 <a class="sourceLine" id="cb1-14" data-line-number="14">} <span class="st">&quot;&quot;</span></a></code></pre></div>
-<p>If we save this to <code>default.nix</code> we can use it as follows:</p>
+<p>If we save this to <code>default.nix</code> we can use it as follows (unless you’re reading this more than six months in the future from the time of writing, more on that below):</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" data-line-number="1">$ <span class="ex">nix-shell</span> default.nix</a>
 <a class="sourceLine" id="cb2-2" data-line-number="2"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a>
 <a class="sourceLine" id="cb2-3" data-line-number="3">[<span class="ex">nix-shell</span>]$ pandoc --version</a>
@@ -66,7 +66,7 @@
 <a class="sourceLine" id="cb2-5" data-line-number="5"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a></code></pre></div>
 <p>Pandoc is infamously large, so this will probably take a while the first time. Fortunately, Nix caches build artifacts and knows to provide the same output if the inputs are unchanged, so if we immediately try this again a second time it should be nearly instantaneous.</p>
 <p>Barring an event like the garbage collection of the Nix store or a change in the expression above, we would like to never rebuild this package again. Unfortunately, there is a serious flaw with this expression that prevents us from guaranteeing this.</p>
-<p>The problem is not immediately obvious, and might only manifest days or weeks later. The issue is with the second line,</p>
+<p>The problem is not immediately obvious, and might only manifest days or weeks later, or when you upgrade NixOS to the next version. The issue is with the second line,</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span><span class="kw">;</span></a></code></pre></div>
 <p>where we import the system-wide <code>nixpkgs</code>. If we later update this by running</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1">$ <span class="ex">nix-channel</span> --update</a></code></pre></div>
