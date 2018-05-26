@@ -134,7 +134,13 @@
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" data-line-number="1">$ <span class="ex">./updater</span> versions.json nixpkgs nixos-18.03</a></code></pre></div>
 <p>The reason I went with this approach is that <code>jq</code> is easier and friendlier to use than most of the Nix tooling available, and Nix fortunately has good JSON interoperability. I’ve toyed with the idea of rewriting my updater script in a language that is more robust (possibly Haskell with <a href="https://github.com/haskell-nix/hnix">hnix</a>) but I feel like it’s at a local maximum and I’m happy with the way it works for now.</p>
 <p>I hope you find some of the ideas and/or code here useful the next time you’re wondering if you should pin <code>nixpkgs</code> and how to do so!</p>
-<p>Thanks to <a href="https://jarmac.org/">Ahmad Jarara</a>, <a href="https://twitter.com/@chrisczynski">Chris Stryczynski</a>, <a href="https://github.com/garry-cairns">Garry Cairns</a>, <a href="https://haroldtreen.com/">Harold Treen</a>, <a href="http://susanpotter.net/">Susan Potter</a>, and <a href="https://twitter.com/tpflug">Tobias Pflug</a> for comments and feedback!</p>
+<p><strong>Appendix 1</strong></p>
+<p>If you use Nix 2.0 or newer, the <code>builtins.fetchTarball</code> command takes a <code>sha256</code> which means you can replace <code>fetchFromGitHub</code> and bootstrap without an existing <code>&lt;nixpkgs&gt;</code>! The following code snippet is identical to <code>fetchFromGitHub</code>:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ex">fetcher</span> = { owner, repo, rev, sha256 }: <span class="ex">builtins.fetchTarball</span> {</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">  <span class="ex">inherit</span> sha256<span class="kw">;</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">  <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/archive/</span><span class="va">${rev}</span><span class="st">.tar.gz&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">};</a></code></pre></div>
+<p>Thanks to <a href="https://jarmac.org/">Ahmad Jarara</a>, <a href="https://twitter.com/@chrisczynski">Chris Stryczynski</a>, <a href="https://github.com/garry-cairns">Garry Cairns</a>, <a href="https://haroldtreen.com/">Harold Treen</a>, <a href="https://ren.zone/">Renzo Carbonara</a>, <a href="http://susanpotter.net/">Susan Potter</a>, and <a href="https://twitter.com/tpflug">Tobias Pflug</a> for comments and feedback!</p>
 ]]></summary>
 </entry>
 <entry>
