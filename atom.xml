@@ -189,7 +189,7 @@
 </div>
 
 <p><a href="https://mybinder.org/">mybinder.org</a> is a website that will freely host a GitHub repository as a collection of interactive Jupyter notebooks. It has excellent built-in support for some of the more popular Jupyter kernels such as Python and Julia, but it also has support for building a <code>Dockerfile</code> of your choosing.</p>
-<p>This means that getting an IHaskell installation up and running can be as simple as clicking a link, and I’m happy to report that I’ve gotten this working! You can <a href="https://mybinder.org/v2/gh/gibiansky/IHaskell/7a41fa209d071cf7ff7c4e63dbc9f584006efb0d">try it here</a>.</p>
+<p>This means that getting an IHaskell installation up and running can be as simple as clicking a link, and I’m happy to report that I’ve gotten this working! You can <a href="https://mybinder.org/v2/gh/gibiansky/IHaskell/master">try it here</a>.</p>
 <p>I started with the simplest thing I could think of, which was to install system dependencies and Jupyter to an Ubuntu container and then run <code>stack install ihaskell</code>. You can see the Dockerfile for that <a href="https://github.com/vaibhavsagar/ihaskell-mybinder/blob/6d093c5cd06cde77e13a5a98ae8ce093ba51fee9/Dockerfile">here</a>.</p>
 <p>Once I had that working, my next step was to roll these changes into <a href="https://github.com/gibiansky/IHaskell/pull/848">IHaskell’s <code>Dockerfile</code></a> and now everyone can use IHaskell on mybinder.org!</p>
 <p>I’ve also <a href="https://hub.docker.com/r/vaibhavsagar/ihaskell/">pushed an image to Docker Hub</a> that you can use as a base for your own repositories. A minimal example of a valid <code>Dockerfile</code> looks something like this:</p>
