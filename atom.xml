@@ -557,7 +557,7 @@
 <a class="sourceLine" id="cb6-4" data-line-number="4">$ <span class="ex">cabal</span> build</a></code></pre></div>
 <p>The difference is the extra options passed to the linker. After the last command, I get a whole bunch of warnings about</p>
 <pre><code>&quot;Using &#39;&lt;function&gt;&#39; in statically linked applications requires at runtime the shared libraries from the glibc version used for linking&quot;</code></pre>
-<p>which is definitely something to watch out for if you plan on deploying these executables to a machine that might be running a different version of <code>glibc</code>. You can confirm that the executable has been statically linked by running</p>
+<p>which is definitely something to watch out for if you plan on deploying these executables to a machine that might be running a different version of <code>glibc</code>. A more robust solution is to link against e.g. <code>musl</code> instead of <code>glibc</code>, as Niklas Hambüchen has done <a href="https://github.com/nh2/static-haskell-nix">here</a>. You can confirm that the executable has been statically linked by running</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" data-line-number="1">$ <span class="fu">ldd</span> dist/build/blank-me-up/blank-me-up</a>
 <a class="sourceLine" id="cb8-2" data-line-number="2">        <span class="ex">not</span> a dynamic executable</a></code></pre></div>
 <p>I’ve made this project available <a href="https://github.com/vaibhavsagar/experiments/tree/master/static-haskell-nix">here</a> if you’d like to tweak it. Since this was relatively straightforward, I think it might be possible to do this without <code>buildFHSUserEnv</code>. Maybe I will try that next.</p>
@@ -573,7 +573,8 @@
 <a class="sourceLine" id="cb10-6" data-line-number="6">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
 <a class="sourceLine" id="cb10-7" data-line-number="7">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
 <a class="sourceLine" id="cb10-8" data-line-number="8">];</a></code></pre></div>
-<p>This is also available in the linked repository.</p>
+<p>This is also available in the linked repository, and you can pin <code>nixpkgs</code> as follows to get my exact build:</p>
+<pre><code>$ nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/08d245eb31a3de0ad73719372190ce84c1bf3aee.tar.gz default.nix</code></pre>
 <p><strong>Edit 2</strong>: <a href="https://github.com/angerman">Moritz Angermann</a> and <a href="https://github.com/nh2">Niklas Hambüchen</a> improved these instructions to be more robust. Thanks Moritz and Niklas!</p>
 ]]></summary>
 </entry>
