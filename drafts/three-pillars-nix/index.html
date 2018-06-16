@@ -56,6 +56,7 @@
 <p>Without full control of environment variables, we can’t ensure that only the dependencies we specify are used to produce the build output, and our builds might complete successfully on our machine but not on another, which is no better than the current non-Nix state of affairs.</p>
 <p>Without symbolic links, we might have broken build outputs and/or system configurations if intermediate files were put in place during a failed build. We wouldn’t be able to trust that a build either fails or produces a complete output and Nix would be completely unsuitable for system deployment.</p>
 <p>I hope this provides some more insight into how Nix achieves its goals. I’m more confident that there’s no magic here, just difficult and tedious engineering!</p>
+<p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> and <a href="https://twitter.com/tpflug">Tobias Pflug</a> for comments and feedback.</p>
 
         </div>
         <div id="footer">
