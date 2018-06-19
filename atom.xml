@@ -8,8 +8,199 @@
         <name>Vaibhav Sagar</name>
         <email>vaibhavsagar@gmail.com</email>
     </author>
-    <updated>2018-05-27T00:00:00Z</updated>
+    <updated>2018-06-19T00:00:00Z</updated>
     <entry>
+    <title>Trees That Shrink</title>
+    <link href="http://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html" />
+    <id>http://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html</id>
+    <published>2018-06-19T00:00:00Z</published>
+    <updated>2018-06-19T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on 19 June 2018
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/programming/index.html">programming</a>
+    
+</div>
+
+<p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/trees-that-shrink/TreesThatShrink.ipynb">IHaskell notebook</a>.</em></p>
+<p>I read <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">this paper</a> a while ago and people seemed pretty excited about it, although I couldn’t see why. Fortunately, someone posed me an interesting problem recently and in the process of tackling it I think I understand now.</p>
+<p>Suppose we have a simple algebraic data type representing the lambda calculus with <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">de Bruijn indices</a>, which are a way of avoiding the messy problem of variable names:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Expr</span> a</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Lit</span> a</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">Var</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">Abs</span> (<span class="dt">Expr</span> a)</a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">App</span> (<span class="dt">Expr</span> a) (<span class="dt">Expr</span> a)</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
+<p>So far so good! Now we want to have let bindings in this language, and we’ve decided that we want named variables as well while we’re at it because de Bruijn indices are not so much fun to work with. We dutifully define another data type:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Expr&#39;</span> a</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Lit&#39;</span> a</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">Var&#39;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">Abs&#39;</span> (<span class="dt">Expr&#39;</span> a)</a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">App&#39;</span> (<span class="dt">Expr&#39;</span> a) (<span class="dt">Expr&#39;</span> a)</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">Let&#39;</span> <span class="dt">String</span> (<span class="dt">Expr&#39;</span> a) (<span class="dt">Expr&#39;</span> a)</a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
+<p>Let bindings can be easily desugared into lambda abstractions as follows:</p>
+<pre><code>let &lt;n&gt; = &lt;x&gt; in &lt;y&gt; &lt;=&gt; (\n -&gt; y) x</code></pre>
+<p>which will help us to write a simpler evaluator. However, we’d also like to make sure the desugaring has been implemented correctly, perhaps by converting to some intermediate state where both the name and the correct de Bruijn index coexist peacefully. We have a couple of options, none of which are great:</p>
+<ol type="1">
+<li>Define a third data type and then write an indexing pass that converts <code>Var String</code> to <code>Var (String, Int)</code> and then a desugaring pass that converts that to <code>Expr a</code>.</li>
+<li>Work entirely within the bigger data type, forget about indexing, and throw errors whenever a <code>Let</code> is encountered after a desugaring pass.</li>
+<li>Combine the desugaring and indexing passes into one, and forget about keeping track of the desugaring.</li>
+</ol>
+<p>Let’s implement the third:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Map.Strict</span> <span class="kw">as</span> <span class="dt">Map</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Map.Map</span> <span class="dt">String</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="ot">desugarAndAnonymise ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr&#39;</span> a <span class="ot">-&gt;</span> <span class="dt">Expr</span> a</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">desugarAndAnonymise env expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">    <span class="dt">Lit&#39;</span> a <span class="ot">-&gt;</span> <span class="dt">Lit</span> a</a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">    <span class="dt">Var&#39;</span> name <span class="ot">-&gt;</span> <span class="dt">Var</span> (env <span class="fu">Map.!</span> name)</a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">    <span class="dt">Abs&#39;</span> expr&#39; <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb4-10" data-line-number="10">        env&#39;  <span class="fu">=</span> Map.map succ env</a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">        <span class="kw">in</span> <span class="dt">Abs</span> (desugarAndAnonymise env&#39; expr&#39;)</a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">    <span class="dt">App&#39;</span> f x <span class="ot">-&gt;</span> <span class="dt">App</span> (desugarAndAnonymise env f) (desugarAndAnonymise env x)</a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">    <span class="dt">Let&#39;</span> n v expr&#39; <span class="ot">-&gt;</span> desugarAndAnonymise env (<span class="dt">App&#39;</span> (<span class="dt">Abs&#39;</span> expr&#39;) v)</a></code></pre></div>
+<p>That wasn’t a lot of fun to write, I have no idea if I did the conversion from names to indices correctly, and there’s no easy way to check if I did.</p>
+<p>These problems are (barely) manageable in this case, but what if we want to add more syntax sugar or share this data type with other libraries that have different use cases? We’d either have to write variations on a theme over and over again or say goodbye to type safety. It also becomes harder and harder to decompose our functions into smaller ones that only do one thing. There has to be a better way!</p>
+<p>This is the subject of <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">Trees that Grow</a> by Shayan Najd and Simon Peyton Jones. They noticed the need for this approach when looking at GHC’s abstract syntax tree type but the idiom is generally applicable.</p>
+<p>The first insight is that defining different data types for each use case is the wrong approach. Conceptually all these data types are the same type, just with different annotations or decoration, and we should be able to define the base data type with enough extensibility to accommodate all the other use cases.</p>
+<p>The second insight is that we can use some of GHC’s fancier features to ease the pain of working with this ridiculously extensible data type, such as type families and pattern synonyms.</p>
+<p>The third insight is that this can be made to work with other language features, such as generalised abstract data types and existentials! We won’t use this here, but it’s great to know that it’s possible.</p>
+<p>Let’s see how we can use it to solve our problem. The first thing to do is turn on some language extensions, as with anything moderately fun in Haskell:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE TypeFamilies      #-}</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">{-# LANGUAGE PatternSynonyms   #-}</span></a></code></pre></div>
+<p>The next steps are:</p>
+<ol type="1">
+<li>Add a type parameter to the data type declaration.</li>
+<li>Add a field to each constructor with a new data type that uses this parameter (and any others).</li>
+<li>Add an extra constructor to enable extending this data type, also with a new data type as in step 2.</li>
+<li>Define type families for each of the new data types you declared in steps 2 and 3.</li>
+</ol>
+<p>And we’re done! This is what that looks like for our example:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">data</span> <span class="dt">ExpX</span> i a</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">LitX</span> (<span class="dt">XLit</span> i a) a</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">VarX</span> (<span class="dt">XVar</span> i a)</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">AbsX</span> (<span class="dt">XAbs</span> i a) (<span class="dt">ExpX</span> i a)</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">AppX</span> (<span class="dt">XApp</span> i a) (<span class="dt">ExpX</span> i a) (<span class="dt">ExpX</span> i a)</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">ExpX</span> (<span class="dt">XExp</span> i a)</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb6-8" data-line-number="8"><span class="kw">type</span> family <span class="dt">XLit</span> i a</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9"><span class="kw">type</span> family <span class="dt">XVar</span> i a</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10"><span class="kw">type</span> family <span class="dt">XAbs</span> i a</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11"><span class="kw">type</span> family <span class="dt">XApp</span> i a</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="kw">type</span> family <span class="dt">XExp</span> i a</a></code></pre></div>
+<p>The next thing to do is to reconstruct our original data type with no extensions. To do this we’ll need to use the <a href="http://hackage.haskell.org/package/base/docs/Data-Void.html"><code>Data.Void</code></a> package:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Void</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="ot">void ::</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">void <span class="fu">=</span> error <span class="st">&quot;Attempt to evaluate void&quot;</span></a></code></pre></div>
+<p>Now we can define <code>ExpUD</code> (UD for “undecorated”) using <code>Int</code> for our <code>Var</code> like we originally wanted and <code>Void</code> for all other extension points. It might get frustrating to construct and work with these values by hand, so we can use pattern synonyms to ease this pain.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpUD</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">UD</span> a</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="kw">data</span> <span class="dt">UD</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">pattern <span class="dt">LitUD</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">pattern <span class="dt">LitUD</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">    <span class="kw">where</span> <span class="dt">LitUD</span> a <span class="fu">=</span> <span class="dt">LitX</span> void a</a>
+<a class="sourceLine" id="cb8-12" data-line-number="12">pattern <span class="dt">VarUD</span><span class="ot"> ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">pattern <span class="dt">VarUD</span> i <span class="ot">&lt;-</span> <span class="dt">VarX</span> i</a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">    <span class="kw">where</span> <span class="dt">VarUD</span> i <span class="fu">=</span> <span class="dt">VarX</span> i</a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">pattern <span class="dt">AbsUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">pattern <span class="dt">AbsUD</span> a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> _ a</a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">    <span class="kw">where</span> <span class="dt">AbsUD</span> a <span class="fu">=</span> <span class="dt">AbsX</span> void a</a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">pattern <span class="dt">AppUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">pattern <span class="dt">AppUD</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">    <span class="kw">where</span> <span class="dt">AppUD</span> f a <span class="fu">=</span> <span class="dt">AppX</span> void f a</a></code></pre></div>
+<p>This is unfortunately a bit boilerplate-y, but now we can define that intermediate data type that uses named variables as well as de Bruijn indices! As a bonus, we can now have named parameters to lambdas, which would not have been possible with the approach we tried to use above.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpAnn</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">Ann</span> a</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw">data</span> <span class="dt">Ann</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Ann</span> a <span class="fu">=</span> (<span class="dt">String</span>, <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">pattern <span class="dt">LitAnn</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">pattern <span class="dt">LitAnn</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
+<a class="sourceLine" id="cb9-11" data-line-number="11">    <span class="kw">where</span> <span class="dt">LitAnn</span> a <span class="fu">=</span> <span class="dt">LitX</span> void a</a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">pattern <span class="dt">VarAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-13" data-line-number="13">pattern <span class="dt">VarAnn</span> s i <span class="ot">&lt;-</span> <span class="dt">VarX</span> (s,i)</a>
+<a class="sourceLine" id="cb9-14" data-line-number="14">    <span class="kw">where</span> <span class="dt">VarAnn</span> s i <span class="fu">=</span> <span class="dt">VarX</span> (s, i)</a>
+<a class="sourceLine" id="cb9-15" data-line-number="15">pattern <span class="dt">AbsAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-16" data-line-number="16">pattern <span class="dt">AbsAnn</span> s a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb9-17" data-line-number="17">    <span class="kw">where</span> <span class="dt">AbsAnn</span> s a <span class="fu">=</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb9-18" data-line-number="18">pattern <span class="dt">AppAnn</span><span class="ot"> ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-19" data-line-number="19">pattern <span class="dt">AppAnn</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
+<a class="sourceLine" id="cb9-20" data-line-number="20">    <span class="kw">where</span> <span class="dt">AppAnn</span> f a <span class="fu">=</span> <span class="dt">AppX</span> void f a</a></code></pre></div>
+<p>Now for my favourite part, where we add let bindings! We achieve this by using a tuple to represent <code>let &lt;name&gt; = &lt;expr&gt; in &lt;expr&gt;</code> as <code>(&lt;name&gt;, &lt;expr&gt;, &lt;expr&gt;)</code>, and we use named variables and parameters in this representation.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpLet</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">Let</span> a</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw">data</span> <span class="dt">Let</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-6" data-line-number="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Let</span> a <span class="fu">=</span> (<span class="dt">String</span>, <span class="dt">ExpLet</span> a, <span class="dt">ExpLet</span> a)</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">pattern <span class="dt">LitLet</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">pattern <span class="dt">LitLet</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">    <span class="kw">where</span> <span class="dt">LitLet</span> a <span class="fu">=</span> <span class="dt">LitX</span> void a</a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">pattern <span class="dt">VarLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">pattern <span class="dt">VarLet</span> s <span class="ot">&lt;-</span> <span class="dt">VarX</span> s</a>
+<a class="sourceLine" id="cb10-14" data-line-number="14">    <span class="kw">where</span> <span class="dt">VarLet</span> s <span class="fu">=</span> <span class="dt">VarX</span> s</a>
+<a class="sourceLine" id="cb10-15" data-line-number="15">pattern <span class="dt">AbsLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-16" data-line-number="16">pattern <span class="dt">AbsLet</span> s a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb10-17" data-line-number="17">    <span class="kw">where</span> <span class="dt">AbsLet</span> s a <span class="fu">=</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb10-18" data-line-number="18">pattern <span class="dt">AppLet</span><span class="ot"> ::</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-19" data-line-number="19">pattern <span class="dt">AppLet</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
+<a class="sourceLine" id="cb10-20" data-line-number="20">    <span class="kw">where</span> <span class="dt">AppLet</span> f a <span class="fu">=</span> <span class="dt">AppX</span> void f a</a>
+<a class="sourceLine" id="cb10-21" data-line-number="21">pattern <span class="dt">LetLet</span> n v e <span class="ot">&lt;-</span> <span class="dt">ExpX</span> (n,v,e)</a></code></pre></div>
+<p>Now instead of writing a single giant pass, we can write smaller ones!</p>
+<p>We can write a desugarer that preserves names and rewrites our let bindings as follows:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="ot">desugar ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">desugar env expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">    <span class="dt">LitLet</span> a <span class="ot">-&gt;</span> <span class="dt">LitAnn</span> a</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">    <span class="dt">VarLet</span> name <span class="ot">-&gt;</span> <span class="dt">VarAnn</span> name (env <span class="fu">Map.!</span> name)</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">    <span class="dt">AbsLet</span> name expr&#39; <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb11-6" data-line-number="6">        env&#39;  <span class="fu">=</span> Map.map succ env</a>
+<a class="sourceLine" id="cb11-7" data-line-number="7">        env&#39;&#39; <span class="fu">=</span> Map.insert name <span class="dv">0</span> env&#39;</a>
+<a class="sourceLine" id="cb11-8" data-line-number="8">        <span class="kw">in</span> <span class="dt">AbsAnn</span> name (desugar env&#39;&#39; expr&#39;)</a>
+<a class="sourceLine" id="cb11-9" data-line-number="9">    <span class="dt">AppLet</span> f x <span class="ot">-&gt;</span> <span class="dt">AppAnn</span> (desugar env f) (desugar env x)</a>
+<a class="sourceLine" id="cb11-10" data-line-number="10">    <span class="dt">LetLet</span> n v expr&#39; <span class="ot">-&gt;</span> desugar env (<span class="dt">AppLet</span> (<span class="dt">AbsLet</span> n expr&#39;) v)</a></code></pre></div>
+<p>We can also write an anonymiser that throws the names away:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">anonymise ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">anonymise expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">    <span class="dt">LitAnn</span> a <span class="ot">-&gt;</span> <span class="dt">LitUD</span> a</a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">    <span class="dt">VarAnn</span> _ i <span class="ot">-&gt;</span> <span class="dt">VarUD</span> i</a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">    <span class="dt">AbsAnn</span> _ e <span class="ot">-&gt;</span> <span class="dt">AbsUD</span> (anonymise e)</a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">    <span class="dt">AppAnn</span> f x <span class="ot">-&gt;</span> <span class="dt">AppUD</span> (anonymise f) (anonymise x)</a></code></pre></div>
+<p>And finally an evaluator that operates on undecorated expressions:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="ot">eval ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">eval env expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">    <span class="dt">LitUD</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">    <span class="dt">VarUD</span> i <span class="ot">-&gt;</span> env <span class="fu">!!</span> i</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5">    <span class="dt">AbsUD</span> f <span class="ot">-&gt;</span> eval env f</a>
+<a class="sourceLine" id="cb13-6" data-line-number="6">    <span class="dt">AppUD</span> f x <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb13-7" data-line-number="7">        x&#39; <span class="fu">=</span> eval env x</a>
+<a class="sourceLine" id="cb13-8" data-line-number="8">        <span class="kw">in</span> eval (x&#39;<span class="fu">:</span>env) f</a></code></pre></div>
+<p>Let’s see it in action!</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1">identity <span class="fu">=</span> <span class="dt">AbsLet</span> <span class="st">&quot;i&quot;</span> (<span class="dt">VarLet</span> <span class="st">&quot;i&quot;</span>)</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2">konst <span class="fu">=</span> (<span class="dt">AbsLet</span> <span class="st">&quot;x&quot;</span> (<span class="dt">AbsLet</span> <span class="st">&quot;y&quot;</span> (<span class="dt">VarLet</span> <span class="st">&quot;x&quot;</span>)))</a>
+<a class="sourceLine" id="cb14-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">eval [] <span class="fu">.</span> anonymise <span class="fu">.</span> desugar Map.empty <span class="fu">$</span> <span class="dt">AppLet</span> (<span class="dt">AppLet</span> konst (<span class="dt">LitLet</span> <span class="dv">1</span>)) (<span class="dt">LitLet</span> <span class="dv">2</span>)</a></code></pre></div>
+<pre><code>2</code></pre>
+<p>Awesome! We have composable compiler passes that are easier to write and to think about. Even with this small example, I hope the benefits are clear.</p>
+<p>Thanks to <a href="http://andychu.net/">Andy Chu</a> and <a href="https://push.cx/">Peter Bhat Harkins</a> for comments and feedback.</p>
+]]></summary>
+</entry>
+<entry>
     <title>Quick and Easy Nixpkgs Pinning</title>
     <link href="http://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html" />
     <id>http://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html</id>
@@ -1201,284 +1392,6 @@ p.caption {
 <p>We can also use it to solve <a href="https://en.wikipedia.org/wiki/2-satisfiability">2SAT</a>, which is the problem of determining whether boolean variables in series of constraints of the form <code>a || b</code> can be assigned T and F values such that all constraints hold. This is discussed <a href="https://kartikkukreja.wordpress.com/2013/05/16/solving-2-sat-in-linear-time/">here</a> but boils down to encoding the constraints as nodes and edges, calculating the SCCs, and processing the output in reverse topologically sorted order. An advantage to doing it this way is that the process can stop at the first SCC that indicates unsatisfiability. I have an implementation of this <a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms2/week6/Week6.ipynb">here</a>.</p>
 <p>Discovering this algorithm got me excited about theoretical computer science and reminded me that algorithms can be fun, interesting, and an opportunity to marvel at the music of the spheres. I’m curious to know what other equally awesome algorithms are out there. Which one’s your favourite?</p>
 <p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a> for the title and feedback, and <a href="https://twitter.com/imccoy">Iain McCoy</a> for suggesting <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.3876">a more functional approach</a>.</p>
-]]></summary>
-</entry>
-<entry>
-    <title>Imperative Haskell</title>
-    <link href="http://vaibhavsagar.com/blog/2017/05/29/imperative-haskell/index.html" />
-    <id>http://vaibhavsagar.com/blog/2017/05/29/imperative-haskell/index.html</id>
-    <published>2017-05-29T00:00:00Z</published>
-    <updated>2017-05-29T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
-    Posted on 29 May 2017
-    
-</div>
-<div class="info">
-    
-        Tags: <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/programming/index.html">programming</a>
-    
-</div>
-
-<p><em>This post covers essentially the same material as a 5-minute presentation I gave at <a href="https://www.recurse.com/scout/click?t=5ac465e5d3396a7e491e42afac4c5c90">RC</a>, because giving that talk over and over again doesn’t scale and there are things I would like to cover that are difficult within that time limit.</em></p>
-<p>I was working through Tim Roughgarden’s <a href="https://www.coursera.org/learn/algorithm-design-analysis/">Algorithms 1</a> (which has now been replaced by two smaller courses) and attempting to do all the exercises in Haskell when I bumped up against an uncomfortable truth. Haskell’s ‘quicksort’:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1">qsort []     <span class="fu">=</span> []</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">qsort (x<span class="fu">:</span>xs) <span class="fu">=</span> lt <span class="fu">++</span> [x] <span class="fu">++</span> gt</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="kw">where</span> lt <span class="fu">=</span> qsort [e <span class="fu">|</span> e <span class="ot">&lt;-</span> xs, e <span class="fu">&lt;</span>  x]</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">          gt <span class="fu">=</span> qsort [e <span class="fu">|</span> e <span class="ot">&lt;-</span> xs, e <span class="fu">&gt;=</span> x]</a></code></pre></div>
-<p>isn’t a true quicksort! Specifically, it doesn’t sort the elements in place, and the assignment I was working on involved counting the number of comparisons, so I couldn’t get away with my fake quicksort. With my tail between my legs, I gave up on my pure Haskell approach and implemented a solution in Python:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="im">import</span> sys</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">sys.setrecursionlimit(<span class="dv">10000</span>)</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="kw">def</span> partition_first(array, l, r):</a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    p <span class="op">=</span> array[l]</a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">    i <span class="op">=</span> l <span class="op">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(l<span class="op">+</span><span class="dv">1</span>, r):</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">        <span class="cf">if</span> array[j] <span class="op">&lt;</span> p:</a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">            array[j], array[i] <span class="op">=</span> array[i], array[j]</a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">            i <span class="op">+=</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">    array[l], array[i<span class="dv">-1</span>] <span class="op">=</span> array[i<span class="dv">-1</span>], array[l]</a>
-<a class="sourceLine" id="cb2-12" data-line-number="12">    <span class="cf">return</span> (i<span class="dv">-1</span>)</a>
-<a class="sourceLine" id="cb2-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14"><span class="kw">def</span> partition_last(array, l, r):</a>
-<a class="sourceLine" id="cb2-15" data-line-number="15">    array[r<span class="dv">-1</span>], array[l] <span class="op">=</span> array[l], array[r<span class="dv">-1</span>]</a>
-<a class="sourceLine" id="cb2-16" data-line-number="16">    <span class="cf">return</span> partition_first(array, l, r)</a>
-<a class="sourceLine" id="cb2-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb2-18" data-line-number="18"><span class="kw">def</span> partition_median(array, l, r):</a>
-<a class="sourceLine" id="cb2-19" data-line-number="19">    p_idx <span class="op">=</span> choose_median(array, l, r)</a>
-<a class="sourceLine" id="cb2-20" data-line-number="20">    array[p_idx], array[l] <span class="op">=</span> array[l], array[p_idx]</a>
-<a class="sourceLine" id="cb2-21" data-line-number="21">    <span class="cf">return</span> partition_first(array, l, r)</a>
-<a class="sourceLine" id="cb2-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb2-23" data-line-number="23"><span class="kw">def</span> choose_median(array, l, r):</a>
-<a class="sourceLine" id="cb2-24" data-line-number="24">    head <span class="op">=</span> array[l]</a>
-<a class="sourceLine" id="cb2-25" data-line-number="25">    last <span class="op">=</span> array[r<span class="dv">-1</span>]</a>
-<a class="sourceLine" id="cb2-26" data-line-number="26">    length <span class="op">=</span> r<span class="op">-</span>l</a>
-<a class="sourceLine" id="cb2-27" data-line-number="27">    <span class="cf">if</span> length <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</a>
-<a class="sourceLine" id="cb2-28" data-line-number="28">        mid_idx <span class="op">=</span> l <span class="op">+</span> (length<span class="op">//</span><span class="dv">2</span>) <span class="op">-</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb2-29" data-line-number="29">    <span class="cf">else</span>:</a>
-<a class="sourceLine" id="cb2-30" data-line-number="30">        mid_idx <span class="op">=</span> l <span class="op">+</span> (length<span class="op">//</span><span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb2-31" data-line-number="31">    mid <span class="op">=</span> array[mid_idx]</a>
-<a class="sourceLine" id="cb2-32" data-line-number="32">    options <span class="op">=</span> [(l, head), (mid_idx, mid), (r<span class="dv">-1</span>, last)]</a>
-<a class="sourceLine" id="cb2-33" data-line-number="33">    options.remove(<span class="bu">max</span>(options, key<span class="op">=</span><span class="kw">lambda</span> v: v[<span class="dv">1</span>]))</a>
-<a class="sourceLine" id="cb2-34" data-line-number="34">    options.remove(<span class="bu">min</span>(options, key<span class="op">=</span><span class="kw">lambda</span> v: v[<span class="dv">1</span>]))</a>
-<a class="sourceLine" id="cb2-35" data-line-number="35">    <span class="cf">return</span> options[<span class="dv">0</span>][<span class="dv">0</span>]</a>
-<a class="sourceLine" id="cb2-36" data-line-number="36"></a>
-<a class="sourceLine" id="cb2-37" data-line-number="37"><span class="kw">def</span> quicksort(array, start, end, partition):</a>
-<a class="sourceLine" id="cb2-38" data-line-number="38">    <span class="kw">global</span> comparisons</a>
-<a class="sourceLine" id="cb2-39" data-line-number="39">    <span class="cf">if</span> end<span class="op">&lt;=</span>start: <span class="cf">return</span></a>
-<a class="sourceLine" id="cb2-40" data-line-number="40">    <span class="cf">else</span>:</a>
-<a class="sourceLine" id="cb2-41" data-line-number="41">        p_idx <span class="op">=</span> partition(array, start, end)</a>
-<a class="sourceLine" id="cb2-42" data-line-number="42">        comparisons <span class="op">+=</span> (end<span class="op">-</span>start<span class="dv">-1</span>)</a>
-<a class="sourceLine" id="cb2-43" data-line-number="43">        quicksort(array, start, p_idx, partition)</a>
-<a class="sourceLine" id="cb2-44" data-line-number="44">        quicksort(array, p_idx<span class="op">+</span><span class="dv">1</span>, end, partition)</a>
-<a class="sourceLine" id="cb2-45" data-line-number="45"></a>
-<a class="sourceLine" id="cb2-46" data-line-number="46"></a>
-<a class="sourceLine" id="cb2-47" data-line-number="47">comparisons <span class="op">=</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb2-48" data-line-number="48">inp1 <span class="op">=</span> contents.copy()</a>
-<a class="sourceLine" id="cb2-49" data-line-number="49">quicksort(inp1, <span class="dv">0</span>, <span class="bu">len</span>(inp1), partition_first)</a>
-<a class="sourceLine" id="cb2-50" data-line-number="50"><span class="bu">print</span>(comparisons)</a>
-<a class="sourceLine" id="cb2-51" data-line-number="51"></a>
-<a class="sourceLine" id="cb2-52" data-line-number="52">comparisons <span class="op">=</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb2-53" data-line-number="53">inp2 <span class="op">=</span> contents.copy()</a>
-<a class="sourceLine" id="cb2-54" data-line-number="54">quicksort(inp2, <span class="dv">0</span>, <span class="bu">len</span>(inp2), partition_last)</a>
-<a class="sourceLine" id="cb2-55" data-line-number="55"><span class="bu">print</span>(comparisons)</a>
-<a class="sourceLine" id="cb2-56" data-line-number="56"></a>
-<a class="sourceLine" id="cb2-57" data-line-number="57">comparisons <span class="op">=</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb2-58" data-line-number="58">inp3 <span class="op">=</span> contents.copy()</a>
-<a class="sourceLine" id="cb2-59" data-line-number="59">quicksort(inp3, <span class="dv">0</span>, <span class="bu">len</span>(inp3), partition_median)</a>
-<a class="sourceLine" id="cb2-60" data-line-number="60"><span class="bu">print</span>(comparisons)</a></code></pre></div>
-<p>This implementation is not particularly Pythonic: note the recursion limit and the use of a global variable. I actually forgot to reset the variable to 0 between iterations, which was fun to track down. But it works!</p>
-<p>So far, so good. This isn’t something we’d be able to do in Haskell, right? And even if we could, the equivalent implementation would be so different as to be unrecognisable. At least this is what I thought until I took a closer look at <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Monad-ST.html">Control.Monad.ST</a> and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-STRef.html">Data.STRef</a>.</p>
-<p>One of my biggest gripes with Haskell is the quality of the documentation. <code>Control.Monad.ST</code> is introduced as</p>
-<blockquote>
-<p>This library provides support for strict state threads, as described in the PLDI ’94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional State Threads</em>.</p>
-</blockquote>
-<p>and <code>Data.STRef</code> is introduced as</p>
-<blockquote>
-<p>Mutable references in the (strict) ST monad.</p>
-</blockquote>
-<p>I don’t want to read a paper to figure out how to use these libraries, and in fact I don’t have to! In recognition of this, I humbly present alternative descriptions for <code>Control.Monad.ST</code>:</p>
-<blockquote>
-<p>You asked for mutable state, here it is!</p>
-</blockquote>
-<p>and <code>Data.STRef</code>:</p>
-<blockquote>
-<p>Variables that you can actually vary!!!1!1!one!1eleventyone</p>
-</blockquote>
-<p>Code utilising these libraries can look very familiar to people used to imperative languages, e.g. past me. Here’s the above quicksort rewritten in Haskell:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">{-# LANGUAGE RankNTypes #-}</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Vector</span> (fromList, toList, freeze, thaw)</a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="kw">import</span> <span class="dt">Control.Monad</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, write, swap)</a>
-<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Vector</span> <span class="kw">as</span> <span class="dt">V</span> (<span class="dt">Vector</span>, length)</a>
-<a class="sourceLine" id="cb3-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Data.List</span> (sortOn)</a>
-<a class="sourceLine" id="cb3-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (read)</a>
-<a class="sourceLine" id="cb3-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb3-12" data-line-number="12">vector <span class="fu">=</span> fromList contents</a>
-<a class="sourceLine" id="cb3-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb3-14" data-line-number="14">partitionFirst array l r <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-15" data-line-number="15">    p <span class="ot">&lt;-</span> read array l</a>
-<a class="sourceLine" id="cb3-16" data-line-number="16">    i <span class="ot">&lt;-</span> newSTRef (l<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb3-17" data-line-number="17">    forM_ [l<span class="fu">+</span><span class="dv">1</span><span class="fu">..</span>(r<span class="fu">-</span><span class="dv">1</span>)] <span class="fu">$</span> \j <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-18" data-line-number="18">        arrayJ <span class="ot">&lt;-</span> read array j</a>
-<a class="sourceLine" id="cb3-19" data-line-number="19">        i&#39;     <span class="ot">&lt;-</span> readSTRef i</a>
-<a class="sourceLine" id="cb3-20" data-line-number="20">        when (arrayJ <span class="fu">&lt;</span> p) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-21" data-line-number="21">            swap array i&#39; j</a>
-<a class="sourceLine" id="cb3-22" data-line-number="22">            modifySTRef&#39; i (<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb3-23" data-line-number="23">    i&#39; <span class="ot">&lt;-</span> readSTRef i</a>
-<a class="sourceLine" id="cb3-24" data-line-number="24">    swap array (i&#39;<span class="fu">-</span><span class="dv">1</span>) l</a>
-<a class="sourceLine" id="cb3-25" data-line-number="25">    return (i&#39;<span class="fu">-</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb3-26" data-line-number="26"></a>
-<a class="sourceLine" id="cb3-27" data-line-number="27">partitionLast array l r <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-28" data-line-number="28">    swap array (r<span class="fu">-</span><span class="dv">1</span>) l</a>
-<a class="sourceLine" id="cb3-29" data-line-number="29">    partitionFirst array l r</a>
-<a class="sourceLine" id="cb3-30" data-line-number="30"></a>
-<a class="sourceLine" id="cb3-31" data-line-number="31">partitionMedian array l r <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-32" data-line-number="32">    p <span class="ot">&lt;-</span> chooseMedian array l r</a>
-<a class="sourceLine" id="cb3-33" data-line-number="33">    swap array p l</a>
-<a class="sourceLine" id="cb3-34" data-line-number="34">    partitionFirst array l r</a>
-<a class="sourceLine" id="cb3-35" data-line-number="35"></a>
-<a class="sourceLine" id="cb3-36" data-line-number="36">chooseMedian array l r <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-37" data-line-number="37">    h <span class="ot">&lt;-</span> read array l</a>
-<a class="sourceLine" id="cb3-38" data-line-number="38">    t <span class="ot">&lt;-</span> read array (r<span class="fu">-</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb3-39" data-line-number="39">    <span class="kw">let</span> len <span class="fu">=</span> r<span class="fu">-</span>l</a>
-<a class="sourceLine" id="cb3-40" data-line-number="40">    <span class="kw">let</span> mid <span class="fu">=</span> <span class="kw">if</span> (len <span class="ot">`mod`</span> <span class="dv">2</span>) <span class="fu">==</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb3-41" data-line-number="41">        <span class="kw">then</span> l <span class="fu">+</span> (len <span class="ot">`div`</span> <span class="dv">2</span>) <span class="fu">-</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-42" data-line-number="42">        <span class="kw">else</span> l <span class="fu">+</span> (len <span class="ot">`div`</span> <span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb3-43" data-line-number="43">    m <span class="ot">&lt;-</span> read array mid</a>
-<a class="sourceLine" id="cb3-44" data-line-number="44">    <span class="kw">let</span> options <span class="fu">=</span> sortOn snd [(l, h), (mid, m), (r<span class="fu">-</span><span class="dv">1</span>, t)]</a>
-<a class="sourceLine" id="cb3-45" data-line-number="45">    return (fst (options <span class="fu">!!</span> <span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb3-46" data-line-number="46"></a>
-<a class="sourceLine" id="cb3-47" data-line-number="47">quicksort array start end partition comparisons <span class="fu">=</span> when (start <span class="fu">&lt;</span> end) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-48" data-line-number="48">    i <span class="ot">&lt;-</span> partition array start end</a>
-<a class="sourceLine" id="cb3-49" data-line-number="49">    modifySTRef&#39; comparisons (<span class="fu">+</span> (end<span class="fu">-</span>start<span class="fu">-</span><span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb3-50" data-line-number="50">    quicksort array start i   partition comparisons</a>
-<a class="sourceLine" id="cb3-51" data-line-number="51">    quicksort array (i<span class="fu">+</span><span class="dv">1</span>) end partition comparisons</a>
-<a class="sourceLine" id="cb3-52" data-line-number="52"></a>
-<a class="sourceLine" id="cb3-53" data-line-number="53"><span class="ot">quicksort&#39; ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> <span class="dt">V.Vector</span> a <span class="ot">-&gt;</span> (forall s a<span class="fu">.</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> <span class="dt">STVector</span> s a <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-54" data-line-number="54">quicksort&#39; vector partition <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-55" data-line-number="55">    array  <span class="ot">&lt;-</span> thaw vector</a>
-<a class="sourceLine" id="cb3-56" data-line-number="56">    comps  <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
-<a class="sourceLine" id="cb3-57" data-line-number="57">    quicksort array <span class="dv">0</span> (V.length vector) partition comps</a>
-<a class="sourceLine" id="cb3-58" data-line-number="58">    readSTRef comps</a>
-<a class="sourceLine" id="cb3-59" data-line-number="59"></a>
-<a class="sourceLine" id="cb3-60" data-line-number="60">quicksort&#39; vector partitionFirst</a>
-<a class="sourceLine" id="cb3-61" data-line-number="61">quicksort&#39; vector partitionLast</a>
-<a class="sourceLine" id="cb3-62" data-line-number="62">quicksort&#39; vector partitionMedian</a></code></pre></div>
-<p>This is roughly the same length as the Python implementation, and even improves on it in some ways: no recursion limit fiddling and no global variables.</p>
-<p>If we can write Haskell that resembles Python, and Python is executable pseudocode, can we cut out the middleman and translate pseudocode directly to Haskell? Let’s take a look at another problem.</p>
-<p>I needed to calculate the size of the strongly connected components of a graph for another assignment, and I decided to use Tarjan’s Strongly Connected Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode noweb"><code class="sourceCode noweb"><a class="sourceLine" id="cb4-1" data-line-number="1"> algorithm tarjan is</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">  input: graph G = (V, E)</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">  output: set of strongly connected components (sets of vertices)</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">  index := 0</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6">  S := empty array</a>
-<a class="sourceLine" id="cb4-7" data-line-number="7">  for each v in V do</a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">    if (v.index is undefined) then</a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">      strongconnect(v)</a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">    end if</a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">  end for</a>
-<a class="sourceLine" id="cb4-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">  function strongconnect(v)</a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">    // Set the depth index for v to the smallest unused index</a>
-<a class="sourceLine" id="cb4-15" data-line-number="15">    v.index := index</a>
-<a class="sourceLine" id="cb4-16" data-line-number="16">    v.lowlink := index</a>
-<a class="sourceLine" id="cb4-17" data-line-number="17">    index := index + 1</a>
-<a class="sourceLine" id="cb4-18" data-line-number="18">    S.push(v)</a>
-<a class="sourceLine" id="cb4-19" data-line-number="19">    v.onStack := true</a>
-<a class="sourceLine" id="cb4-20" data-line-number="20"></a>
-<a class="sourceLine" id="cb4-21" data-line-number="21">    // Consider successors of v</a>
-<a class="sourceLine" id="cb4-22" data-line-number="22">    for each (v, w) in E do</a>
-<a class="sourceLine" id="cb4-23" data-line-number="23">      if (w.index is undefined) then</a>
-<a class="sourceLine" id="cb4-24" data-line-number="24">        // Successor w has not yet been visited; recurse on it</a>
-<a class="sourceLine" id="cb4-25" data-line-number="25">        strongconnect(w)</a>
-<a class="sourceLine" id="cb4-26" data-line-number="26">        v.lowlink  := min(v.lowlink, w.lowlink)</a>
-<a class="sourceLine" id="cb4-27" data-line-number="27">      else if (w.onStack) then</a>
-<a class="sourceLine" id="cb4-28" data-line-number="28">        // Successor w is in stack S and hence in the current SCC</a>
-<a class="sourceLine" id="cb4-29" data-line-number="29">        // Note: The next line may look odd - but is correct.</a>
-<a class="sourceLine" id="cb4-30" data-line-number="30">        // It says w.index not w.lowlink; that is deliberate and from the original paper</a>
-<a class="sourceLine" id="cb4-31" data-line-number="31">        v.lowlink  := min(v.lowlink, w.index)</a>
-<a class="sourceLine" id="cb4-32" data-line-number="32">      end if</a>
-<a class="sourceLine" id="cb4-33" data-line-number="33">    end for</a>
-<a class="sourceLine" id="cb4-34" data-line-number="34"></a>
-<a class="sourceLine" id="cb4-35" data-line-number="35">    // If v is a root node, pop the stack and generate an SCC</a>
-<a class="sourceLine" id="cb4-36" data-line-number="36">    if (v.lowlink = v.index) then</a>
-<a class="sourceLine" id="cb4-37" data-line-number="37">      start a new strongly connected component</a>
-<a class="sourceLine" id="cb4-38" data-line-number="38">      repeat</a>
-<a class="sourceLine" id="cb4-39" data-line-number="39">        w := S.pop()</a>
-<a class="sourceLine" id="cb4-40" data-line-number="40">        w.onStack := false</a>
-<a class="sourceLine" id="cb4-41" data-line-number="41">        add w to current strongly connected component</a>
-<a class="sourceLine" id="cb4-42" data-line-number="42">      while (w != v)</a>
-<a class="sourceLine" id="cb4-43" data-line-number="43">      output the current strongly connected component</a>
-<a class="sourceLine" id="cb4-44" data-line-number="44">    end if</a>
-<a class="sourceLine" id="cb4-45" data-line-number="45">  end function</a></code></pre></div>
-<p>and here’s what that looks like in Haskell:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_, when)</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span>      (read, replicate)</a>
-<a class="sourceLine" id="cb5-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">tarjan graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
-<a class="sourceLine" id="cb5-13" data-line-number="13">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
-<a class="sourceLine" id="cb5-14" data-line-number="14">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb5-15" data-line-number="15">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">    output   <span class="ot">&lt;-</span> newSTRef []</a>
-<a class="sourceLine" id="cb5-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb5-18" data-line-number="18">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">        vIndex <span class="ot">&lt;-</span> read indices v</a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">        when (vIndex <span class="fu">==</span> <span class="dt">Nothing</span>) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb5-21" data-line-number="21">            strongConnect v graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb5-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb5-23" data-line-number="23">    reverse <span class="fu">&lt;$&gt;</span> readSTRef output</a>
-<a class="sourceLine" id="cb5-24" data-line-number="24">    <span class="kw">where</span> size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-25" data-line-number="25"></a>
-<a class="sourceLine" id="cb5-26" data-line-number="26">strongConnect v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-27" data-line-number="27">    i <span class="ot">&lt;-</span> readSTRef index</a>
-<a class="sourceLine" id="cb5-28" data-line-number="28">    write indices  v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb5-29" data-line-number="29">    write lowlinks v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb5-30" data-line-number="30">    modifySTRef&#39; index (<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb5-31" data-line-number="31">    push v</a>
-<a class="sourceLine" id="cb5-32" data-line-number="32"></a>
-<a class="sourceLine" id="cb5-33" data-line-number="33">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \found <span class="ot">-&gt;</span> <span class="kw">case</span> found <span class="kw">of</span></a>
-<a class="sourceLine" id="cb5-34" data-line-number="34">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-35" data-line-number="35">            strongConnect w graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb5-36" data-line-number="36">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
-<a class="sourceLine" id="cb5-37" data-line-number="37">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> read stackSet w <span class="fu">&gt;&gt;=</span> \wOnStack <span class="ot">-&gt;</span> when wOnStack <span class="fu">$</span></a>
-<a class="sourceLine" id="cb5-38" data-line-number="38">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
-<a class="sourceLine" id="cb5-39" data-line-number="39"></a>
-<a class="sourceLine" id="cb5-40" data-line-number="40">    vLowLink <span class="ot">&lt;-</span> read lowlinks v</a>
-<a class="sourceLine" id="cb5-41" data-line-number="41">    vIndex   <span class="ot">&lt;-</span> read indices  v</a>
-<a class="sourceLine" id="cb5-42" data-line-number="42">    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> modifySTRef&#39; output <span class="fu">.</span> (<span class="fu">:</span>) <span class="fu">=&lt;&lt;</span> addSCC v []</a>
-<a class="sourceLine" id="cb5-43" data-line-number="43">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-44" data-line-number="44">        addSCC v scc <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-45" data-line-number="45">            w <span class="ot">&lt;-</span> pop</a>
-<a class="sourceLine" id="cb5-46" data-line-number="46">            <span class="kw">let</span> scc&#39; <span class="fu">=</span> w<span class="fu">:</span>scc</a>
-<a class="sourceLine" id="cb5-47" data-line-number="47">            <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return scc&#39; <span class="kw">else</span> addSCC v scc&#39;</a>
-<a class="sourceLine" id="cb5-48" data-line-number="48"></a>
-<a class="sourceLine" id="cb5-49" data-line-number="49">        push e <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-50" data-line-number="50">            modifySTRef&#39; stack (e<span class="fu">:</span>)</a>
-<a class="sourceLine" id="cb5-51" data-line-number="51">            write stackSet e <span class="dt">True</span></a>
-<a class="sourceLine" id="cb5-52" data-line-number="52"></a>
-<a class="sourceLine" id="cb5-53" data-line-number="53">        pop <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-54" data-line-number="54">            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
-<a class="sourceLine" id="cb5-55" data-line-number="55">            modifySTRef&#39; stack tail</a>
-<a class="sourceLine" id="cb5-56" data-line-number="56">            write stackSet e <span class="dt">False</span></a>
-<a class="sourceLine" id="cb5-57" data-line-number="57">            return e</a></code></pre></div>
-<p>Aside from explicitly declaring our variables and passing them around, I think this looks pretty close.</p>
-<p>How do we square this with Haskell’s reputation for purity and referential transparency? That’s the subject of <a href="https://www.microsoft.com/en-us/research/publication/lazy-functional-state-threads/">the paper mentioned above</a> that you don’t have to read (but totally can if you want)! They figured out a way to provide a principled pure interface to mutable state by passing the references as arguments into each function that makes use of them and leveraging the type system to make sure any impurity is well contained. The correctness of this approach was <a href="http://iris-project.org/pdfs/2017-icfp-runST-submission.pdf">very recently verified</a>. If desired, we can replace any of the functions with purer and more idiomatic definitions without changing the output, and that satisfies the definition of referential transparency!</p>
-<p>Why don’t we do this all the time, when Haskell is at least a serviceable imperative language? Because writing imperative programs is hard! They don’t compose as well, have less useful type signatures, and are harder to reason about. Getting away from those things is why we have Haskell to begin with! The real question should be: how can we avoid doing things this way as much as possible?</p>
-<p>Before I discovered this part of Haskell, I had this perception of Haskell (and declarative programming more generally) as “imperative programming but less” from a practical perspective. I thought that although writing declarative code in Python was purely (heh) a matter of discipline, writing imperative code in Haskell required completely reconceptualising the algorithm. Thanks to <code>ST</code>, I now know that this not the case, which is a huge relief. If required, I can do a literal translation of the algorithm, and clean it up (or not) later. In fact Haskell is “imperative programming and more”, and that’s awesome!</p>
-<p>Thanks to <a href="http://blog.podsnap.com/">Peter Fraenkel</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="http://msteigerwalt.com/">Michelle Steigerwalt</a> for feedback.</p>
-<p><em>If you’d rather try to make sense of the <a href="https://github.com/vaibhavsagar/presentations/tree/master/imperative-haskell">set of disconnected files</a> that constitutes my slides for that presentation, you can do that instead, although I wouldn’t recommend it.</em></p>
 ]]></summary>
 </entry>
 
