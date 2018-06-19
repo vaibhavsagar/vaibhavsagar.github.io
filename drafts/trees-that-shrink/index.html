@@ -34,7 +34,7 @@
             <h1>Trees That Shrink</h1>
 
             <div class="info">
-    Posted on 14 June 2018
+    Posted on 19 June 2018
     
 </div>
 <div class="info">
@@ -43,7 +43,7 @@
     
 </div>
 
-<p>I read <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">this paper</a> a while ago and people seemed pretty excited about it, although I couldn’t see why. Fortunately, someone posed me an interesting problem recently and in the process of tackling it I believe I know now.</p>
+<p>I read <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">this paper</a> a while ago and people seemed pretty excited about it, although I couldn’t see why. Fortunately, someone posed me an interesting problem recently and in the process of tackling it I think I understand now.</p>
 <p>Suppose we have a simple algebraic data type representing the lambda calculus with <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">de Bruijn indices</a>, which are a way of avoiding the messy problem of variable names:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Expr</span> a</a>
 <a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Lit</span> a</a>
@@ -83,16 +83,13 @@
 <a class="sourceLine" id="cb4-13" data-line-number="13">    <span class="dt">Let'</span> n v expr' <span class="ot">-&gt;</span> desugarAndAnonymise env (<span class="dt">App'</span> (<span class="dt">Abs'</span> expr') v)</a></code></pre></div>
 <p>That wasn’t a lot of fun to write, I have no idea if I did the conversion from names to indices correctly, and there’s no easy way to check if I did.</p>
 <p>These problems are (barely) manageable in this case, but what if we want to add more syntax sugar or share this data type with other libraries that have different use cases? We’d either have to write variations on a theme over and over again or say goodbye to type safety. It also becomes harder and harder to decompose our functions into smaller ones that only do one thing. There has to be a better way!</p>
-<p>This is the subject of a recent paper called <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">Trees that Grow</a> by Shayan Najd and Simon Peyton Jones. They noticed the need for this approach when looking at GHC’s abstract syntax tree type but the idiom is generally applicable.</p>
+<p>This is the subject of <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">Trees that Grow</a> by Shayan Najd and Simon Peyton Jones. They noticed the need for this approach when looking at GHC’s abstract syntax tree type but the idiom is generally applicable.</p>
 <p>The first insight is that defining different data types for each use case is the wrong approach. Conceptually all these data types are the same type, just with different annotations or decoration, and we should be able to define the base data type with enough extensibility to accommodate all the other use cases.</p>
 <p>The second insight is that we can use some of GHC’s fancier features to ease the pain of working with this ridiculously extensible data type, such as type families and pattern synonyms.</p>
 <p>The third insight is that this can be made to work with other language features, such as generalised abstract data types and existentials! We won’t use this here, but it’s great to know that it’s possible.</p>
-<p>Let’s see how we can use it to solve our problem. The first thing to do is turn on a bunch of language extensions, as with anything moderately fun in Haskell:</p>
+<p>Let’s see how we can use it to solve our problem. The first thing to do is turn on some language extensions, as with anything moderately fun in Haskell:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE TypeFamilies      #-}</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">{-# LANGUAGE DataKinds         #-}</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="ot">{-# LANGUAGE PatternSynonyms   #-}</span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="ot">{-# LANGUAGE FlexibleInstances #-}</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="ot">{-# LANGUAGE FlexibleContexts  #-}</span></a></code></pre></div>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">{-# LANGUAGE PatternSynonyms   #-}</span></a></code></pre></div>
 <p>The next steps are:</p>
 <ol type="1">
 <li>Add a type parameter to the data type declaration.</li>
@@ -118,7 +115,7 @@
 <a class="sourceLine" id="cb7-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb7-3" data-line-number="3"><span class="ot">void ::</span> <span class="dt">Void</span></a>
 <a class="sourceLine" id="cb7-4" data-line-number="4">void <span class="fu">=</span> error <span class="st">&quot;Attempt to evaluate void&quot;</span></a></code></pre></div>
-<p>Now we can define <code>ExpUD</code> (UD for undecorated) using <code>Int</code> for our <code>Var</code> like we originally wanted and <code>Void</code> for all other extension points. It might get frustrating to construct and work with these values by hand, so we can use pattern synonyms to ease this pain!</p>
+<p>Now we can define <code>ExpUD</code> (UD for “undecorated”) using <code>Int</code> for our <code>Var</code> like we originally wanted and <code>Void</code> for all other extension points. It might get frustrating to construct and work with these values by hand, so we can use pattern synonyms to ease this pain.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpUD</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">UD</span> a</a>
 <a class="sourceLine" id="cb8-2" data-line-number="2"><span class="kw">data</span> <span class="dt">UD</span></a>
 <a class="sourceLine" id="cb8-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
