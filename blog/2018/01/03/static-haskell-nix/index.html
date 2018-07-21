@@ -114,10 +114,11 @@
 <a class="sourceLine" id="cb10-2" data-line-number="2"><span class="ex">enableSharedLibraries</span> = false<span class="kw">;</span></a>
 <a class="sourceLine" id="cb10-3" data-line-number="3"><span class="ex">configureFlags</span> = [</a>
 <a class="sourceLine" id="cb10-4" data-line-number="4">  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp6.override { withStatic </span><span class="va">=</span> true; <span class="va">}</span><span class="st">}/lib&quot;</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8">];</a></code></pre></div>
+<a class="sourceLine" id="cb10-5" data-line-number="5">  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp6.override { withStatic </span><span class="va">=</span> true; <span class="va">}</span><span class="st">}/lib&quot;</span></a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">];</a></code></pre></div>
 <p>This is also available in the linked repository, and you can pin <code>nixpkgs</code> as follows to get my exact build:</p>
 <pre><code>$ nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/08d245eb31a3de0ad73719372190ce84c1bf3aee.tar.gz default.nix</code></pre>
 <p><strong>Edit 2</strong>: <a href="https://github.com/angerman">Moritz Angermann</a> and <a href="https://github.com/nh2">Niklas Hambüchen</a> improved these instructions to be more robust. Thanks Moritz and Niklas!</p>
