@@ -45,17 +45,25 @@
 
 <p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/hamt/HAMTsFromScratch.ipynb">IHaskell notebook</a>.</em></p>
 <p>I wanted an explanation for HAMTs (Hash Array Mapped Tries) that was more detailed than <a href="https://idea.popcount.org/2012-07-25-introduction-to-hamt/">Marek Majkowski’s introduction</a> and more approachable than <a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf"><em>Ideal Hash Trees</em> by Phil Bagwell</a>, the paper that introduced them. HAMTs form the backbone of the <a href="http://hackage.haskell.org/package/unordered-containers"><code>unordered-containers</code></a> library but the <a href="https://github.com/tibbe/unordered-containers/blob/efa43a2ab09dc6eb72893d12676a8e188cb4ca63/Data/HashMap/Base.hs">implementation has been lovingly optimised</a> to the point where I found it impenetrable. <a href="https://github.com/ezyang/hamt/blob/a43559795630980eb16ab832a003d8e6acd21cf6/HAMT.hs">Edward Z. Yang’s implementation</a> is much easier to follow and after adapting it I think I’m in a good place to provide my own take on HAMTs.</p>
-<p>Let’s start with a few imports!</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Bits</span> (<span class="dt">Bits</span>((.|.), (.&amp;.), bit, complement, popCount, shiftR), <span class="dt">FiniteBits</span>(finiteBitSize))</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.ByteArray.Hash</span> (<span class="dt">FnvHash32</span>(..), fnv1Hash)</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Data.ByteString.Char8</span> (pack)</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Data.Char</span> (intToDigit)</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Semigroup</span> ((&lt;&gt;))</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">import</span> <span class="dt">Data.Vector</span> (<span class="dt">Vector</span>, (//), (!), drop, singleton, take)</a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Data.Word</span> (<span class="dt">Word16</span>, <span class="dt">Word32</span>)</a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="kw">import</span> <span class="dt">Numeric</span> (showIntAtBase)</a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (drop, lookup, take)</a>
-<a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Text.Show.Pretty</span> (pPrint)</a></code></pre></div>
+<p>Let’s start with a few imports! I’ll be using these packages:</p>
+<ol type="1">
+<li><a href="http://hackage.haskell.org/package/base"><code>base</code></a></li>
+<li><a href="http://hackage.haskell.org/package/bytestring"><code>bytestring</code></a></li>
+<li><a href="http://hackage.haskell.org/package/memory"><code>memory</code></a></li>
+<li><a href="http://hackage.haskell.org/package/pretty-show"><code>pretty-show</code></a></li>
+<li><a href="http://hackage.haskell.org/package/vector"><code>vector</code></a></li>
+</ol>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Bits</span>             (<span class="dt">Bits</span> (bit, complement, popCount, shiftR, (.&amp;.), (.|.)),</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">                              <span class="dt">FiniteBits</span> (finiteBitSize))</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Data.ByteArray.Hash</span>   (<span class="dt">FnvHash32</span> (..), fnv1Hash)</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Data.ByteString.Char8</span> (pack)</a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Char</span>             (intToDigit)</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">import</span> <span class="dt">Data.Semigroup</span>        ((&lt;&gt;))</a>
+<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Data.Vector</span>           (<span class="dt">Vector</span>, drop, singleton, take, (!), (//))</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="kw">import</span> <span class="dt">Data.Word</span>             (<span class="dt">Word16</span>, <span class="dt">Word32</span>)</a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Numeric</span>               (showIntAtBase)</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Prelude</span>               <span class="kw">hiding</span> (drop, lookup, take)</a>
+<a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Text.Show.Pretty</span>      (pPrint)</a></code></pre></div>
 <p>We’re going to be doing some bit twiddling. To make things easier I’m going to define a <code>newtype</code> that behaves exactly the same as whatever it’s wrapping except that its <code>Show</code> instance displays the binary representation instead of the decimal one.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span></a>
 <a class="sourceLine" id="cb2-2" data-line-number="2"></a>
@@ -325,7 +333,7 @@
   ]</code></pre>
 <p>And we’re done! I hope you understand HAMTs better than when you started reading this.</p>
 <p>If you want to use this for something other than educational purposes, I would recommend adding logic to deal with hash collisions, which I intentionally omitted. There’s also some low-hanging fruit in terms of performance optimisations. The first thing that comes to mind is an additional <code>Full</code> constructor for the case where all bits in the bitmap are set, and the next thing is the use of unsafe vector functions that omit bounds checking.</p>
-<p>Thanks to <a href="https://twitter.com/evanborden">Evan Borden</a> for comments and feedback.</p>
+<p>Thanks to <a href="https://twitter.com/evanborden">Evan Borden</a> and <a href="http://mjhopkins.github.io/">Mark Hopkins</a> for comments and feedback.</p>
 
         </div>
         <div id="footer">
