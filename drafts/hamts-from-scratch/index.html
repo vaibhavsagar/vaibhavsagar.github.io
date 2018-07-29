@@ -43,7 +43,7 @@
     
 </div>
 
-<p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/hamt/HAMTsFromScratch.ipynb">IHaskell notebook</a>.</em></p>
+<p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/hamt/HAMTsFromScratch.ipynb">IHaskell notebook</a> and the source is available <a href>separately</a>.</em></p>
 <p>I wanted an explanation for HAMTs (Hash Array Mapped Tries) that was more detailed than <a href="https://idea.popcount.org/2012-07-25-introduction-to-hamt/">Marek Majkowski’s introduction</a> and more approachable than <a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf"><em>Ideal Hash Trees</em> by Phil Bagwell</a>, the paper that introduced them. If you haven’t heard of them before, HAMTs are a way of efficiently representing a hashtable as a <a href="https://en.wikipedia.org/wiki/Trie">trie</a>, and although they were first envisioned as a mutable data structure they are easily adapted to work as a <a href="https://en.wikipedia.org/wiki/Persistent_data_structure">persistent data structure</a>. They form the backbone of the <a href="http://hackage.haskell.org/package/unordered-containers"><code>unordered-containers</code></a> library but the <a href="https://github.com/tibbe/unordered-containers/blob/efa43a2ab09dc6eb72893d12676a8e188cb4ca63/Data/HashMap/Base.hs">implementation has been lovingly optimised</a> to the point where I found it impenetrable. <a href="https://github.com/ezyang/hamt/blob/a43559795630980eb16ab832a003d8e6acd21cf6/HAMT.hs">Edward Z. Yang’s implementation</a> is much easier to follow and after adapting it I think I’m in a good place to provide my own take on them.</p>
 <p>Let’s start with a few imports! I’ll be using these packages:</p>
 <ul>
@@ -324,7 +324,7 @@
 <a class="sourceLine" id="cb49-5" data-line-number="5"></a>
 <a class="sourceLine" id="cb49-6" data-line-number="6">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
 <pre><code>1346269
-CPU time:   1.15s</code></pre>
+CPU time:   1.02s</code></pre>
 <p>We can memoise it by storing previously calculated results and using them if they are available:</p>
 <div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb51-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
 <a class="sourceLine" id="cb51-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
