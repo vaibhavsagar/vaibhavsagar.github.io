@@ -286,36 +286,102 @@
 <p>Let’s quickly confirm that it works.</p>
 <div class="sourceCode" id="cb42"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb42-1" data-line-number="1">lookup <span class="st">&quot;100&quot;</span> example</a></code></pre></div>
 <pre><code>Just 3</code></pre>
+<h4 id="memoising-fibonacci">Memoising Fibonacci</h4>
+<p>We now have enough of an API to use this as a hashtable! Let’s use it to memoise the calculation of the Fibonacci sequence. The naïve implementation looks like this:</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb44-1" data-line-number="1"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb44-2" data-line-number="2">fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb44-3" data-line-number="3">fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb44-4" data-line-number="4">fib n <span class="fu">=</span> fib (n<span class="fu">-</span><span class="dv">1</span>) <span class="fu">+</span> fib (n<span class="fu">-</span><span class="dv">2</span>)</a></code></pre></div>
+<p>And we can memoise it by storing previously calculated results and using them if they are available:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb45-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb45-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
+<a class="sourceLine" id="cb45-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb45-4" data-line-number="4"><span class="ot">fib' ::</span> <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Int</span>, <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb45-5" data-line-number="5">fib' table <span class="dv">0</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">0</span> <span class="dv">1</span> table)</a>
+<a class="sourceLine" id="cb45-6" data-line-number="6">fib' table <span class="dv">1</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">1</span> <span class="dv">1</span> table)</a>
+<a class="sourceLine" id="cb45-7" data-line-number="7">fib' table n <span class="fu">=</span> <span class="kw">case</span> lookup n table <span class="kw">of</span></a>
+<a class="sourceLine" id="cb45-8" data-line-number="8">    <span class="dt">Just</span> i <span class="ot">-&gt;</span> (i, table)</a>
+<a class="sourceLine" id="cb45-9" data-line-number="9">    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb45-10" data-line-number="10">        (i1, table')  <span class="fu">=</span> fib' table  (n<span class="fu">-</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb45-11" data-line-number="11">        (i2, table'') <span class="fu">=</span> fib' table' (n<span class="fu">-</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb45-12" data-line-number="12">        <span class="kw">in</span> (i1 <span class="fu">+</span> i2, insert n (i1 <span class="fu">+</span> i2) table'')</a>
+<a class="sourceLine" id="cb45-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb45-14" data-line-number="14"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb45-15" data-line-number="15">fib n <span class="fu">=</span> fst <span class="fu">$</span> fib' empty n</a></code></pre></div>
+<p>This avoids unnecessary computation, especially if we can reuse the hashtable instead of discarding it:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb46-1" data-line-number="1">(result, table) <span class="fu">=</span> fib' empty <span class="dv">19</span></a>
+<a class="sourceLine" id="cb46-2" data-line-number="2">pPrint <span class="fu">$</span> fib' table <span class="dv">20</span></a></code></pre></div>
+<pre><code>( 10946
+, Many
+    1111111111111111
+    [ Many
+        0000000000000011
+        [ Leaf 00000000000000000000000000000000 0 1
+        , Leaf 00000000000000000000000000010000 16 1597
+        ]
+    , Many
+        0000000000000011
+        [ Leaf 00000000000000000000000000000001 1 1
+        , Leaf 00000000000000000000000000010001 17 2584
+        ]
+    , Many
+        0000000000000011
+        [ Leaf 00000000000000000000000000000010 2 2
+        , Leaf 00000000000000000000000000010010 18 4181
+        ]
+    , Many
+        0000000000000011
+        [ Leaf 00000000000000000000000000000011 3 3
+        , Leaf 00000000000000000000000000010011 19 6765
+        ]
+    , Many
+        0000000000000011
+        [ Leaf 00000000000000000000000000000100 4 5
+        , Leaf 00000000000000000000000000010100 20 10946
+        ]
+    , Leaf 00000000000000000000000000000101 5 8
+    , Leaf 00000000000000000000000000000110 6 13
+    , Leaf 00000000000000000000000000000111 7 21
+    , Leaf 00000000000000000000000000001000 8 34
+    , Leaf 00000000000000000000000000001001 9 55
+    , Leaf 00000000000000000000000000001010 10 89
+    , Leaf 00000000000000000000000000001011 11 144
+    , Leaf 00000000000000000000000000001100 12 233
+    , Leaf 00000000000000000000000000001101 13 377
+    , Leaf 00000000000000000000000000001110 14 610
+    , Leaf 00000000000000000000000000001111 15 987
+    ]
+)</code></pre>
 <h3 id="delete">Delete</h3>
-<p>Finally we come to <code>delete</code>, which is only a little more complex. It needs to make sure that there are no <code>None</code> nodes in the tree, so if a deletion results in a <code>None</code> node, it will unset the bit in the bitmap if there are any sibling nodes, and if it was the only child of a <code>Many</code> node, it will replace the <code>Many</code> node with itself. <code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb44-1" data-line-number="1"><span class="ot">delete ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb44-2" data-line-number="2">delete key hamt <span class="fu">=</span> delete' <span class="dv">0</span> (hash key) hamt</a>
-<a class="sourceLine" id="cb44-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb44-4" data-line-number="4"><span class="ot">delete' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb44-5" data-line-number="5">delete' shift hash <span class="dt">None</span> <span class="fu">=</span> <span class="dt">None</span></a>
-<a class="sourceLine" id="cb44-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb44-7" data-line-number="7">delete' shift hash leaf<span class="fu">@</span>(<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
-<a class="sourceLine" id="cb44-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">None</span></a>
-<a class="sourceLine" id="cb44-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> leaf</a>
-<a class="sourceLine" id="cb44-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb44-11" data-line-number="11">delete' shift hash many<span class="fu">@</span>(<span class="dt">Many</span> bitmap vector)</a>
-<a class="sourceLine" id="cb44-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> many</a>
-<a class="sourceLine" id="cb44-13" data-line-number="13">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb44-14" data-line-number="14">        subtree <span class="fu">=</span> vector <span class="fu">!</span> index</a>
-<a class="sourceLine" id="cb44-15" data-line-number="15">        subtree' <span class="fu">=</span> delete' (shift<span class="fu">+</span>bitsPerSubkey) hash subtree</a>
-<a class="sourceLine" id="cb44-16" data-line-number="16">        <span class="kw">in</span> <span class="kw">case</span> subtree' <span class="kw">of</span></a>
-<a class="sourceLine" id="cb44-17" data-line-number="17">            <span class="dt">None</span> <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb44-18" data-line-number="18">                <span class="kw">then</span> <span class="dt">None</span></a>
-<a class="sourceLine" id="cb44-19" data-line-number="19">                <span class="kw">else</span> <span class="dt">Many</span> (bitmap <span class="fu">.&amp;.</span> complement mask) (deleteAt vector index)</a>
-<a class="sourceLine" id="cb44-20" data-line-number="20">            <span class="dt">Leaf</span>{} <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb44-21" data-line-number="21">                <span class="kw">then</span> subtree'</a>
-<a class="sourceLine" id="cb44-22" data-line-number="22">                <span class="kw">else</span>  <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
-<a class="sourceLine" id="cb44-23" data-line-number="23">            <span class="dt">Many</span>{} <span class="ot">-&gt;</span> <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
-<a class="sourceLine" id="cb44-24" data-line-number="24">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb44-25" data-line-number="25">        mask <span class="fu">=</span> bitMask hash shift</a>
-<a class="sourceLine" id="cb44-26" data-line-number="26">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
+<p>Finally we come to <code>delete</code>, which is only a little more complex than <code>lookup</code>. It needs to make sure that there are no <code>None</code> nodes in the tree, so if a deletion results in a <code>None</code> node, it will unset the bit in the bitmap if there are any sibling nodes, and if it was the only child of a <code>Many</code> node, it will replace the <code>Many</code> node with itself. <code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb48-1" data-line-number="1"><span class="ot">delete ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb48-2" data-line-number="2">delete key hamt <span class="fu">=</span> delete' <span class="dv">0</span> (hash key) hamt</a>
+<a class="sourceLine" id="cb48-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb48-4" data-line-number="4"><span class="ot">delete' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb48-5" data-line-number="5">delete' shift hash <span class="dt">None</span> <span class="fu">=</span> <span class="dt">None</span></a>
+<a class="sourceLine" id="cb48-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb48-7" data-line-number="7">delete' shift hash leaf<span class="fu">@</span>(<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
+<a class="sourceLine" id="cb48-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">None</span></a>
+<a class="sourceLine" id="cb48-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> leaf</a>
+<a class="sourceLine" id="cb48-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb48-11" data-line-number="11">delete' shift hash many<span class="fu">@</span>(<span class="dt">Many</span> bitmap vector)</a>
+<a class="sourceLine" id="cb48-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> many</a>
+<a class="sourceLine" id="cb48-13" data-line-number="13">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb48-14" data-line-number="14">        subtree <span class="fu">=</span> vector <span class="fu">!</span> index</a>
+<a class="sourceLine" id="cb48-15" data-line-number="15">        subtree' <span class="fu">=</span> delete' (shift<span class="fu">+</span>bitsPerSubkey) hash subtree</a>
+<a class="sourceLine" id="cb48-16" data-line-number="16">        <span class="kw">in</span> <span class="kw">case</span> subtree' <span class="kw">of</span></a>
+<a class="sourceLine" id="cb48-17" data-line-number="17">            <span class="dt">None</span> <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb48-18" data-line-number="18">                <span class="kw">then</span> <span class="dt">None</span></a>
+<a class="sourceLine" id="cb48-19" data-line-number="19">                <span class="kw">else</span> <span class="dt">Many</span> (bitmap <span class="fu">.&amp;.</span> complement mask) (deleteAt vector index)</a>
+<a class="sourceLine" id="cb48-20" data-line-number="20">            <span class="dt">Leaf</span>{} <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb48-21" data-line-number="21">                <span class="kw">then</span> subtree'</a>
+<a class="sourceLine" id="cb48-22" data-line-number="22">                <span class="kw">else</span>  <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
+<a class="sourceLine" id="cb48-23" data-line-number="23">            <span class="dt">Many</span>{} <span class="ot">-&gt;</span> <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
+<a class="sourceLine" id="cb48-24" data-line-number="24">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb48-25" data-line-number="25">        mask <span class="fu">=</span> bitMask hash shift</a>
+<a class="sourceLine" id="cb48-26" data-line-number="26">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
 <p>Let’s see this in action.</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb45-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb49-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
 <pre><code>Many
   0100010000000000
   [ Many
@@ -327,7 +393,7 @@
       ]
   ]</code></pre>
 <p>Note that it’s possible to have a situation where we have a <code>Many</code> node with only one child, because our replacement behaviour checks the length of the vector before any elements are removed from it. However, removing the last leaf will correctly delete the parent node as well.</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb47-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;10&quot;</span> <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb51-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;10&quot;</span> <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
 <pre><code>Many
   0100000000000000
   [ Many
@@ -338,7 +404,7 @@
   ]</code></pre>
 <p>And we’re done! I hope you understand HAMTs better than when you started reading this.</p>
 <p>If you want to use this for something other than educational purposes, I would recommend adding logic to deal with hash collisions, which I intentionally omitted. There’s also some low-hanging fruit in terms of performance optimisations. The first thing that comes to mind is an additional <code>Full</code> constructor for the case where all bits in the bitmap are set, and the next thing is the use of unsafe vector functions that omit bounds checking.</p>
-<p>Thanks to <a href="https://twitter.com/evanborden">Evan Borden</a>, <a href="https://hypirion.com/">Jean Niklas L’orange</a>, and <a href="http://mjhopkins.github.io/">Mark Hopkins</a> for comments and feedback.</p>
+<p>Thanks to <a href="https://twitter.com/evanborden">Evan Borden</a>, <a href="https://hypirion.com/">Jean Niklas L’orange</a>, <a href="http://mjhopkins.github.io/">Mark Hopkins</a>, and <a href="https://teh.id.au/">Tim Humphries</a> for comments and feedback.</p>
 
         </div>
         <div id="footer">
