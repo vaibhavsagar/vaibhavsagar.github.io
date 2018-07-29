@@ -34,7 +34,7 @@
             <h1>HAMTs from Scratch</h1>
 
             <div class="info">
-    Posted on 27 July 2018
+    Posted on 29 July 2018
     
 </div>
 <div class="info">
@@ -44,7 +44,7 @@
 </div>
 
 <p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/hamt/HAMTsFromScratch.ipynb">IHaskell notebook</a>.</em></p>
-<p>I wanted an explanation for HAMTs (Hash Array Mapped Tries) that was more detailed than <a href="https://idea.popcount.org/2012-07-25-introduction-to-hamt/">Marek Majkowski’s introduction</a> and more approachable than <a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf"><em>Ideal Hash Trees</em> by Phil Bagwell</a>, the paper that introduced them. If you haven’t heard of them before, HAMTs are a way of efficiently representing a hashtable as a <a href="https://en.wikipedia.org/wiki/Trie">trie</a>. They form the backbone of the <a href="http://hackage.haskell.org/package/unordered-containers"><code>unordered-containers</code></a> library but the <a href="https://github.com/tibbe/unordered-containers/blob/efa43a2ab09dc6eb72893d12676a8e188cb4ca63/Data/HashMap/Base.hs">implementation has been lovingly optimised</a> to the point where I found it impenetrable. <a href="https://github.com/ezyang/hamt/blob/a43559795630980eb16ab832a003d8e6acd21cf6/HAMT.hs">Edward Z. Yang’s implementation</a> is much easier to follow and after adapting it I think I’m in a good place to provide my own take on them.</p>
+<p>I wanted an explanation for HAMTs (Hash Array Mapped Tries) that was more detailed than <a href="https://idea.popcount.org/2012-07-25-introduction-to-hamt/">Marek Majkowski’s introduction</a> and more approachable than <a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf"><em>Ideal Hash Trees</em> by Phil Bagwell</a>, the paper that introduced them. If you haven’t heard of them before, HAMTs are a way of efficiently representing a hashtable as a <a href="https://en.wikipedia.org/wiki/Trie">trie</a>, and although they were first envisioned as a mutable data structure they are easily adapted to work as a <a href="https://en.wikipedia.org/wiki/Persistent_data_structure">persistent data structure</a>. They form the backbone of the <a href="http://hackage.haskell.org/package/unordered-containers"><code>unordered-containers</code></a> library but the <a href="https://github.com/tibbe/unordered-containers/blob/efa43a2ab09dc6eb72893d12676a8e188cb4ca63/Data/HashMap/Base.hs">implementation has been lovingly optimised</a> to the point where I found it impenetrable. <a href="https://github.com/ezyang/hamt/blob/a43559795630980eb16ab832a003d8e6acd21cf6/HAMT.hs">Edward Z. Yang’s implementation</a> is much easier to follow and after adapting it I think I’m in a good place to provide my own take on them.</p>
 <p>Let’s start with a few imports! I’ll be using these packages:</p>
 <ol type="1">
 <li><a href="http://hackage.haskell.org/package/base"><code>base</code></a></li>
@@ -89,7 +89,7 @@
 <p>The width of bitmaps is <span class="math inline">2<sup><em>n</em></sup></span> where <span class="math inline"><em>n</em></span> is the number of bits of the hash that we use at each level of the tree (more on this below). I’m setting <span class="math inline"><em>n</em> = 4</span> which is what <code>unordered-containers</code> uses (as of this writing), but we could e.g. set <span class="math inline"><em>n</em> = 5</span> and use 32-bit bitmaps if we wanted.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ot">bitsPerSubkey ::</span> <span class="dt">Int</span></a>
 <a class="sourceLine" id="cb8-2" data-line-number="2">bitsPerSubkey <span class="fu">=</span> <span class="dv">4</span></a></code></pre></div>
-<p><code>Shift</code> is a multiple of <span class="math inline"><em>n</em></span> that we will use to focus on the correct part of the hash. More on this later.</p>
+<p><code>Shift</code> is a multiple of <span class="math inline"><em>n</em></span> that we will use to focus on the correct part of the hash.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Shift</span> <span class="fu">=</span> <span class="dt">Int</span></a></code></pre></div>
 <p>I’m also going to define a <code>Hashable</code> class to decouple the choice of a hash function from the implementation of <code>HAMT</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">class</span> <span class="dt">Hashable</span> a <span class="kw">where</span></a>
@@ -135,7 +135,7 @@
 <a class="sourceLine" id="cb15-7" data-line-number="7"><span class="ot">deleteAt ::</span> <span class="dt">Vector</span> a <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Vector</span> a</a>
 <a class="sourceLine" id="cb15-8" data-line-number="8">deleteAt vector index <span class="fu">=</span> take index vector <span class="fu">&lt;&gt;</span> drop (index<span class="fu">+</span><span class="dv">1</span>) vector</a></code></pre></div>
 <h3 id="insert">Insert</h3>
-<p>I think the bit manipulation functions are crucial to understanding what’s going on, so I’m choosing to motivate them by trying to define <code>insert</code> without them and coming up with them as they are needed. My initial definition won’t be quite right so I’ll call it <code>insert_</code> to differentiate it from the correct <code>insert'</code> function I present later. The type signature for <code>insert_</code> is</p>
+<p>I think the bit manipulation functions are crucial to understanding what’s going on, so I’m going to motivate them by trying to define <code>insert</code> without them and coming up with them as they are needed. This initial definition won’t be quite right so I’ll call it <code>insert_</code> to differentiate it from the correct <code>insert'</code> function I present later. The type signature for <code>insert_</code> is</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">insert_ ::</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> key <span class="ot">-&gt;</span> value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a></code></pre></div>
 <p>Inserting a key-value pair into an empty HAMT gives us a single leaf node:</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1">insert_ hash key value <span class="dt">None</span> <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a></code></pre></div>
@@ -150,28 +150,34 @@
 <p>Where does <code>someBitmap</code> come from? Time for an example! Let’s start with a <code>Leaf (hash &quot;1&quot;) &quot;1&quot; 1</code>:</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" data-line-number="1">h <span class="fu">=</span> hash <span class="st">&quot;1&quot;</span></a>
 <a class="sourceLine" id="cb20-2" data-line-number="2">leaf <span class="fu">=</span> <span class="dt">Leaf</span> h <span class="st">&quot;1&quot;</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb20-3" data-line-number="3">leaf</a></code></pre></div>
+<a class="sourceLine" id="cb20-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb20-4" data-line-number="4">leaf</a></code></pre></div>
 <pre><code>Leaf 00000101000011000101110100101110 &quot;1&quot; 1</code></pre>
 <p><code>someBitMap</code> is a 16-bit bitmap where the number of bits set (the <code>popCount</code>) is the length of the vector, which in this case is <span class="math inline">1</span>. We want to set one bit, but which bit? We carve off the last <span class="math inline"><em>n</em></span> bits using a mask:</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="ot">subkeyMask ::</span> <span class="dt">Bitmap</span></a>
 <a class="sourceLine" id="cb22-2" data-line-number="2">subkeyMask <span class="fu">=</span> (bit bitsPerSubkey) <span class="fu">-</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb22-3" data-line-number="3">subkeyMask</a></code></pre></div>
+<a class="sourceLine" id="cb22-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb22-4" data-line-number="4">subkeyMask</a></code></pre></div>
 <pre><code>0000000000001111</code></pre>
 <div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" data-line-number="1"><span class="co">--     0101110100101110</span></a>
 <a class="sourceLine" id="cb24-2" data-line-number="2"><span class="co">-- .&amp;. 0000000000001111</span></a>
 <a class="sourceLine" id="cb24-3" data-line-number="3"><span class="co">-----------------------</span></a>
 <a class="sourceLine" id="cb24-4" data-line-number="4"><span class="co">--     0000000000001110</span></a>
-<a class="sourceLine" id="cb24-5" data-line-number="5">fragment <span class="fu">=</span> fromIntegral h <span class="fu">.&amp;.</span> subkeyMask</a>
-<a class="sourceLine" id="cb24-6" data-line-number="6">fragment</a></code></pre></div>
+<a class="sourceLine" id="cb24-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb24-6" data-line-number="6">fragment <span class="fu">=</span> fromIntegral h <span class="fu">.&amp;.</span> subkeyMask</a>
+<a class="sourceLine" id="cb24-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb24-8" data-line-number="8">fragment</a></code></pre></div>
 <pre><code>0000000000001110</code></pre>
 <p>Then we interpret that fragment as a number:</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb26-1" data-line-number="1"><span class="dt">Binary</span> position <span class="fu">=</span> fragment</a>
-<a class="sourceLine" id="cb26-2" data-line-number="2">position</a></code></pre></div>
+<a class="sourceLine" id="cb26-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb26-3" data-line-number="3">position</a></code></pre></div>
 <pre><code>14</code></pre>
 <p>Finally, we set that bit and we have our bitmap:</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb28-1" data-line-number="1"><span class="ot">someBitmap ::</span> <span class="dt">Bitmap</span></a>
 <a class="sourceLine" id="cb28-2" data-line-number="2">someBitmap <span class="fu">=</span> <span class="dt">Binary</span> <span class="fu">$</span> bit <span class="fu">$</span> fromIntegral position</a>
-<a class="sourceLine" id="cb28-3" data-line-number="3">someBitmap</a></code></pre></div>
+<a class="sourceLine" id="cb28-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb28-4" data-line-number="4">someBitmap</a></code></pre></div>
 <pre><code>0100000000000000</code></pre>
 <p>We’re going to be doing this a lot, so I’ll define this as <code>bitMask_</code>. The extra <code>_</code> is because it isn’t quite right for the same reason as <code>insert_</code>:</p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb30-1" data-line-number="1"><span class="ot">bitMask_ ::</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span></a>
@@ -179,7 +185,7 @@
 <a class="sourceLine" id="cb30-3" data-line-number="3">    fragment <span class="fu">=</span> fromIntegral hash <span class="fu">.&amp;.</span> subkeyMask</a>
 <a class="sourceLine" id="cb30-4" data-line-number="4">    <span class="dt">Binary</span> position <span class="fu">=</span> fragment</a>
 <a class="sourceLine" id="cb30-5" data-line-number="5">    <span class="kw">in</span> <span class="dt">Binary</span> (bit (fromIntegral position))</a></code></pre></div>
-<p>Let’s look at the <code>Many</code> case. If we try inserting into a node where the bit in the bitmap corresponding to the hash of the key is <code>0</code>, then we can insert a leaf node into the vector and set the corresponding bit to <code>1</code>:</p>
+<p>Let’s look at the <code>Many</code> case. If we try inserting into a node where the bit in the bitmap corresponding to the mask is <code>0</code>, this means that there is an empty slot in the vector. We can insert a leaf node into this slot and set the corresponding bit in the bitmap to <code>1</code>:</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb31-1" data-line-number="1">insert_ hash key value (<span class="dt">Many</span> bitmap vector)</a>
 <a class="sourceLine" id="cb31-2" data-line-number="2">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> <span class="kw">let</span></a>
 <a class="sourceLine" id="cb31-3" data-line-number="3">        leaf <span class="fu">=</span> <span class="dt">Leaf</span> (hash key) key value</a>
@@ -190,70 +196,86 @@
 <a class="sourceLine" id="cb31-8" data-line-number="8">        mask <span class="fu">=</span> bitMask_ hash</a>
 <a class="sourceLine" id="cb31-9" data-line-number="9">        index <span class="fu">=</span> undefined</a></code></pre></div>
 <h4 id="mask-indexing">Mask Indexing</h4>
-<p>What <code>index</code> do we use? This is where <code>popCount</code> makes an appearance. Let’s demonstrate by inserting <code>(&quot;10&quot;, 2)</code> into our example. We first get the mask corresponding to <code>hash &quot;10&quot;</code>:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb32-1" data-line-number="1">mask <span class="fu">=</span> bitMask_ (hash <span class="st">&quot;10&quot;</span>)</a></code></pre></div>
-<p>Next we want to find the number of lower bits that have been set, so we use <code>mask - 1</code> as a mask and get the <code>popCount</code>:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb33-1" data-line-number="1">index <span class="fu">=</span> popCount (someBitmap <span class="fu">.&amp;.</span> (mask <span class="fu">-</span> <span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb33-2" data-line-number="2">index</a></code></pre></div>
+<p>What <code>index</code> do we use? This is where <code>popCount</code> makes an appearance. Let’s demonstrate by inserting <code>(&quot;10&quot;, 2)</code> into our example. First we get the mask corresponding to <code>hash &quot;10&quot;</code>:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb32-1" data-line-number="1">mask <span class="fu">=</span> bitMask_ (hash <span class="st">&quot;10&quot;</span>)</a>
+<a class="sourceLine" id="cb32-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb32-3" data-line-number="3">mask</a></code></pre></div>
+<pre><code>0000010000000000</code></pre>
+<p>Next we want to find the number of lower bits that have been set. We use <code>mask - 1</code> as a mask:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb34-1" data-line-number="1">mask <span class="fu">-</span> <span class="dv">1</span></a></code></pre></div>
+<pre><code>0000001111111111</code></pre>
+<div class="sourceCode" id="cb36"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb36-1" data-line-number="1"><span class="co">--     0100000000000000</span></a>
+<a class="sourceLine" id="cb36-2" data-line-number="2"><span class="co">-- .&amp;. 0000001111111111</span></a>
+<a class="sourceLine" id="cb36-3" data-line-number="3"><span class="co">-----------------------</span></a>
+<a class="sourceLine" id="cb36-4" data-line-number="4"><span class="co">--     0000000000000000</span></a>
+<a class="sourceLine" id="cb36-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb36-6" data-line-number="6">masked <span class="fu">=</span> someBitmap <span class="fu">.&amp;.</span> (mask <span class="fu">-</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb36-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb36-8" data-line-number="8">masked</a></code></pre></div>
+<pre><code>0000000000000000</code></pre>
+<p>Then we count the number of bits set with <code>popCount</code>:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb38-1" data-line-number="1">index <span class="fu">=</span> popCount masked</a>
+<a class="sourceLine" id="cb38-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb38-3" data-line-number="3">index</a></code></pre></div>
 <pre><code>0</code></pre>
 <p>And this is the index we need to insert at! We’ll call this <code>maskIndex</code>:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb35-1" data-line-number="1"><span class="ot">maskIndex ::</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb35-2" data-line-number="2">maskIndex bitmap mask <span class="fu">=</span> popCount (bitmap <span class="fu">.&amp;.</span> (mask <span class="fu">-</span> <span class="dv">1</span>))</a></code></pre></div>
-<p>The final case is where the bit in the bitmap is already set, and we need to recursively update the HAMT at the corresponding index:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb36-1" data-line-number="1">insert_ hash key value (<span class="dt">Many</span> bitmap vector)</a>
-<a class="sourceLine" id="cb36-2" data-line-number="2">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">1</span> <span class="fu">=</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb36-3" data-line-number="3">        subtree' <span class="fu">=</span> insert_ hash key value (vector <span class="fu">!</span> index)</a>
-<a class="sourceLine" id="cb36-4" data-line-number="4">        vector' <span class="fu">=</span> updateAt vector index subtree'</a>
-<a class="sourceLine" id="cb36-5" data-line-number="5">        <span class="kw">in</span> <span class="dt">Many</span> bitmap vector'</a>
-<a class="sourceLine" id="cb36-6" data-line-number="6">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb36-7" data-line-number="7">        mask <span class="fu">=</span> bitMask_ hash</a>
-<a class="sourceLine" id="cb36-8" data-line-number="8">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
-<p>But instead of carving off the last <span class="math inline"><em>n</em></span> bits of <code>hash</code>, we want to recursively carve off the next <span class="math inline"><em>n</em></span> bits!</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb40-1" data-line-number="1"><span class="ot">maskIndex ::</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb40-2" data-line-number="2">maskIndex bitmap mask <span class="fu">=</span> popCount (bitmap <span class="fu">.&amp;.</span> (mask <span class="fu">-</span> <span class="dv">1</span>))</a></code></pre></div>
+<p>The final case is where the bit in the bitmap is already set. We need to recursively update the HAMT at the corresponding index:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb41-1" data-line-number="1">insert_ hash key value (<span class="dt">Many</span> bitmap vector)</a>
+<a class="sourceLine" id="cb41-2" data-line-number="2">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">1</span> <span class="fu">=</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb41-3" data-line-number="3">        subtree' <span class="fu">=</span> insert_ hash key value (vector <span class="fu">!</span> index)</a>
+<a class="sourceLine" id="cb41-4" data-line-number="4">        vector' <span class="fu">=</span> updateAt vector index subtree'</a>
+<a class="sourceLine" id="cb41-5" data-line-number="5">        <span class="kw">in</span> <span class="dt">Many</span> bitmap vector'</a>
+<a class="sourceLine" id="cb41-6" data-line-number="6">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb41-7" data-line-number="7">        mask <span class="fu">=</span> bitMask_ hash</a>
+<a class="sourceLine" id="cb41-8" data-line-number="8">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
+<p>But this definition is wrong, because instead of carving off the last <span class="math inline"><em>n</em></span> bits of <code>hash</code>, we want to recursively carve off the next <span class="math inline"><em>n</em></span> bits!</p>
 <h4 id="shifting">Shifting</h4>
-<p>This is what’s missing from our definition, a <code>shift</code> parameter corresponding to how far up the <code>hash</code> we’re looking. Taking this extra parameter into account, our bit manipulation functions now become:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb37-1" data-line-number="1"><span class="ot">subkeyMask ::</span> <span class="dt">Bitmap</span></a>
-<a class="sourceLine" id="cb37-2" data-line-number="2">subkeyMask <span class="fu">=</span> (bit bitsPerSubkey) <span class="fu">-</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb37-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb37-4" data-line-number="4"><span class="ot">maskIndex ::</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb37-5" data-line-number="5">maskIndex bitmap mask <span class="fu">=</span> popCount (bitmap <span class="fu">.&amp;.</span> (mask <span class="fu">-</span> <span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb37-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb37-7" data-line-number="7"><span class="ot">subkey ::</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb37-8" data-line-number="8">subkey hash shift <span class="fu">=</span> fromIntegral <span class="fu">$</span> (fromIntegral <span class="fu">$</span> shiftR hash shift) <span class="fu">.&amp;.</span> subkeyMask</a>
-<a class="sourceLine" id="cb37-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb37-10" data-line-number="10"><span class="ot">bitMask ::</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span></a>
-<a class="sourceLine" id="cb37-11" data-line-number="11">bitMask hash shift <span class="fu">=</span> bit (subkey hash shift)</a></code></pre></div>
-<p>And we plumb through this <code>shift</code> parameter, only modifying it in the final case, to give us the correct definitions of <code>insert'</code> and <code>insert</code>:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb38-1" data-line-number="1"><span class="ot">insert ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb38-2" data-line-number="2">insert key value hamt <span class="fu">=</span> insert' <span class="dv">0</span> (hash key) key value hamt</a>
-<a class="sourceLine" id="cb38-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb38-4" data-line-number="4"><span class="ot">insert' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> key <span class="ot">-&gt;</span> value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb38-5" data-line-number="5">insert' shift hash key value <span class="dt">None</span> <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a>
-<a class="sourceLine" id="cb38-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb38-7" data-line-number="7">insert' shift hash key value leaf<span class="fu">@</span>(<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
-<a class="sourceLine" id="cb38-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a>
-<a class="sourceLine" id="cb38-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> insert' shift hash key value (<span class="dt">Many</span> (bitMask leafHash shift) (singleton leaf))</a>
-<a class="sourceLine" id="cb38-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb38-11" data-line-number="11">insert' shift hash key value (<span class="dt">Many</span> bitmap vector)</a>
-<a class="sourceLine" id="cb38-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb38-13" data-line-number="13">        leaf <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a>
-<a class="sourceLine" id="cb38-14" data-line-number="14">        vector' <span class="fu">=</span> insertAt vector index leaf</a>
-<a class="sourceLine" id="cb38-15" data-line-number="15">        bitmap' <span class="fu">=</span> bitmap <span class="fu">.|.</span> mask</a>
-<a class="sourceLine" id="cb38-16" data-line-number="16">        <span class="kw">in</span> <span class="dt">Many</span> bitmap' vector'</a>
-<a class="sourceLine" id="cb38-17" data-line-number="17">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb38-18" data-line-number="18">        subtree <span class="fu">=</span> vector <span class="fu">!</span> index</a>
-<a class="sourceLine" id="cb38-19" data-line-number="19">        subtree' <span class="fu">=</span> insert' (shift<span class="fu">+</span>bitsPerSubkey) hash key value subtree</a>
-<a class="sourceLine" id="cb38-20" data-line-number="20">        vector' <span class="fu">=</span> updateAt vector index subtree'</a>
-<a class="sourceLine" id="cb38-21" data-line-number="21">        <span class="kw">in</span> <span class="dt">Many</span> bitmap vector'</a>
-<a class="sourceLine" id="cb38-22" data-line-number="22">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb38-23" data-line-number="23">        mask <span class="fu">=</span> bitMask hash shift</a>
-<a class="sourceLine" id="cb38-24" data-line-number="24">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
+<p>This is what’s missing from our definition, a <code>shift</code> parameter corresponding to how far up the <code>hash</code> we’re looking. This is why we defined <code>Shift</code> above. Taking this extra parameter into account, our bit manipulation functions now become:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb42-1" data-line-number="1"><span class="ot">subkeyMask ::</span> <span class="dt">Bitmap</span></a>
+<a class="sourceLine" id="cb42-2" data-line-number="2">subkeyMask <span class="fu">=</span> (bit bitsPerSubkey) <span class="fu">-</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb42-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb42-4" data-line-number="4"><span class="ot">maskIndex ::</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb42-5" data-line-number="5">maskIndex bitmap mask <span class="fu">=</span> popCount (bitmap <span class="fu">.&amp;.</span> (mask <span class="fu">-</span> <span class="dv">1</span>))</a>
+<a class="sourceLine" id="cb42-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb42-7" data-line-number="7"><span class="ot">subkey ::</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb42-8" data-line-number="8">subkey hash shift <span class="fu">=</span> fromIntegral <span class="fu">$</span> (fromIntegral <span class="fu">$</span> shiftR hash shift) <span class="fu">.&amp;.</span> subkeyMask</a>
+<a class="sourceLine" id="cb42-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb42-10" data-line-number="10"><span class="ot">bitMask ::</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Bitmap</span></a>
+<a class="sourceLine" id="cb42-11" data-line-number="11">bitMask hash shift <span class="fu">=</span> bit (subkey hash shift)</a></code></pre></div>
+<p>We plumb through this <code>shift</code> parameter, only modifying it in the final case, to give us the correct definitions of <code>insert'</code> and <code>insert</code>:</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb43-1" data-line-number="1"><span class="ot">insert ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb43-2" data-line-number="2">insert key value hamt <span class="fu">=</span> insert' <span class="dv">0</span> (hash key) key value hamt</a>
+<a class="sourceLine" id="cb43-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb43-4" data-line-number="4"><span class="ot">insert' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> key <span class="ot">-&gt;</span> value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb43-5" data-line-number="5">insert' shift hash key value <span class="dt">None</span> <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a>
+<a class="sourceLine" id="cb43-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb43-7" data-line-number="7">insert' shift hash key value leaf<span class="fu">@</span>(<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
+<a class="sourceLine" id="cb43-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a>
+<a class="sourceLine" id="cb43-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> insert' shift hash key value (<span class="dt">Many</span> (bitMask leafHash shift) (singleton leaf))</a>
+<a class="sourceLine" id="cb43-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb43-11" data-line-number="11">insert' shift hash key value (<span class="dt">Many</span> bitmap vector)</a>
+<a class="sourceLine" id="cb43-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb43-13" data-line-number="13">        leaf <span class="fu">=</span> <span class="dt">Leaf</span> hash key value</a>
+<a class="sourceLine" id="cb43-14" data-line-number="14">        vector' <span class="fu">=</span> insertAt vector index leaf</a>
+<a class="sourceLine" id="cb43-15" data-line-number="15">        bitmap' <span class="fu">=</span> bitmap <span class="fu">.|.</span> mask</a>
+<a class="sourceLine" id="cb43-16" data-line-number="16">        <span class="kw">in</span> <span class="dt">Many</span> bitmap' vector'</a>
+<a class="sourceLine" id="cb43-17" data-line-number="17">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb43-18" data-line-number="18">        subtree <span class="fu">=</span> vector <span class="fu">!</span> index</a>
+<a class="sourceLine" id="cb43-19" data-line-number="19">        subtree' <span class="fu">=</span> insert' (shift<span class="fu">+</span>bitsPerSubkey) hash key value subtree</a>
+<a class="sourceLine" id="cb43-20" data-line-number="20">        vector' <span class="fu">=</span> updateAt vector index subtree'</a>
+<a class="sourceLine" id="cb43-21" data-line-number="21">        <span class="kw">in</span> <span class="dt">Many</span> bitmap vector'</a>
+<a class="sourceLine" id="cb43-22" data-line-number="22">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb43-23" data-line-number="23">        mask <span class="fu">=</span> bitMask hash shift</a>
+<a class="sourceLine" id="cb43-24" data-line-number="24">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
 <p>Now we can construct HAMTs and inspect them! I’ll define a <code>fromList</code> function to make things easier and use <code>pPrint</code> from <code>pretty-show</code> to highlight the tree structure:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb39-1" data-line-number="1"><span class="ot">fromList ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> [(key, value)] <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb39-2" data-line-number="2">fromList <span class="fu">=</span> foldr (uncurry insert) empty</a>
-<a class="sourceLine" id="cb39-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb39-4" data-line-number="4">example <span class="fu">=</span> fromList [(<span class="st">&quot;1&quot;</span>, <span class="dv">1</span>), (<span class="st">&quot;10&quot;</span>, <span class="dv">2</span>), (<span class="st">&quot;100&quot;</span>, <span class="dv">3</span>), (<span class="st">&quot;1000&quot;</span>, <span class="dv">4</span>)]</a>
-<a class="sourceLine" id="cb39-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb39-6" data-line-number="6">pPrint example</a></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb44-1" data-line-number="1"><span class="ot">fromList ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> [(key, value)] <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb44-2" data-line-number="2">fromList <span class="fu">=</span> foldr (uncurry insert) empty</a>
+<a class="sourceLine" id="cb44-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb44-4" data-line-number="4">example <span class="fu">=</span> fromList [(<span class="st">&quot;1&quot;</span>, <span class="dv">1</span>), (<span class="st">&quot;10&quot;</span>, <span class="dv">2</span>), (<span class="st">&quot;100&quot;</span>, <span class="dv">3</span>), (<span class="st">&quot;1000&quot;</span>, <span class="dv">4</span>)]</a>
+<a class="sourceLine" id="cb44-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb44-6" data-line-number="6">pPrint example</a></code></pre></div>
 <pre><code>Many
   0100010000000000
   [ Many
@@ -268,86 +290,91 @@
       ]
   ]</code></pre>
 <h3 id="lookup">Lookup</h3>
-<p>Compared to <code>insert</code>, <code>lookup</code> is a walk in the park. It’s implemented like we would expect on empty trees and leaf nodes, and it recurses exactly like <code>insert</code>, using the bitmap to check possible membership.</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb41-1" data-line-number="1">lookup<span class="ot"> ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">Maybe</span> value</a>
-<a class="sourceLine" id="cb41-2" data-line-number="2">lookup key hamt <span class="fu">=</span> lookup' <span class="dv">0</span> (hash key) hamt</a>
-<a class="sourceLine" id="cb41-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb41-4" data-line-number="4"><span class="ot">lookup' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">Maybe</span> value</a>
-<a class="sourceLine" id="cb41-5" data-line-number="5">lookup' shift hash <span class="dt">None</span> <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb41-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb41-7" data-line-number="7">lookup' shift hash (<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
-<a class="sourceLine" id="cb41-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">Just</span> leafValue</a>
-<a class="sourceLine" id="cb41-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb41-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb41-11" data-line-number="11">lookup' shift hash (<span class="dt">Many</span> bitmap vector)</a>
-<a class="sourceLine" id="cb41-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb41-13" data-line-number="13">    <span class="fu">|</span> otherwise <span class="fu">=</span> lookup' (shift<span class="fu">+</span>bitsPerSubkey) hash (vector <span class="fu">!</span> index)</a>
-<a class="sourceLine" id="cb41-14" data-line-number="14">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb41-15" data-line-number="15">        mask <span class="fu">=</span> bitMask hash shift</a>
-<a class="sourceLine" id="cb41-16" data-line-number="16">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
+<p>Compared to <code>insert</code>, <code>lookup</code> is a walk in the park. It’s implemented along the same lines as <code>insert</code>:</p>
+<ol type="1">
+<li>On <code>None</code> nodes, it fails.</li>
+<li>On <code>Leaf</code> nodes, it succeeds if the hashes match.</li>
+<li>On <code>Many</code> nodes, it fails if the bit isn’t set, and recurses into the child node otherwise.</li>
+</ol>
+<div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb46-1" data-line-number="1">lookup<span class="ot"> ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">Maybe</span> value</a>
+<a class="sourceLine" id="cb46-2" data-line-number="2">lookup key hamt <span class="fu">=</span> lookup' <span class="dv">0</span> (hash key) hamt</a>
+<a class="sourceLine" id="cb46-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb46-4" data-line-number="4"><span class="ot">lookup' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">Maybe</span> value</a>
+<a class="sourceLine" id="cb46-5" data-line-number="5">lookup' shift hash <span class="dt">None</span> <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb46-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb46-7" data-line-number="7">lookup' shift hash (<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
+<a class="sourceLine" id="cb46-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">Just</span> leafValue</a>
+<a class="sourceLine" id="cb46-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb46-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb46-11" data-line-number="11">lookup' shift hash (<span class="dt">Many</span> bitmap vector)</a>
+<a class="sourceLine" id="cb46-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb46-13" data-line-number="13">    <span class="fu">|</span> otherwise <span class="fu">=</span> lookup' (shift<span class="fu">+</span>bitsPerSubkey) hash (vector <span class="fu">!</span> index)</a>
+<a class="sourceLine" id="cb46-14" data-line-number="14">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb46-15" data-line-number="15">        mask <span class="fu">=</span> bitMask hash shift</a>
+<a class="sourceLine" id="cb46-16" data-line-number="16">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
 <p>Let’s quickly confirm that it works.</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb42-1" data-line-number="1">lookup <span class="st">&quot;100&quot;</span> example</a></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb47-1" data-line-number="1">lookup <span class="st">&quot;100&quot;</span> example</a></code></pre></div>
 <pre><code>Just 3</code></pre>
 <h4 id="memoising-fibonacci">Memoising Fibonacci</h4>
-<p>We now have enough of an API to use this as a hashtable! Let’s use it to memoise the calculation of the Fibonacci sequence. The naïve implementation looks like this:</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb44-1" data-line-number="1"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb44-2" data-line-number="2">fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb44-3" data-line-number="3">fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb44-4" data-line-number="4">fib n <span class="fu">=</span> fib (n<span class="fu">-</span><span class="dv">1</span>) <span class="fu">+</span> fib (n<span class="fu">-</span><span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb44-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb44-6" data-line-number="6">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
+<p>We now have enough of an API to use this as a hashtable! Let’s use it to memoise the calculation of the Fibonacci sequence. The naïve implementation does a lot of unnecessary recomputation:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb49-1" data-line-number="1"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb49-2" data-line-number="2">fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb49-3" data-line-number="3">fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb49-4" data-line-number="4">fib n <span class="fu">=</span> fib (n<span class="fu">-</span><span class="dv">1</span>) <span class="fu">+</span> fib (n<span class="fu">-</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb49-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb49-6" data-line-number="6">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
 <pre><code>1346269
 CPU time:   1.14s</code></pre>
-<p>And we can memoise it by storing previously calculated results and using them if they are available:</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb46-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb46-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
-<a class="sourceLine" id="cb46-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb46-4" data-line-number="4"><span class="ot">fib' ::</span> <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Int</span>, <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb46-5" data-line-number="5">fib' table <span class="dv">0</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">0</span> <span class="dv">1</span> table)</a>
-<a class="sourceLine" id="cb46-6" data-line-number="6">fib' table <span class="dv">1</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">1</span> <span class="dv">1</span> table)</a>
-<a class="sourceLine" id="cb46-7" data-line-number="7">fib' table n <span class="fu">=</span> <span class="kw">case</span> lookup n table <span class="kw">of</span></a>
-<a class="sourceLine" id="cb46-8" data-line-number="8">    <span class="dt">Just</span> i <span class="ot">-&gt;</span> (i, table)</a>
-<a class="sourceLine" id="cb46-9" data-line-number="9">    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb46-10" data-line-number="10">        (i1, table')  <span class="fu">=</span> fib' table  (n<span class="fu">-</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb46-11" data-line-number="11">        (i2, table'') <span class="fu">=</span> fib' table' (n<span class="fu">-</span><span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb46-12" data-line-number="12">        <span class="kw">in</span> (i1 <span class="fu">+</span> i2, insert n (i1 <span class="fu">+</span> i2) table'')</a>
-<a class="sourceLine" id="cb46-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb46-14" data-line-number="14"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb46-15" data-line-number="15">fib n <span class="fu">=</span> fst <span class="fu">$</span> fib' empty n</a>
-<a class="sourceLine" id="cb46-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb46-17" data-line-number="17">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
+<p>We can memoise it by storing previously calculated results and using them if they are available:</p>
+<div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb51-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb51-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
+<a class="sourceLine" id="cb51-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb51-4" data-line-number="4"><span class="ot">fib' ::</span> <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Int</span>, <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb51-5" data-line-number="5">fib' table <span class="dv">0</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">0</span> <span class="dv">1</span> table)</a>
+<a class="sourceLine" id="cb51-6" data-line-number="6">fib' table <span class="dv">1</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">1</span> <span class="dv">1</span> table)</a>
+<a class="sourceLine" id="cb51-7" data-line-number="7">fib' table n <span class="fu">=</span> <span class="kw">case</span> lookup n table <span class="kw">of</span></a>
+<a class="sourceLine" id="cb51-8" data-line-number="8">    <span class="dt">Just</span> i <span class="ot">-&gt;</span> (i, table)</a>
+<a class="sourceLine" id="cb51-9" data-line-number="9">    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb51-10" data-line-number="10">        (i1, table')  <span class="fu">=</span> fib' table  (n<span class="fu">-</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb51-11" data-line-number="11">        (i2, table'') <span class="fu">=</span> fib' table' (n<span class="fu">-</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb51-12" data-line-number="12">        <span class="kw">in</span> (i1 <span class="fu">+</span> i2, insert n (i1 <span class="fu">+</span> i2) table'')</a>
+<a class="sourceLine" id="cb51-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb51-14" data-line-number="14"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb51-15" data-line-number="15">fib n <span class="fu">=</span> fst <span class="fu">$</span> fib' empty n</a>
+<a class="sourceLine" id="cb51-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb51-17" data-line-number="17">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
 <pre><code>1346269
 CPU time:   0.00s</code></pre>
 <h3 id="delete">Delete</h3>
-<p>Finally we come to <code>delete</code>, which is only a little more complex than <code>lookup</code>. It needs to make sure that there are no <code>None</code> nodes in the tree, so if a deletion results in a <code>None</code> node, it will unset the bit in the bitmap if there are any sibling nodes, and if it was the only child of a <code>Many</code> node, it will replace the <code>Many</code> node with itself. <code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb48-1" data-line-number="1"><span class="ot">delete ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb48-2" data-line-number="2">delete key hamt <span class="fu">=</span> delete' <span class="dv">0</span> (hash key) hamt</a>
-<a class="sourceLine" id="cb48-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb48-4" data-line-number="4"><span class="ot">delete' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
-<a class="sourceLine" id="cb48-5" data-line-number="5">delete' shift hash <span class="dt">None</span> <span class="fu">=</span> <span class="dt">None</span></a>
-<a class="sourceLine" id="cb48-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb48-7" data-line-number="7">delete' shift hash leaf<span class="fu">@</span>(<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
-<a class="sourceLine" id="cb48-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">None</span></a>
-<a class="sourceLine" id="cb48-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> leaf</a>
-<a class="sourceLine" id="cb48-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb48-11" data-line-number="11">delete' shift hash many<span class="fu">@</span>(<span class="dt">Many</span> bitmap vector)</a>
-<a class="sourceLine" id="cb48-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> many</a>
-<a class="sourceLine" id="cb48-13" data-line-number="13">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb48-14" data-line-number="14">        subtree <span class="fu">=</span> vector <span class="fu">!</span> index</a>
-<a class="sourceLine" id="cb48-15" data-line-number="15">        subtree' <span class="fu">=</span> delete' (shift<span class="fu">+</span>bitsPerSubkey) hash subtree</a>
-<a class="sourceLine" id="cb48-16" data-line-number="16">        <span class="kw">in</span> <span class="kw">case</span> subtree' <span class="kw">of</span></a>
-<a class="sourceLine" id="cb48-17" data-line-number="17">            <span class="dt">None</span> <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb48-18" data-line-number="18">                <span class="kw">then</span> <span class="dt">None</span></a>
-<a class="sourceLine" id="cb48-19" data-line-number="19">                <span class="kw">else</span> <span class="dt">Many</span> (bitmap <span class="fu">.&amp;.</span> complement mask) (deleteAt vector index)</a>
-<a class="sourceLine" id="cb48-20" data-line-number="20">            <span class="dt">Leaf</span>{} <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb48-21" data-line-number="21">                <span class="kw">then</span> subtree'</a>
-<a class="sourceLine" id="cb48-22" data-line-number="22">                <span class="kw">else</span>  <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
-<a class="sourceLine" id="cb48-23" data-line-number="23">            <span class="dt">Many</span>{} <span class="ot">-&gt;</span> <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
-<a class="sourceLine" id="cb48-24" data-line-number="24">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb48-25" data-line-number="25">        mask <span class="fu">=</span> bitMask hash shift</a>
-<a class="sourceLine" id="cb48-26" data-line-number="26">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
+<p>Finally we come to <code>delete</code>, which is only a little more complex than <code>lookup</code>. It needs to make sure that there are no <code>None</code> nodes in the tree, so if a deletion results in a <code>None</code> node and there are any sibling nodes, it will unset the bit in the bitmap, and if it is the only child of a <code>Many</code> node, it will replace the <code>Many</code> node with itself. <code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb53-1" data-line-number="1"><span class="ot">delete ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb53-2" data-line-number="2">delete key hamt <span class="fu">=</span> delete' <span class="dv">0</span> (hash key) hamt</a>
+<a class="sourceLine" id="cb53-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb53-4" data-line-number="4"><span class="ot">delete' ::</span> <span class="dt">Shift</span> <span class="ot">-&gt;</span> <span class="dt">Hash</span> <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
+<a class="sourceLine" id="cb53-5" data-line-number="5">delete' shift hash <span class="dt">None</span> <span class="fu">=</span> <span class="dt">None</span></a>
+<a class="sourceLine" id="cb53-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb53-7" data-line-number="7">delete' shift hash leaf<span class="fu">@</span>(<span class="dt">Leaf</span> leafHash leafKey leafValue)</a>
+<a class="sourceLine" id="cb53-8" data-line-number="8">    <span class="fu">|</span> hash <span class="fu">==</span> leafHash <span class="fu">=</span> <span class="dt">None</span></a>
+<a class="sourceLine" id="cb53-9" data-line-number="9">    <span class="fu">|</span> otherwise <span class="fu">=</span> leaf</a>
+<a class="sourceLine" id="cb53-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb53-11" data-line-number="11">delete' shift hash many<span class="fu">@</span>(<span class="dt">Many</span> bitmap vector)</a>
+<a class="sourceLine" id="cb53-12" data-line-number="12">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">0</span> <span class="fu">=</span> many</a>
+<a class="sourceLine" id="cb53-13" data-line-number="13">    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb53-14" data-line-number="14">        subtree <span class="fu">=</span> vector <span class="fu">!</span> index</a>
+<a class="sourceLine" id="cb53-15" data-line-number="15">        subtree' <span class="fu">=</span> delete' (shift<span class="fu">+</span>bitsPerSubkey) hash subtree</a>
+<a class="sourceLine" id="cb53-16" data-line-number="16">        <span class="kw">in</span> <span class="kw">case</span> subtree' <span class="kw">of</span></a>
+<a class="sourceLine" id="cb53-17" data-line-number="17">            <span class="dt">None</span> <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb53-18" data-line-number="18">                <span class="kw">then</span> <span class="dt">None</span></a>
+<a class="sourceLine" id="cb53-19" data-line-number="19">                <span class="kw">else</span> <span class="dt">Many</span> (bitmap <span class="fu">.&amp;.</span> complement mask) (deleteAt vector index)</a>
+<a class="sourceLine" id="cb53-20" data-line-number="20">            <span class="dt">Leaf</span>{} <span class="ot">-&gt;</span> <span class="kw">if</span> length vector <span class="fu">==</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb53-21" data-line-number="21">                <span class="kw">then</span> subtree'</a>
+<a class="sourceLine" id="cb53-22" data-line-number="22">                <span class="kw">else</span>  <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
+<a class="sourceLine" id="cb53-23" data-line-number="23">            <span class="dt">Many</span>{} <span class="ot">-&gt;</span> <span class="dt">Many</span> bitmap (updateAt vector index subtree')</a>
+<a class="sourceLine" id="cb53-24" data-line-number="24">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb53-25" data-line-number="25">        mask <span class="fu">=</span> bitMask hash shift</a>
+<a class="sourceLine" id="cb53-26" data-line-number="26">        index <span class="fu">=</span> maskIndex bitmap mask</a></code></pre></div>
 <p>Let’s see this in action.</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb49-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
+<div class="sourceCode" id="cb54"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb54-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
 <pre><code>Many
   0100010000000000
   [ Many
@@ -358,8 +385,8 @@ CPU time:   0.00s</code></pre>
       , Leaf 01110100110101100000101010011110 &quot;100&quot; 3
       ]
   ]</code></pre>
-<p>Note that it’s possible to have a situation where we have a <code>Many</code> node with only one child, because our replacement behaviour checks the length of the vector before any elements are removed from it. However, removing the last leaf will correctly delete the parent node as well.</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb51-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;10&quot;</span> <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
+<p>It’s possible to have a situation where we have a <code>Many</code> node with only one child, because our replacement behaviour checks the length of the vector before any elements are removed from it. However, removing the last leaf will correctly delete the parent node.</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb56-1" data-line-number="1">pPrint <span class="fu">$</span> delete <span class="st">&quot;10&quot;</span> <span class="fu">$</span> delete <span class="st">&quot;1000&quot;</span> example</a></code></pre></div>
 <pre><code>Many
   0100000000000000
   [ Many
