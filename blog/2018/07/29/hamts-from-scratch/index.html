@@ -316,7 +316,7 @@
 <div class="sourceCode" id="cb47"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb47-1" data-line-number="1">lookup <span class="st">&quot;100&quot;</span> example</a></code></pre></div>
 <pre><code>Just 3</code></pre>
 <h4 id="memoising-fibonacci">Memoising Fibonacci</h4>
-<p>We now have enough of an API to use this as a hashtable! Let’s use it to memoise the calculation of the Fibonacci sequence. The naïve implementation does a lot of unnecessary recomputation:</p>
+<p>We now have enough of an API to use this as a hashtable! Let’s use it to memoise the calculation of the Fibonacci sequence. The naive implementation does a lot of unnecessary recomputation:</p>
 <div class="sourceCode" id="cb49"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb49-1" data-line-number="1"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
 <a class="sourceLine" id="cb49-2" data-line-number="2">fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
 <a class="sourceLine" id="cb49-3" data-line-number="3">fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span></a>
@@ -324,7 +324,7 @@
 <a class="sourceLine" id="cb49-5" data-line-number="5"></a>
 <a class="sourceLine" id="cb49-6" data-line-number="6">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
 <pre><code>1346269
-CPU time:   1.21s</code></pre>
+CPU time:   1.12s</code></pre>
 <p>We can memoise it by storing previously calculated results and using them if they are available:</p>
 <div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb51-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
 <a class="sourceLine" id="cb51-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
