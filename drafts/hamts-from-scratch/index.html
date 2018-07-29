@@ -51,6 +51,7 @@
 <li><a href="http://hackage.haskell.org/package/bytestring"><code>bytestring</code></a></li>
 <li><a href="http://hackage.haskell.org/package/memory"><code>memory</code></a></li>
 <li><a href="http://hackage.haskell.org/package/pretty-show"><code>pretty-show</code></a></li>
+<li><a href="http://hackage.haskell.org/package/timeit"><code>timeit</code></a></li>
 <li><a href="http://hackage.haskell.org/package/vector"><code>vector</code></a></li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Bits</span>             (<span class="dt">Bits</span> (bit, complement, popCount, shiftR, (.&amp;.), (.|.)),</a>
@@ -63,7 +64,8 @@
 <a class="sourceLine" id="cb1-8" data-line-number="8"><span class="kw">import</span> <span class="dt">Data.Word</span>             (<span class="dt">Word16</span>, <span class="dt">Word32</span>)</a>
 <a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Numeric</span>               (showIntAtBase)</a>
 <a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Prelude</span>               <span class="kw">hiding</span> (drop, lookup, take)</a>
-<a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Text.Show.Pretty</span>      (pPrint)</a></code></pre></div>
+<a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span> <span class="dt">System.TimeIt</span>         (timeIt)</a>
+<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Text.Show.Pretty</span>      (pPrint)</a></code></pre></div>
 <p>We’re going to be doing some bit twiddling. To make things easier I’m going to define a <code>newtype</code> that behaves exactly the same as whatever it’s wrapping except that its <code>Show</code> instance displays the binary representation instead of the decimal one.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span></a>
 <a class="sourceLine" id="cb2-2" data-line-number="2"></a>
@@ -291,67 +293,31 @@
 <div class="sourceCode" id="cb44"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb44-1" data-line-number="1"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
 <a class="sourceLine" id="cb44-2" data-line-number="2">fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
 <a class="sourceLine" id="cb44-3" data-line-number="3">fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb44-4" data-line-number="4">fib n <span class="fu">=</span> fib (n<span class="fu">-</span><span class="dv">1</span>) <span class="fu">+</span> fib (n<span class="fu">-</span><span class="dv">2</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb44-4" data-line-number="4">fib n <span class="fu">=</span> fib (n<span class="fu">-</span><span class="dv">1</span>) <span class="fu">+</span> fib (n<span class="fu">-</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb44-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb44-6" data-line-number="6">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
+<pre><code>1346269
+CPU time:   1.14s</code></pre>
 <p>And we can memoise it by storing previously calculated results and using them if they are available:</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb45-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb45-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
-<a class="sourceLine" id="cb45-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb45-4" data-line-number="4"><span class="ot">fib' ::</span> <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Int</span>, <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb45-5" data-line-number="5">fib' table <span class="dv">0</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">0</span> <span class="dv">1</span> table)</a>
-<a class="sourceLine" id="cb45-6" data-line-number="6">fib' table <span class="dv">1</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">1</span> <span class="dv">1</span> table)</a>
-<a class="sourceLine" id="cb45-7" data-line-number="7">fib' table n <span class="fu">=</span> <span class="kw">case</span> lookup n table <span class="kw">of</span></a>
-<a class="sourceLine" id="cb45-8" data-line-number="8">    <span class="dt">Just</span> i <span class="ot">-&gt;</span> (i, table)</a>
-<a class="sourceLine" id="cb45-9" data-line-number="9">    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb45-10" data-line-number="10">        (i1, table')  <span class="fu">=</span> fib' table  (n<span class="fu">-</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb45-11" data-line-number="11">        (i2, table'') <span class="fu">=</span> fib' table' (n<span class="fu">-</span><span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb45-12" data-line-number="12">        <span class="kw">in</span> (i1 <span class="fu">+</span> i2, insert n (i1 <span class="fu">+</span> i2) table'')</a>
-<a class="sourceLine" id="cb45-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb45-14" data-line-number="14"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb45-15" data-line-number="15">fib n <span class="fu">=</span> fst <span class="fu">$</span> fib' empty n</a></code></pre></div>
-<p>This avoids unnecessary computation, especially if we can reuse the hashtable instead of discarding it:</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb46-1" data-line-number="1">(result, table) <span class="fu">=</span> fib' empty <span class="dv">19</span></a>
-<a class="sourceLine" id="cb46-2" data-line-number="2">pPrint <span class="fu">$</span> fib' table <span class="dv">20</span></a></code></pre></div>
-<pre><code>( 10946
-, Many
-    1111111111111111
-    [ Many
-        0000000000000011
-        [ Leaf 00000000000000000000000000000000 0 1
-        , Leaf 00000000000000000000000000010000 16 1597
-        ]
-    , Many
-        0000000000000011
-        [ Leaf 00000000000000000000000000000001 1 1
-        , Leaf 00000000000000000000000000010001 17 2584
-        ]
-    , Many
-        0000000000000011
-        [ Leaf 00000000000000000000000000000010 2 2
-        , Leaf 00000000000000000000000000010010 18 4181
-        ]
-    , Many
-        0000000000000011
-        [ Leaf 00000000000000000000000000000011 3 3
-        , Leaf 00000000000000000000000000010011 19 6765
-        ]
-    , Many
-        0000000000000011
-        [ Leaf 00000000000000000000000000000100 4 5
-        , Leaf 00000000000000000000000000010100 20 10946
-        ]
-    , Leaf 00000000000000000000000000000101 5 8
-    , Leaf 00000000000000000000000000000110 6 13
-    , Leaf 00000000000000000000000000000111 7 21
-    , Leaf 00000000000000000000000000001000 8 34
-    , Leaf 00000000000000000000000000001001 9 55
-    , Leaf 00000000000000000000000000001010 10 89
-    , Leaf 00000000000000000000000000001011 11 144
-    , Leaf 00000000000000000000000000001100 12 233
-    , Leaf 00000000000000000000000000001101 13 377
-    , Leaf 00000000000000000000000000001110 14 610
-    , Leaf 00000000000000000000000000001111 15 987
-    ]
-)</code></pre>
+<div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb46-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb46-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
+<a class="sourceLine" id="cb46-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb46-4" data-line-number="4"><span class="ot">fib' ::</span> <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Int</span>, <span class="dt">HAMT</span> <span class="dt">Int</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb46-5" data-line-number="5">fib' table <span class="dv">0</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">0</span> <span class="dv">1</span> table)</a>
+<a class="sourceLine" id="cb46-6" data-line-number="6">fib' table <span class="dv">1</span> <span class="fu">=</span> (<span class="dv">1</span>, insert <span class="dv">1</span> <span class="dv">1</span> table)</a>
+<a class="sourceLine" id="cb46-7" data-line-number="7">fib' table n <span class="fu">=</span> <span class="kw">case</span> lookup n table <span class="kw">of</span></a>
+<a class="sourceLine" id="cb46-8" data-line-number="8">    <span class="dt">Just</span> i <span class="ot">-&gt;</span> (i, table)</a>
+<a class="sourceLine" id="cb46-9" data-line-number="9">    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb46-10" data-line-number="10">        (i1, table')  <span class="fu">=</span> fib' table  (n<span class="fu">-</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb46-11" data-line-number="11">        (i2, table'') <span class="fu">=</span> fib' table' (n<span class="fu">-</span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb46-12" data-line-number="12">        <span class="kw">in</span> (i1 <span class="fu">+</span> i2, insert n (i1 <span class="fu">+</span> i2) table'')</a>
+<a class="sourceLine" id="cb46-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb46-14" data-line-number="14"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb46-15" data-line-number="15">fib n <span class="fu">=</span> fst <span class="fu">$</span> fib' empty n</a>
+<a class="sourceLine" id="cb46-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb46-17" data-line-number="17">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
+<pre><code>1346269
+CPU time:   0.00s</code></pre>
 <h3 id="delete">Delete</h3>
 <p>Finally we come to <code>delete</code>, which is only a little more complex than <code>lookup</code>. It needs to make sure that there are no <code>None</code> nodes in the tree, so if a deletion results in a <code>None</code> node, it will unset the bit in the bitmap if there are any sibling nodes, and if it was the only child of a <code>Many</code> node, it will replace the <code>Many</code> node with itself. <code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
 <div class="sourceCode" id="cb48"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb48-1" data-line-number="1"><span class="ot">delete ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
