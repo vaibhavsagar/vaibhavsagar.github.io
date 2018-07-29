@@ -46,14 +46,14 @@
 <p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/hamt/HAMTsFromScratch.ipynb">IHaskell notebook</a>.</em></p>
 <p>I wanted an explanation for HAMTs (Hash Array Mapped Tries) that was more detailed than <a href="https://idea.popcount.org/2012-07-25-introduction-to-hamt/">Marek Majkowski’s introduction</a> and more approachable than <a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf"><em>Ideal Hash Trees</em> by Phil Bagwell</a>, the paper that introduced them. If you haven’t heard of them before, HAMTs are a way of efficiently representing a hashtable as a <a href="https://en.wikipedia.org/wiki/Trie">trie</a>, and although they were first envisioned as a mutable data structure they are easily adapted to work as a <a href="https://en.wikipedia.org/wiki/Persistent_data_structure">persistent data structure</a>. They form the backbone of the <a href="http://hackage.haskell.org/package/unordered-containers"><code>unordered-containers</code></a> library but the <a href="https://github.com/tibbe/unordered-containers/blob/efa43a2ab09dc6eb72893d12676a8e188cb4ca63/Data/HashMap/Base.hs">implementation has been lovingly optimised</a> to the point where I found it impenetrable. <a href="https://github.com/ezyang/hamt/blob/a43559795630980eb16ab832a003d8e6acd21cf6/HAMT.hs">Edward Z. Yang’s implementation</a> is much easier to follow and after adapting it I think I’m in a good place to provide my own take on them.</p>
 <p>Let’s start with a few imports! I’ll be using these packages:</p>
-<ol type="1">
+<ul>
 <li><a href="http://hackage.haskell.org/package/base"><code>base</code></a></li>
 <li><a href="http://hackage.haskell.org/package/bytestring"><code>bytestring</code></a></li>
 <li><a href="http://hackage.haskell.org/package/memory"><code>memory</code></a></li>
 <li><a href="http://hackage.haskell.org/package/pretty-show"><code>pretty-show</code></a></li>
 <li><a href="http://hackage.haskell.org/package/timeit"><code>timeit</code></a></li>
 <li><a href="http://hackage.haskell.org/package/vector"><code>vector</code></a></li>
-</ol>
+</ul>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Bits</span>             (<span class="dt">Bits</span> (bit, complement, popCount, shiftR, (.&amp;.), (.|.)),</a>
 <a class="sourceLine" id="cb1-2" data-line-number="2">                              <span class="dt">FiniteBits</span> (finiteBitSize))</a>
 <a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Data.ByteArray.Hash</span>   (<span class="dt">FnvHash32</span> (..), fnv1Hash)</a>
@@ -66,7 +66,7 @@
 <a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Prelude</span>               <span class="kw">hiding</span> (drop, lookup, take)</a>
 <a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span> <span class="dt">System.TimeIt</span>         (timeIt)</a>
 <a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Text.Show.Pretty</span>      (pPrint)</a></code></pre></div>
-<p>We’re going to be doing some bit twiddling. To make things easier I’m going to define a <code>newtype</code> that behaves exactly the same as whatever it’s wrapping except that its <code>Show</code> instance displays the binary representation instead of the decimal one.</p>
+<p>We’re going to be doing some bit twiddling. To make this easier to follow I’m going to define a <code>newtype</code> whose <code>Show</code> instance displays the binary representation.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span></a>
 <a class="sourceLine" id="cb2-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">newtype</span> <span class="dt">Binary</span> a <span class="fu">=</span> <span class="dt">Binary</span> a</a>
@@ -106,11 +106,11 @@
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1">hash <span class="st">&quot;1&quot;</span><span class="ot"> ::</span> <span class="dt">Binary</span> <span class="dt">Word32</span></a></code></pre></div>
 <pre><code>00000101000011000101110100101110</code></pre>
 <p>A HAMT can be</p>
-<ol type="1">
+<ul>
 <li>empty (<code>None</code>)</li>
 <li>a leaf node with the hash, the key, and the value (<code>Leaf</code>)</li>
-<li>a node with a bitmap and a (non-empty) vector of child HAMTs (<code>Many</code>).</li>
-</ol>
+<li>a node with a bitmap and a (non-empty) vector of child HAMTs (<code>Many</code>)</li>
+</ul>
 <p>I’ve chosen to ignore the possibility of collisions, but we could handle them by adding an extra constructor, e.g. <code>Colliding</code> with a hash and a vector of key-value pairs.</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">data</span> <span class="dt">HAMT</span> key value</a>
 <a class="sourceLine" id="cb14-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">None</span></a>
@@ -121,11 +121,11 @@
 <a class="sourceLine" id="cb14-7" data-line-number="7"><span class="ot">empty ::</span> <span class="dt">HAMT</span> k v</a>
 <a class="sourceLine" id="cb14-8" data-line-number="8">empty <span class="fu">=</span> <span class="dt">None</span></a></code></pre></div>
 <p>We’ll need some helper functions for vectors:</p>
-<ol type="1">
-<li><code>insertAt</code> inserts an element at a specified index, shifting elements to the right forwards.</li>
-<li><code>updateAt</code> replaces an element at a specified index with a new element.</li>
-<li><code>deleteAt</code> removes an element at an index, shifting elements to the right backwards.</li>
-</ol>
+<ul>
+<li><code>insertAt</code> inserts an element at a specified index, shifting elements to the right forwards</li>
+<li><code>updateAt</code> replaces an element at a specified index with a new element</li>
+<li><code>deleteAt</code> removes an element at an index, shifting elements to the right backwards</li>
+</ul>
 <div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="ot">insertAt ::</span> <span class="dt">Vector</span> a <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Vector</span> a</a>
 <a class="sourceLine" id="cb15-2" data-line-number="2">insertAt vector index a <span class="fu">=</span> take index vector <span class="fu">&lt;&gt;</span> singleton a <span class="fu">&lt;&gt;</span> drop index vector</a>
 <a class="sourceLine" id="cb15-3" data-line-number="3"></a>
@@ -224,7 +224,7 @@
 <p>The final case is where the bit in the bitmap is already set. We need to recursively update the HAMT at the corresponding index:</p>
 <div class="sourceCode" id="cb41"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb41-1" data-line-number="1">insert_ hash key value (<span class="dt">Many</span> bitmap vector)</a>
 <a class="sourceLine" id="cb41-2" data-line-number="2">    <span class="fu">|</span> bitmap <span class="fu">.&amp;.</span> mask <span class="fu">==</span> <span class="dv">1</span> <span class="fu">=</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb41-3" data-line-number="3">        subtree' <span class="fu">=</span> insert_ hash key value (vector <span class="fu">!</span> index)</a>
+<a class="sourceLine" id="cb41-3" data-line-number="3">        subtree' <span class="fu">=</span> insert_ hash key value (vector <span class="fu">!</span> index) <span class="co">-- WRONG!</span></a>
 <a class="sourceLine" id="cb41-4" data-line-number="4">        vector' <span class="fu">=</span> updateAt vector index subtree'</a>
 <a class="sourceLine" id="cb41-5" data-line-number="5">        <span class="kw">in</span> <span class="dt">Many</span> bitmap vector'</a>
 <a class="sourceLine" id="cb41-6" data-line-number="6">    <span class="kw">where</span></a>
@@ -291,11 +291,11 @@
   ]</code></pre>
 <h3 id="lookup">Lookup</h3>
 <p>Compared to <code>insert</code>, <code>lookup</code> is a walk in the park. It’s implemented along the same lines as <code>insert</code>:</p>
-<ol type="1">
-<li>On <code>None</code> nodes, it fails.</li>
-<li>On <code>Leaf</code> nodes, it succeeds if the hashes match.</li>
-<li>On <code>Many</code> nodes, it fails if the bit isn’t set, and recurses into the child node otherwise.</li>
-</ol>
+<ul>
+<li>on <code>None</code> nodes, it fails</li>
+<li>on <code>Leaf</code> nodes, it succeeds if the hashes match</li>
+<li>on <code>Many</code> nodes, it fails if the bit isn’t set, and recurses into the child node otherwise</li>
+</ul>
 <div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb46-1" data-line-number="1">lookup<span class="ot"> ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">Maybe</span> value</a>
 <a class="sourceLine" id="cb46-2" data-line-number="2">lookup key hamt <span class="fu">=</span> lookup' <span class="dv">0</span> (hash key) hamt</a>
 <a class="sourceLine" id="cb46-3" data-line-number="3"></a>
@@ -324,7 +324,7 @@
 <a class="sourceLine" id="cb49-5" data-line-number="5"></a>
 <a class="sourceLine" id="cb49-6" data-line-number="6">timeIt <span class="fu">$</span> print <span class="fu">$</span> fib <span class="dv">30</span></a></code></pre></div>
 <pre><code>1346269
-CPU time:   1.14s</code></pre>
+CPU time:   1.22s</code></pre>
 <p>We can memoise it by storing previously calculated results and using them if they are available:</p>
 <div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb51-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Hashable</span> <span class="dt">Int</span> <span class="kw">where</span></a>
 <a class="sourceLine" id="cb51-2" data-line-number="2">    hash int <span class="fu">=</span> <span class="dt">Binary</span> (fromIntegral int)</a>
@@ -346,7 +346,12 @@ CPU time:   1.14s</code></pre>
 <pre><code>1346269
 CPU time:   0.00s</code></pre>
 <h3 id="delete">Delete</h3>
-<p>Finally we come to <code>delete</code>, which is only a little more complex than <code>lookup</code>. It needs to make sure that there are no <code>None</code> nodes in the tree, so if a deletion results in a <code>None</code> node and there are any sibling nodes, it will unset the bit in the bitmap, and if it is the only child of a <code>Many</code> node, it will replace the <code>Many</code> node with itself. <code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
+<p>Finally we come to <code>delete</code>, which is only a little more complex than <code>lookup</code>. It needs to make sure that no <code>Many</code> node has a child <code>None</code> node, so if a <code>None</code> node:</p>
+<ul>
+<li>is an only child, it will replace the parent node</li>
+<li>has any sibling nodes, it will be removed from the parent node’s bitmap and vector</li>
+</ul>
+<p><code>Leaf</code> nodes similarly replace their parents if they are the only child.</p>
 <div class="sourceCode" id="cb53"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb53-1" data-line-number="1"><span class="ot">delete ::</span> <span class="dt">Hashable</span> key <span class="ot">=&gt;</span> key <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value <span class="ot">-&gt;</span> <span class="dt">HAMT</span> key value</a>
 <a class="sourceLine" id="cb53-2" data-line-number="2">delete key hamt <span class="fu">=</span> delete' <span class="dv">0</span> (hash key) hamt</a>
 <a class="sourceLine" id="cb53-3" data-line-number="3"></a>
