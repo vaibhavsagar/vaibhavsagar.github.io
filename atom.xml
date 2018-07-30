@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Vaibhav Sagar's blog</title>
-    <link href="http://vaibhavsagar.com/atom.xml" rel="self" />
-    <link href="http://vaibhavsagar.com" />
-    <id>http://vaibhavsagar.com/atom.xml</id>
+    <link href="https://vaibhavsagar.com/atom.xml" rel="self" />
+    <link href="https://vaibhavsagar.com" />
+    <id>https://vaibhavsagar.com/atom.xml</id>
     <author>
         <name>Vaibhav Sagar</name>
         <email>vaibhavsagar@gmail.com</email>
@@ -11,8 +11,8 @@
     <updated>2018-07-29T00:00:00Z</updated>
     <entry>
     <title>HAMTs from Scratch</title>
-    <link href="http://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html</id>
     <published>2018-07-29T00:00:00Z</published>
     <updated>2018-07-29T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -389,8 +389,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>Trees That Shrink</title>
-    <link href="http://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html</id>
     <published>2018-06-19T00:00:00Z</published>
     <updated>2018-06-19T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -646,8 +646,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>Quick and Easy Nixpkgs Pinning</title>
-    <link href="http://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html</id>
     <published>2018-05-27T00:00:00Z</published>
     <updated>2018-05-27T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -780,8 +780,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>IHaskell on CoCalc!</title>
-    <link href="http://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/index.html</id>
     <published>2018-04-08T00:00:00Z</published>
     <updated>2018-04-08T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -809,8 +809,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>IHaskell on mybinder.org</title>
-    <link href="http://vaibhavsagar.com/blog/2018/03/31/ihaskell-mybinder/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/03/31/ihaskell-mybinder/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/03/31/ihaskell-mybinder/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/03/31/ihaskell-mybinder/index.html</id>
     <published>2018-03-31T00:00:00Z</published>
     <updated>2018-03-31T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -835,8 +835,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>Faking Non-NixOS for Stack</title>
-    <link href="http://vaibhavsagar.com/blog/2018/03/17/faking-non-nixos-stack/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/03/17/faking-non-nixos-stack/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/03/17/faking-non-nixos-stack/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/03/17/faking-non-nixos-stack/index.html</id>
     <published>2018-03-17T00:00:00Z</published>
     <updated>2018-03-17T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -971,8 +971,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>Revisiting 'Monadic Parsing in Haskell'</title>
-    <link href="http://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/index.html</id>
     <published>2018-02-04T00:00:00Z</published>
     <updated>2018-02-04T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -1119,8 +1119,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>Building Static Haskell Binaries with Nix</title>
-    <link href="http://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/index.html" />
-    <id>http://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/index.html</id>
     <published>2018-01-03T00:00:00Z</published>
     <updated>2018-01-03T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -1216,8 +1216,8 @@ CPU time:   0.00s</code></pre>
 </entry>
 <entry>
     <title>I Haskell a Git</title>
-    <link href="http://vaibhavsagar.com/blog/2017/08/13/i-haskell-a-git/index.html" />
-    <id>http://vaibhavsagar.com/blog/2017/08/13/i-haskell-a-git/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2017/08/13/i-haskell-a-git/index.html" />
+    <id>https://vaibhavsagar.com/blog/2017/08/13/i-haskell-a-git/index.html</id>
     <published>2017-08-13T00:00:00Z</published>
     <updated>2017-08-13T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
@@ -1700,8 +1700,8 @@ True</code></pre>
 </entry>
 <entry>
     <title>Easy Pull Requests</title>
-    <link href="http://vaibhavsagar.com/blog/2017/07/31/easy-pull-requests/index.html" />
-    <id>http://vaibhavsagar.com/blog/2017/07/31/easy-pull-requests/index.html</id>
+    <link href="https://vaibhavsagar.com/blog/2017/07/31/easy-pull-requests/index.html" />
+    <id>https://vaibhavsagar.com/blog/2017/07/31/easy-pull-requests/index.html</id>
     <published>2017-07-31T00:00:00Z</published>
     <updated>2017-07-31T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
