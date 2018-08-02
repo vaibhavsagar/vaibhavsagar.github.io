@@ -57,7 +57,7 @@
 <a class="sourceLine" id="cb2-6" data-line-number="6"><span class="kw">instance</span> (<span class="dt">FiniteBits</span> a, <span class="dt">Show</span> a, <span class="dt">Integral</span> a) <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">Binary</span> a) <span class="kw">where</span></a>
 <a class="sourceLine" id="cb2-7" data-line-number="7">    show (<span class="dt">Binary</span> n) <span class="fu">=</span> <span class="kw">let</span></a>
 <a class="sourceLine" id="cb2-8" data-line-number="8">        str <span class="fu">=</span> showIntAtBase <span class="dv">2</span> intToDigit n <span class="st">&quot;&quot;</span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">        size <span class="fu">=</span> finiteBitSize <span class="fu">$</span> undefined <span class="ot">`asTypeOf`</span> n</a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">        size <span class="fu">=</span> finiteBitSize n</a>
 <a class="sourceLine" id="cb2-10" data-line-number="10">        <span class="kw">in</span> replicate (size <span class="fu">-</span> length str) <span class="ch">&#39;0&#39;</span> <span class="fu">&lt;&gt;</span> str</a></code></pre></div>
 <p>Using this <code>newtype</code> we can turn this:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="dv">24732</span><span class="ot"> ::</span> <span class="dt">Word16</span></a></code></pre></div>
