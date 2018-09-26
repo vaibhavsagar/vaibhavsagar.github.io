@@ -64,15 +64,19 @@
 <p>And now instead of giving me something useful, this function gives me an address in memory, which seems especially pointless.</p>
 <p>I give up. This example seems contrived, but over the course of my relationship with Python, which is more than a decade long now, I’ve seen the same dynamic play out embarrassingly many times. How do I write programs that work? Surely this is a simple question with a straightforward answer.</p>
 <p>Indeed, the most common response I get when I ask this question is to write tests. That sounds reasonable, so let’s do that:</p>
-<pre><code>&gt;&gt;&gt; def map(f, ls):
-...     print(&quot;Where are your tests now?&quot;)
-...     return [2, 3, 4]
-...
-&gt;&gt;&gt; map(plusOne, [1, 2, 3]) == [2, 3, 4]
-Where are your tests now?
-True</code></pre>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls):</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">...     <span class="bu">print</span>(<span class="st">&quot;Where are your tests now?&quot;</span>)</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">...     <span class="cf">return</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">...</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="op">&gt;&gt;&gt;</span> <span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="op">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">Where are your tests now?</a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="va">True</span></a></code></pre></div>
 <p>Okay, my test passes, so everything must be good, right?</p>
-<p>I contend that tests are necessary, but not sufficient. They are problematic for at least two reasons: 1. They are only as good as the specification they imply for how a program should behave. If that specification is incomplete or wrong, no amount of tests will guarantee software that works. 2. The language doesn’t understand tests, by which I mean that it’s extremely difficult to automatically go from a failing test to the part of the code where the error lives. The programmer has to do the legwork of tracking down the bug based on essentially one bit of information in many cases.</p>
+<p>I contend that tests are necessary, but not sufficient. They are problematic for at least two reasons:</p>
+<ol type="1">
+<li>They are only as good as the specification they imply for how a program should behave. If that specification is incomplete or wrong, no amount of tests will guarantee software that works.</li>
+<li>The language doesn’t understand tests, by which I mean that it’s extremely difficult to automatically go from a failing test to the part of the code where the error lives. The programmer has to do the legwork of tracking down the bug based on essentially one bit of information in many cases.</li>
+</ol>
 <p>Fortunately, tests aren’t the only specification of how a program should behave. Types can also serve as specifications, and they have the advantage that they are extremely well integrated into the language in a way tests usually are not.</p>
 <p>What does this mean in practice? Let’s look at Haskell. Haskell is statically typed, which means it expects to know the types of all the expressions in your program at compile time. This is nothing special though, lots of other languages also claim to be statically typed. What is special about Haskell though is that it has type inference, which means that you don’t have to annotate expressions with their types most of the time because the compiler can figure it out. If you put these two features together, you get typed holes!</p>
 <p>Let’s try to write that same program in Haskell:</p>
