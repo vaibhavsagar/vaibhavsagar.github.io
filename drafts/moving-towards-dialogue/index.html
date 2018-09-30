@@ -79,8 +79,103 @@
 </ol>
 <p>Fortunately, tests aren’t the only specification of how a program should behave. Types can also serve as specifications, and they have the advantage that they are extremely well integrated into the language in a way tests usually are not.</p>
 <p>What does this mean in practice? Let’s look at Haskell. Haskell is statically typed, which means it expects to know the types of all the expressions in your program at compile time. This is nothing special though, lots of other languages also claim to be statically typed. What is special about Haskell though is that it has type inference, which means that you don’t have to annotate expressions with their types most of the time because the compiler can figure it out. If you put these two features together, you get typed holes!</p>
-<p>Let’s try to write that same program in Haskell:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"></code></pre></div>
+<p>Let’s try to write that same program in Haskell with typed holes. To start, let’s create a file called <code>Main.hs</code> with the following contents:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">map f ls <span class="fu">=</span> _</a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>To automate the cycle of loading this file into GHCi every time we make a change, we’re going to use <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a>, which does essentially that and not much else. This is the result of running <code>ghcid Main.hs</code>:</p>
+<pre><code>Main.hs:4:12: error:
+    • Found hole: _ :: [b]
+      Where: ‘b’ is a rigid type variable bound by
+               the type signature for:
+                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+               at Main.hs:3:1-29
+    • In the expression: _
+      In an equation for ‘map’: map f ls = _
+    • Relevant bindings include
+        ls :: [a] (bound at Main.hs:4:7)
+        f :: a -&gt; b (bound at Main.hs:4:5)
+        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
+  |
+4 | map f ls = _
+  |</code></pre>
+<p>I’d suggest ignoring the middle and instead focusing on the top, which tells us the type of the hole, and the bottom, which tells us which bindings are in scope that we can use to fill in the hole.</p>
+<p>In this case we aren’t learning anything new, and we already know that the hole is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most promising, and we can split it into one of two cases: an empty list, or some element and the rest of the list. We can put a typed hole on the right hand side of each case alternative:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">map f ls <span class="fu">=</span> <span class="kw">case</span> ls <span class="kw">of</span></a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">    [] <span class="ot">-&gt;</span> _1</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6">    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> _2</a>
+<a class="sourceLine" id="cb7-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-9" data-line-number="9">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb7-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>And our <code>ghcid</code> output changes:</p>
+<pre><code>Main.hs:5:11-12: error:
+    • Found hole: _1 :: [b]
+      Where: ‘b’ is a rigid type variable bound by
+               the type signature for:
+                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+               at Main.hs:3:1-29
+      Or perhaps ‘_1’ is mis-spelled, or not in scope
+    • In the expression: _1
+      In a case alternative: [] -&gt; _1
+      In the expression:
+        case ls of
+          [] -&gt; _1
+          x : xs -&gt; _2
+    • Relevant bindings include
+        ls :: [a] (bound at Main.hs:4:7)
+        f :: a -&gt; b (bound at Main.hs:4:5)
+        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
+  |
+5 |     [] -&gt; _1
+  |           ^^
+Main.hs:6:13-14: error:
+    • Found hole: _2 :: [b]
+      Where: ‘b’ is a rigid type variable bound by
+               the type signature for:
+                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+               at Main.hs:3:1-29
+      Or perhaps ‘_2’ is mis-spelled, or not in scope
+    • In the expression: _2
+      In a case alternative: x : xs -&gt; _2
+      In the expression:
+        case ls of
+          [] -&gt; _1
+          x : xs -&gt; _2
+    • Relevant bindings include
+        xs :: [a] (bound at Main.hs:6:7)
+        x :: a (bound at Main.hs:6:5)
+        ls :: [a] (bound at Main.hs:4:7)
+        f :: a -&gt; b (bound at Main.hs:4:5)
+        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
+  |
+6 |     x:xs -&gt; _2
+  |             ^^</code></pre>
+<p>We haven’t learned anything new about the types, but we can make progress another way. The only sensible thing to put on the right hand side when given an empty list is another empty list, and when given an element and a list the most reasonable thing to do is to operate on each of them and put them together into a new list:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">map f ls <span class="fu">=</span> <span class="kw">case</span> ls <span class="kw">of</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">    [] <span class="ot">-&gt;</span> []</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> _1<span class="fu">:</span>_2</a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 
         </div>
         <div id="footer">
