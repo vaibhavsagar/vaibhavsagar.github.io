@@ -105,7 +105,7 @@
         map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
   |
 4 | map f ls = _
-  |</code></pre>
+  |            ^</code></pre>
 <p>I’d suggest ignoring the middle and instead focusing on the top, which tells us the type of the hole, and the bottom, which tells us which bindings are in scope that we can use to fill in the hole.</p>
 <p>In this case we aren’t learning anything new, and we already know that the hole is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most promising, and we can split it into one of two cases: an empty list, or some element and the rest of the list. We can put a typed hole on the right hand side of each case alternative:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
@@ -214,7 +214,7 @@ Main.hs:6:16-17: error:
         map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
   |
 6 |     x:xs -&gt; _1:_2
-  |</code></pre>
+  |                ^^</code></pre>
 <p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>, and we see that the most reasonable way to get a value of this type is to recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
 <a class="sourceLine" id="cb11-2" data-line-number="2"></a>
