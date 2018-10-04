@@ -163,7 +163,7 @@ Main.hs:6:13-14: error:
   |
 6 |     x:xs -&gt; _2
   |             ^^</code></pre>
-<p>We haven’t learned anything new about the types, but we can make progress another way. The only sensible thing to put on the right hand side when given an empty list is another empty list, and when given an element and a list the most reasonable thing to do is to operate on each of them and put them together into a new list:</p>
+<p>We haven’t learned anything new about the types, but we can make progress another way. The only sensible thing to put on the right hand side when given an empty list is another empty list, and after splitting a list apart the most reasonable thing to do is to combine two other things into a new list:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
 <a class="sourceLine" id="cb9-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb9-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
@@ -176,6 +176,79 @@ Main.hs:6:13-14: error:
 <a class="sourceLine" id="cb9-10" data-line-number="10"></a>
 <a class="sourceLine" id="cb9-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb9-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>Now the output gets a little more interesting:</p>
+<pre><code>Main.hs:6:13-14: error:
+    • Found hole: _1 :: b
+      Where: ‘b’ is a rigid type variable bound by
+               the type signature for:
+                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+               at Main.hs:3:1-29
+      Or perhaps ‘_1’ is mis-spelled, or not in scope
+    • In the first argument of ‘(:)’, namely ‘_1’
+      In the expression: _1 : _2
+      In a case alternative: x : xs -&gt; _1 : _2
+    • Relevant bindings include
+        xs :: [a] (bound at Main.hs:6:7)
+        x :: a (bound at Main.hs:6:5)
+        ls :: [a] (bound at Main.hs:4:7)
+        f :: a -&gt; b (bound at Main.hs:4:5)
+        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
+  |
+6 |     x:xs -&gt; _1:_2
+  |             ^^
+Main.hs:6:16-17: error:
+    • Found hole: _2 :: [b]
+      Where: ‘b’ is a rigid type variable bound by
+               the type signature for:
+                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+               at Main.hs:3:1-29
+      Or perhaps ‘_2’ is mis-spelled, or not in scope
+    • In the second argument of ‘(:)’, namely ‘_2’
+      In the expression: _1 : _2
+      In a case alternative: x : xs -&gt; _1 : _2
+    • Relevant bindings include
+        xs :: [a] (bound at Main.hs:6:7)
+        x :: a (bound at Main.hs:6:5)
+        ls :: [a] (bound at Main.hs:4:7)
+        f :: a -&gt; b (bound at Main.hs:4:5)
+        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
+  |
+6 |     x:xs -&gt; _1:_2
+  |</code></pre>
+<p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>, and we see that the most reasonable way to get a value of this type is to recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">map f ls <span class="fu">=</span> <span class="kw">case</span> ls <span class="kw">of</span></a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">    [] <span class="ot">-&gt;</span> []</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6">    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> f x<span class="fu">:</span> map f xs</a>
+<a class="sourceLine" id="cb11-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb11-9" data-line-number="9">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb11-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb11-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>And <code>ghcid</code> is satisfied:</p>
+<pre><code>All good (1 module, at &lt;time&gt;)</code></pre>
+<p>It compiles! But does it work?</p>
+<pre><code>$ runhaskell Main.hs
+True</code></pre>
+<p>Fantastic! We were able to ask the compiler for hints and get useful answers back. This is a gigantic improvement over anything I’m aware of in Python land.</p>
+<p>Unfortunately, there is a catch: this program is too easy to break. Let me demonstrate my favourite way:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">map f ls <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb14-6" data-line-number="6"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb14-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb14-9" data-line-number="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb14-10" data-line-number="10">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>The astute reader will notice that this is the same as my earliest Python program. Here is what <code>ghcid</code> has to say:</p>
+<pre><code>All good (1 module, at &lt;time&gt;)</code></pre>
+<p>So what’s going on here? It turns out an empty list is a valid list of any type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
+<p>One way of avoiding this class of incorrect program is to specify that the input and the output lists should be of the same length. It’s possible to do this in Haskell, but it is a lot of work. Can we do better?</p>
 
         </div>
         <div id="footer">
