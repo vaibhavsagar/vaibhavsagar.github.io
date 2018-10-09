@@ -91,21 +91,21 @@
 <a class="sourceLine" id="cb5-9" data-line-number="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb5-10" data-line-number="10">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 <p>To automate the cycle of loading this file into GHCi every time we make a change, we’re going to use <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a>, which does essentially that and not much else. This is the result of running <code>ghcid Main.hs</code>:</p>
-<pre><code>Main.hs:4:12: error:
-    • Found hole: _ :: [b]
-      Where: ‘b’ is a rigid type variable bound by
-               the type signature for:
-                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-               at Main.hs:3:1-29
-    • In the expression: _
-      In an equation for ‘map’: map f ls = _
-    • Relevant bindings include
-        ls :: [a] (bound at Main.hs:4:7)
-        f :: a -&gt; b (bound at Main.hs:4:5)
-        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
-  |
-4 | map f ls = _
-  |            ^</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb6-1" data-line-number="1">Main.hs:4:12: error:</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">    • Found hole: _ :: [b]</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">               the type signature for:</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">    • In the expression: _</a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">      In an equation for ‘map’: map f ls = _</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb6-13" data-line-number="13">  |</a>
+<a class="sourceLine" id="cb6-14" data-line-number="14">4 | map f ls = _</a>
+<a class="sourceLine" id="cb6-15" data-line-number="15">  |            ^</a></code></pre></div>
 <p>I’d suggest ignoring the middle and instead focusing on the top, which tells us the type of the hole, and the bottom, which tells us which bindings are in scope that we can use to fill in the hole.</p>
 <p>In this case we aren’t learning anything new, and we already know that the hole is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most promising, and we can split it into one of two cases: an empty list, or some element and the rest of the list. We can put a typed hole on the right hand side of each case alternative:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
@@ -121,48 +121,48 @@
 <a class="sourceLine" id="cb7-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb7-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 <p>And our <code>ghcid</code> output changes:</p>
-<pre><code>Main.hs:5:11-12: error:
-    • Found hole: _1 :: [b]
-      Where: ‘b’ is a rigid type variable bound by
-               the type signature for:
-                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-               at Main.hs:3:1-29
-      Or perhaps ‘_1’ is mis-spelled, or not in scope
-    • In the expression: _1
-      In a case alternative: [] -&gt; _1
-      In the expression:
-        case ls of
-          [] -&gt; _1
-          x : xs -&gt; _2
-    • Relevant bindings include
-        ls :: [a] (bound at Main.hs:4:7)
-        f :: a -&gt; b (bound at Main.hs:4:5)
-        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
-  |
-5 |     [] -&gt; _1
-  |           ^^
-Main.hs:6:13-14: error:
-    • Found hole: _2 :: [b]
-      Where: ‘b’ is a rigid type variable bound by
-               the type signature for:
-                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-               at Main.hs:3:1-29
-      Or perhaps ‘_2’ is mis-spelled, or not in scope
-    • In the expression: _2
-      In a case alternative: x : xs -&gt; _2
-      In the expression:
-        case ls of
-          [] -&gt; _1
-          x : xs -&gt; _2
-    • Relevant bindings include
-        xs :: [a] (bound at Main.hs:6:7)
-        x :: a (bound at Main.hs:6:5)
-        ls :: [a] (bound at Main.hs:4:7)
-        f :: a -&gt; b (bound at Main.hs:4:5)
-        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
-  |
-6 |     x:xs -&gt; _2
-  |             ^^</code></pre>
+<div class="sourceCode" id="cb8"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb8-1" data-line-number="1">Main.hs:5:11-12: error:</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">    • Found hole: _1 :: [b]</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">               the type signature for:</a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">      Or perhaps ‘_1’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">    • In the expression: _1</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">      In a case alternative: [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">      In the expression:</a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">        case ls of</a>
+<a class="sourceLine" id="cb8-12" data-line-number="12">          [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">          x : xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">  |</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">5 |     [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">  |           ^^</a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">Main.hs:6:13-14: error:</a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">    • Found hole: _2 :: [b]</a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">               the type signature for:</a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb8-26" data-line-number="26">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb8-27" data-line-number="27">      Or perhaps ‘_2’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb8-28" data-line-number="28">    • In the expression: _2</a>
+<a class="sourceLine" id="cb8-29" data-line-number="29">      In a case alternative: x : xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-30" data-line-number="30">      In the expression:</a>
+<a class="sourceLine" id="cb8-31" data-line-number="31">        case ls of</a>
+<a class="sourceLine" id="cb8-32" data-line-number="32">          [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-33" data-line-number="33">          x : xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-34" data-line-number="34">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb8-35" data-line-number="35">        xs :: [a] (bound at Main.hs:6:7)</a>
+<a class="sourceLine" id="cb8-36" data-line-number="36">        x :: a (bound at Main.hs:6:5)</a>
+<a class="sourceLine" id="cb8-37" data-line-number="37">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb8-38" data-line-number="38">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb8-39" data-line-number="39">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb8-40" data-line-number="40">  |</a>
+<a class="sourceLine" id="cb8-41" data-line-number="41">6 |     x:xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-42" data-line-number="42">  |             ^^</a></code></pre></div>
 <p>We haven’t learned anything new about the types, but we can make progress another way. The only sensible thing to put on the right hand side when given an empty list is another empty list, and after splitting a list apart the most reasonable thing to do is to combine two other things into a new list:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
 <a class="sourceLine" id="cb9-2" data-line-number="2"></a>
@@ -177,44 +177,44 @@ Main.hs:6:13-14: error:
 <a class="sourceLine" id="cb9-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb9-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 <p>Now the output gets a little more interesting:</p>
-<pre><code>Main.hs:6:13-14: error:
-    • Found hole: _1 :: b
-      Where: ‘b’ is a rigid type variable bound by
-               the type signature for:
-                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-               at Main.hs:3:1-29
-      Or perhaps ‘_1’ is mis-spelled, or not in scope
-    • In the first argument of ‘(:)’, namely ‘_1’
-      In the expression: _1 : _2
-      In a case alternative: x : xs -&gt; _1 : _2
-    • Relevant bindings include
-        xs :: [a] (bound at Main.hs:6:7)
-        x :: a (bound at Main.hs:6:5)
-        ls :: [a] (bound at Main.hs:4:7)
-        f :: a -&gt; b (bound at Main.hs:4:5)
-        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
-  |
-6 |     x:xs -&gt; _1:_2
-  |             ^^
-Main.hs:6:16-17: error:
-    • Found hole: _2 :: [b]
-      Where: ‘b’ is a rigid type variable bound by
-               the type signature for:
-                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-               at Main.hs:3:1-29
-      Or perhaps ‘_2’ is mis-spelled, or not in scope
-    • In the second argument of ‘(:)’, namely ‘_2’
-      In the expression: _1 : _2
-      In a case alternative: x : xs -&gt; _1 : _2
-    • Relevant bindings include
-        xs :: [a] (bound at Main.hs:6:7)
-        x :: a (bound at Main.hs:6:5)
-        ls :: [a] (bound at Main.hs:4:7)
-        f :: a -&gt; b (bound at Main.hs:4:5)
-        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)
-  |
-6 |     x:xs -&gt; _1:_2
-  |                ^^</code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb10-1" data-line-number="1">Main.hs:6:13-14: error:</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">    • Found hole: _1 :: b</a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">               the type signature for:</a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">      Or perhaps ‘_1’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">    • In the first argument of ‘(:)’, namely ‘_1’</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">      In the expression: _1 : _2</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">      In a case alternative: x : xs -&gt; _1 : _2</a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">        xs :: [a] (bound at Main.hs:6:7)</a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">        x :: a (bound at Main.hs:6:5)</a>
+<a class="sourceLine" id="cb10-14" data-line-number="14">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb10-15" data-line-number="15">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb10-16" data-line-number="16">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb10-17" data-line-number="17">  |</a>
+<a class="sourceLine" id="cb10-18" data-line-number="18">6 |     x:xs -&gt; _1:_2</a>
+<a class="sourceLine" id="cb10-19" data-line-number="19">  |             ^^</a>
+<a class="sourceLine" id="cb10-20" data-line-number="20">Main.hs:6:16-17: error:</a>
+<a class="sourceLine" id="cb10-21" data-line-number="21">    • Found hole: _2 :: [b]</a>
+<a class="sourceLine" id="cb10-22" data-line-number="22">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb10-23" data-line-number="23">               the type signature for:</a>
+<a class="sourceLine" id="cb10-24" data-line-number="24">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb10-25" data-line-number="25">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb10-26" data-line-number="26">      Or perhaps ‘_2’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb10-27" data-line-number="27">    • In the second argument of ‘(:)’, namely ‘_2’</a>
+<a class="sourceLine" id="cb10-28" data-line-number="28">      In the expression: _1 : _2</a>
+<a class="sourceLine" id="cb10-29" data-line-number="29">      In a case alternative: x : xs -&gt; _1 : _2</a>
+<a class="sourceLine" id="cb10-30" data-line-number="30">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb10-31" data-line-number="31">        xs :: [a] (bound at Main.hs:6:7)</a>
+<a class="sourceLine" id="cb10-32" data-line-number="32">        x :: a (bound at Main.hs:6:5)</a>
+<a class="sourceLine" id="cb10-33" data-line-number="33">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb10-34" data-line-number="34">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb10-35" data-line-number="35">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb10-36" data-line-number="36">  |</a>
+<a class="sourceLine" id="cb10-37" data-line-number="37">6 |     x:xs -&gt; _1:_2</a>
+<a class="sourceLine" id="cb10-38" data-line-number="38">  |                ^^</a></code></pre></div>
 <p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>, and we see that the most reasonable way to get a value of this type is to recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
 <a class="sourceLine" id="cb11-2" data-line-number="2"></a>
@@ -229,10 +229,10 @@ Main.hs:6:16-17: error:
 <a class="sourceLine" id="cb11-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb11-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 <p>And <code>ghcid</code> is satisfied:</p>
-<pre><code>All good (1 module, at &lt;time&gt;)</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb12-1" data-line-number="1">All good (1 module, at &lt;time&gt;)</a></code></pre></div>
 <p>It compiles! But does it work?</p>
-<pre><code>$ runhaskell Main.hs
-True</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" data-line-number="1">$ <span class="ex">runhaskell</span> Main.hs</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="ex">True</span></a></code></pre></div>
 <p>Fantastic! We were able to ask the compiler for hints and get useful answers back. This is a gigantic improvement over anything I’m aware of in Python land.</p>
 <p>Unfortunately, there is a catch: this program is too easy to break. Let me demonstrate my favourite way:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
@@ -245,8 +245,8 @@ True</code></pre>
 <a class="sourceLine" id="cb14-8" data-line-number="8"></a>
 <a class="sourceLine" id="cb14-9" data-line-number="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb14-10" data-line-number="10">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
-<p>The astute reader will notice that this is the same as my earliest Python program. Here is what <code>ghcid</code> has to say:</p>
-<pre><code>All good (1 module, at &lt;time&gt;)</code></pre>
+<p>The astute reader will notice that this is the Haskell equivalent of the obviously broken Python program we started with. Here is what <code>ghcid</code> has to say:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb15-1" data-line-number="1">All good (1 module, at &lt;time&gt;)</a></code></pre></div>
 <p>So what’s going on here? It turns out an empty list is a valid list of any type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
 <p>One way of avoiding this class of incorrect program is to specify that the input and the output lists should be of the same length. It’s possible to do this in Haskell, but it is a lot of work. Can we do better?</p>
 
