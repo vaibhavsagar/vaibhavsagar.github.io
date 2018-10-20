@@ -249,6 +249,10 @@
 <div class="sourceCode" id="cb15"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb15-1" data-line-number="1">All good (1 module, at &lt;time&gt;)</a></code></pre></div>
 <p>So what’s going on here? It turns out an empty list is a valid list of any type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
 <p>One way of avoiding this class of incorrect program is to specify that the input and the output lists should be of the same length. It’s possible to do this in Haskell, but it is a lot of work. Can we do better?</p>
+<p>Enter Idris.</p>
+<p>Idris is a functional programming language with a more sophisticated type system than Haskell’s. Unfortunately it trades off some type inference to achieve this, so it’s not strictly better than Haskell in every way. It has excellent built-in editor support, and therefore has fancier typed holes!</p>
+<p>Let’s try to implement <code>map</code> again:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode idris"><code class="sourceCode idris"></code></pre></div>
 
         </div>
         <div id="footer">
