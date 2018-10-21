@@ -252,7 +252,52 @@
 <p>Enter Idris.</p>
 <p>Idris is a functional programming language with a more sophisticated type system than Haskell’s. Unfortunately it trades off some type inference to achieve this, so it’s not strictly better than Haskell in every way. It has excellent built-in editor support, and therefore has fancier typed holes!</p>
 <p>Let’s try to implement <code>map</code> again:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode idris"><code class="sourceCode idris"></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb16-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb16-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb16-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb16-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb16-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb16-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb16-11" data-line-number="11"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb16-12" data-line-number="12">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb16-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb16-14" data-line-number="14"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb16-15" data-line-number="15">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>Instead of implementing <code>map</code> on lists, we’ll use a more interesting type called <code>Vect</code> which is essentially a list that knows about its length. A <code>Vect</code> can either be <code>Nil</code> of length <code>0</code> or an element on the front of another <code>Vect</code> of some length <code>length</code> giving us a new <code>Vect</code> of length <code>length + 1</code>. I’ve also gone ahead defined equality on these <code>Vect</code>s because I use it in <code>main</code>.</p>
+<p>Loading the file into the Idris REPL gives us access to the editor integration:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb17-1" data-line-number="1">$ <span class="ex">idris</span> Main.idr</a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">     <span class="ex">____</span>    __     _</a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">    <span class="ex">/</span>  _/___/ /____(_)<span class="ex">____</span></a>
+<a class="sourceLine" id="cb17-4" data-line-number="4">    <span class="ex">/</span> // __  / ___/ / ___/     Version 1.3.0</a>
+<a class="sourceLine" id="cb17-5" data-line-number="5">  <span class="ex">_/</span> // /_/ / /  / (__  )      <span class="ex">http</span>://www.idris-lang.org/</a>
+<a class="sourceLine" id="cb17-6" data-line-number="6"> <span class="ex">/___</span>/\<span class="ex">__</span>,_/_/  /_/____/       Type :? for help</a>
+<a class="sourceLine" id="cb17-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb17-8" data-line-number="8"><span class="ex">Idris</span> is free software with ABSOLUTELY NO WARRANTY.</a>
+<a class="sourceLine" id="cb17-9" data-line-number="9"><span class="ex">For</span> details type :warranty.</a>
+<a class="sourceLine" id="cb17-10" data-line-number="10"><span class="ex">Type</span> checking ./Main.idr</a>
+<a class="sourceLine" id="cb17-11" data-line-number="11"><span class="ex">Holes</span>: Main.map</a>
+<a class="sourceLine" id="cb17-12" data-line-number="12"><span class="ex">*Main</span><span class="op">&gt;</span></a></code></pre></div>
+<p>In vim, I can use <code>&lt;localleader&gt;d</code> with the cursor on <code>map</code> to fill in a skeleton definition:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb18-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb18-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb18-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb18-10" data-line-number="10">map f x <span class="fu">=</span> <span class="ot">?map_rhs</span></a>
+<a class="sourceLine" id="cb18-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb18-12" data-line-number="12"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb18-13" data-line-number="13">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb18-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb18-15" data-line-number="15"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb18-16" data-line-number="16">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 
         </div>
         <div id="footer">
