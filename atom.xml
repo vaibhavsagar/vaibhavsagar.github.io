@@ -8,8 +8,399 @@
         <name>Vaibhav Sagar</name>
         <email>vaibhavsagar@gmail.com</email>
     </author>
-    <updated>2018-07-29T00:00:00Z</updated>
+    <updated>2018-11-03T00:00:00Z</updated>
     <entry>
+    <title>Moving Towards Dialogue</title>
+    <link href="https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/index.html" />
+    <id>https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/index.html</id>
+    <published>2018-11-03T00:00:00Z</published>
+    <updated>2018-11-03T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on  3 November 2018
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="/blog/tags/programming/index.html">programming</a>, <a href="/blog/tags/haskell/index.html">haskell</a>, <a href="/blog/tags/idris/index.html">idris</a>
+    
+</div>
+
+<p><em>This blog post is essentially a transcript of <a href="https://www.youtube.com/watch?v=0oo8wIi2qBE">a 10-minute talk I gave at !!Con</a>, the slides for which are available <a href="https://vaibhavsagar.com/presentations/typed-holes/">here</a>.</em></p>
+<p>Let’s talk about typed holes. What’s a typed hole? A definition I like is <em>“a placeholder for an expression with a known type and an unknown value”</em>.</p>
+<p>Why are typed holes useful? Because they allow the language to help us write programs! To demonstrate, let’s look at some code in Python, a language that lacks this feature.</p>
+<p>Suppose I want to write a function that takes another function and a list and applies the function to each element of that list. A first stab might look like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): <span class="cf">return</span> []</a></code></pre></div>
+<p>This is obviously wrong: this function ignores its arguments and gives us an empty list each time. This is no good, but what’s worse is that Python will accept this definition without complaint. It doesn’t seem to know (or care).</p>
+<p>Let’s try again. I hear the way to do things with lists in Python is to use a list comprehension, so I make sure to use one of those this time:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): [f(e) <span class="cf">for</span> e <span class="kw">in</span> ls]</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">...</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="op">&gt;&gt;&gt;</span> plusOne <span class="op">=</span> <span class="kw">lambda</span> i: i <span class="op">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(<span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]))</a>
+<a class="sourceLine" id="cb2-5" data-line-number="5"><span class="va">None</span></a></code></pre></div>
+<p>But this definition is still wrong, because I forgot to put a <code>return</code> statement in! Again, Python will happily accept this.</p>
+<p>I’m getting a bit frustrated at this point, so I look at how <code>map</code> is actually implemented. It uses a generator comprehension instead of a list comprehension, which makes it more general somehow, so I make sure to use that, and I remember to put a <code>return</code> statement in this time:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): <span class="cf">return</span> (f(e) <span class="cf">for</span> e <span class="kw">in</span> ls)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">...</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(<span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]))</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="op">&lt;</span>generator <span class="bu">object</span> <span class="bu">map</span>.<span class="op">&lt;</span><span class="bu">locals</span><span class="op">&gt;</span>.<span class="op">&lt;</span>genexpr<span class="op">&gt;</span> at <span class="bn">0x7ffb92103ca8</span><span class="op">&gt;</span></a></code></pre></div>
+<p>And now instead of giving me something useful, this function gives me an address in memory, which seems especially pointless.</p>
+<p>I give up. This example seems contrived, but over the course of my relationship with Python, which is more than a decade long now, I’ve seen the same dynamic play out embarrassingly many times. How do I write programs that work? Surely this is a simple question with a straightforward answer.</p>
+<p>Indeed, the most common response I get when I ask this question is to write tests. That sounds reasonable, so let’s do that:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls):</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">...     <span class="bu">print</span>(<span class="st">&quot;Where are your tests now?&quot;</span>)</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">...     <span class="cf">return</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">...</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="op">&gt;&gt;&gt;</span> <span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="op">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">Where are your tests now?</a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="va">True</span></a></code></pre></div>
+<p>Okay, my test passes, so everything must be good, right?</p>
+<p>I contend that tests are necessary, but not sufficient. They are problematic for at least two reasons:</p>
+<ol type="1">
+<li>They are only as good as the specification they imply for how a program should behave. If that specification is incomplete or wrong, no amount of tests will guarantee software that works.</li>
+<li>The language doesn’t understand tests, by which I mean that it’s extremely difficult to automatically go from a failing test to the part of the code where the error lives. The programmer has to do the legwork of tracking down the bug based on essentially one bit of information in many cases.</li>
+</ol>
+<p>Fortunately, tests aren’t the only specification of how a program should behave. Types can also serve as specifications, and they have the advantage that they are extremely well integrated into the language in a way tests usually are not.</p>
+<p>What does this mean in practice? Let’s look at Haskell. Haskell is statically typed, which means it expects to know the types of all the expressions in your program at compile time. This is nothing special though, lots of other languages also claim to be statically typed. What is special about Haskell though is that it has type inference, which means that you don’t have to annotate expressions with their types most of the time because the compiler can figure it out. If you put these two features together, you get typed holes!</p>
+<p>Let’s try to write that same program in Haskell with typed holes. To start, let’s create a file called <code>Main.hs</code> with the following contents:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">map f ls <span class="fu">=</span> _</a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>To automate the cycle of loading this file into GHCi every time we make a change, we’re going to use <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a>, which does essentially that and not much else. This is the result of running <code>ghcid Main.hs</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb6-1" data-line-number="1">Main.hs:4:12: error:</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">    • Found hole: _ :: [b]</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">               the type signature for:</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">    • In the expression: _</a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">      In an equation for ‘map’: map f ls = _</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb6-13" data-line-number="13">  |</a>
+<a class="sourceLine" id="cb6-14" data-line-number="14">4 | map f ls = _</a>
+<a class="sourceLine" id="cb6-15" data-line-number="15">  |            ^</a></code></pre></div>
+<p>I’d suggest ignoring the middle and instead focusing on the top, which tells us the type of the hole, and the bottom, which tells us which bindings are in scope that we can use to fill in the hole.</p>
+<p>In this case we aren’t learning anything new, and we already know that the hole is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most promising, and we can split it into one of two cases: an empty list, or some element and the rest of the list. We can put a typed hole on the right hand side of each case alternative:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">map f ls <span class="fu">=</span> <span class="kw">case</span> ls <span class="kw">of</span></a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">    [] <span class="ot">-&gt;</span> _1</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6">    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> _2</a>
+<a class="sourceLine" id="cb7-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-9" data-line-number="9">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb7-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>And our <code>ghcid</code> output changes:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb8-1" data-line-number="1">Main.hs:5:11-12: error:</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">    • Found hole: _1 :: [b]</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">               the type signature for:</a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">      Or perhaps ‘_1’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">    • In the expression: _1</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">      In a case alternative: [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">      In the expression:</a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">        case ls of</a>
+<a class="sourceLine" id="cb8-12" data-line-number="12">          [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">          x : xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">  |</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">5 |     [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">  |           ^^</a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">Main.hs:6:13-14: error:</a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">    • Found hole: _2 :: [b]</a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">               the type signature for:</a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb8-26" data-line-number="26">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb8-27" data-line-number="27">      Or perhaps ‘_2’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb8-28" data-line-number="28">    • In the expression: _2</a>
+<a class="sourceLine" id="cb8-29" data-line-number="29">      In a case alternative: x : xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-30" data-line-number="30">      In the expression:</a>
+<a class="sourceLine" id="cb8-31" data-line-number="31">        case ls of</a>
+<a class="sourceLine" id="cb8-32" data-line-number="32">          [] -&gt; _1</a>
+<a class="sourceLine" id="cb8-33" data-line-number="33">          x : xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-34" data-line-number="34">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb8-35" data-line-number="35">        xs :: [a] (bound at Main.hs:6:7)</a>
+<a class="sourceLine" id="cb8-36" data-line-number="36">        x :: a (bound at Main.hs:6:5)</a>
+<a class="sourceLine" id="cb8-37" data-line-number="37">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb8-38" data-line-number="38">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb8-39" data-line-number="39">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb8-40" data-line-number="40">  |</a>
+<a class="sourceLine" id="cb8-41" data-line-number="41">6 |     x:xs -&gt; _2</a>
+<a class="sourceLine" id="cb8-42" data-line-number="42">  |             ^^</a></code></pre></div>
+<p>We haven’t learned anything new about the types, but we can make progress another way. The only sensible thing to put on the right hand side when given an empty list is another empty list, and after splitting a list apart the most reasonable thing to do is to combine two other things into a new list:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">map f ls <span class="fu">=</span> <span class="kw">case</span> ls <span class="kw">of</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">    [] <span class="ot">-&gt;</span> []</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> _1<span class="fu">:</span>_2</a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>Now the output gets a little more interesting:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb10-1" data-line-number="1">Main.hs:6:13-14: error:</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">    • Found hole: _1 :: b</a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">               the type signature for:</a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">      Or perhaps ‘_1’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">    • In the first argument of ‘(:)’, namely ‘_1’</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">      In the expression: _1 : _2</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">      In a case alternative: x : xs -&gt; _1 : _2</a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">        xs :: [a] (bound at Main.hs:6:7)</a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">        x :: a (bound at Main.hs:6:5)</a>
+<a class="sourceLine" id="cb10-14" data-line-number="14">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb10-15" data-line-number="15">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb10-16" data-line-number="16">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb10-17" data-line-number="17">  |</a>
+<a class="sourceLine" id="cb10-18" data-line-number="18">6 |     x:xs -&gt; _1:_2</a>
+<a class="sourceLine" id="cb10-19" data-line-number="19">  |             ^^</a>
+<a class="sourceLine" id="cb10-20" data-line-number="20">Main.hs:6:16-17: error:</a>
+<a class="sourceLine" id="cb10-21" data-line-number="21">    • Found hole: _2 :: [b]</a>
+<a class="sourceLine" id="cb10-22" data-line-number="22">      Where: ‘b’ is a rigid type variable bound by</a>
+<a class="sourceLine" id="cb10-23" data-line-number="23">               the type signature for:</a>
+<a class="sourceLine" id="cb10-24" data-line-number="24">                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</a>
+<a class="sourceLine" id="cb10-25" data-line-number="25">               at Main.hs:3:1-29</a>
+<a class="sourceLine" id="cb10-26" data-line-number="26">      Or perhaps ‘_2’ is mis-spelled, or not in scope</a>
+<a class="sourceLine" id="cb10-27" data-line-number="27">    • In the second argument of ‘(:)’, namely ‘_2’</a>
+<a class="sourceLine" id="cb10-28" data-line-number="28">      In the expression: _1 : _2</a>
+<a class="sourceLine" id="cb10-29" data-line-number="29">      In a case alternative: x : xs -&gt; _1 : _2</a>
+<a class="sourceLine" id="cb10-30" data-line-number="30">    • Relevant bindings include</a>
+<a class="sourceLine" id="cb10-31" data-line-number="31">        xs :: [a] (bound at Main.hs:6:7)</a>
+<a class="sourceLine" id="cb10-32" data-line-number="32">        x :: a (bound at Main.hs:6:5)</a>
+<a class="sourceLine" id="cb10-33" data-line-number="33">        ls :: [a] (bound at Main.hs:4:7)</a>
+<a class="sourceLine" id="cb10-34" data-line-number="34">        f :: a -&gt; b (bound at Main.hs:4:5)</a>
+<a class="sourceLine" id="cb10-35" data-line-number="35">        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</a>
+<a class="sourceLine" id="cb10-36" data-line-number="36">  |</a>
+<a class="sourceLine" id="cb10-37" data-line-number="37">6 |     x:xs -&gt; _1:_2</a>
+<a class="sourceLine" id="cb10-38" data-line-number="38">  |                ^^</a></code></pre></div>
+<p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>, and we see that the most reasonable way to get a value of this type is to recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">map f ls <span class="fu">=</span> <span class="kw">case</span> ls <span class="kw">of</span></a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">    [] <span class="ot">-&gt;</span> []</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6">    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> f x<span class="fu">:</span> map f xs</a>
+<a class="sourceLine" id="cb11-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb11-9" data-line-number="9">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb11-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb11-12" data-line-number="12">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>And <code>ghcid</code> is satisfied:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb12-1" data-line-number="1">All good (1 module, at &lt;time&gt;)</a></code></pre></div>
+<p>It compiles! But does it work?</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" data-line-number="1">$ <span class="ex">runhaskell</span> Main.hs</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="ex">True</span></a></code></pre></div>
+<p>Fantastic! We were able to ask the compiler for hints and get useful answers back. This is a gigantic improvement over anything I’m aware of in Python land.</p>
+<p>Unfortunately, there is a catch: this program is too easy to break. Let me demonstrate my favourite way:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">map<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">map f ls <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb14-6" data-line-number="6"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb14-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb14-9" data-line-number="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb14-10" data-line-number="10">main <span class="fu">=</span> print ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>The astute reader will notice that this is the Haskell equivalent of the obviously broken Python program we started with. Here is what <code>ghcid</code> has to say:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb15-1" data-line-number="1">All good (1 module, at &lt;time&gt;)</a></code></pre></div>
+<p>So what’s going on here? It turns out an empty list is a valid list of any type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
+<p>One way of avoiding this class of incorrect program is to specify that the input and the output lists should be of the same length. It’s possible to do this in Haskell, but it is a lot of work. Can we do better?</p>
+<p>Enter Idris.</p>
+<p>Idris is a functional programming language with a more sophisticated type system than Haskell’s. Unfortunately it trades off some type inference to achieve this, so it’s not strictly better than Haskell in every way. It has excellent built-in editor support, and therefore has fancier typed holes!</p>
+<p>Let’s try to implement <code>map</code> again:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb16-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb16-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb16-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb16-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb16-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb16-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb16-11" data-line-number="11"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb16-12" data-line-number="12">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb16-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb16-14" data-line-number="14"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb16-15" data-line-number="15">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>Instead of implementing <code>map</code> on lists, we’ll use a more interesting type called <code>Vect</code> which is essentially a list that knows about its length. A <code>Vect</code> can either be <code>Nil</code> of length <code>0</code> or an element on the front of another <code>Vect</code> of some length <code>length</code> giving us a new <code>Vect</code> of length <code>length + 1</code>. I’ve also gone ahead defined equality on these <code>Vect</code>s because I use it in <code>main</code>.</p>
+<p>Loading the file into the Idris REPL gives us access to the editor integration:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb17-1" data-line-number="1">$ <span class="ex">idris</span> Main.idr</a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">     <span class="ex">____</span>    __     _</a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">    <span class="ex">/</span>  _/___/ /____(_)<span class="ex">____</span></a>
+<a class="sourceLine" id="cb17-4" data-line-number="4">    <span class="ex">/</span> // __  / ___/ / ___/     Version 1.3.0</a>
+<a class="sourceLine" id="cb17-5" data-line-number="5">  <span class="ex">_/</span> // /_/ / /  / (__  )      <span class="ex">http</span>://www.idris-lang.org/</a>
+<a class="sourceLine" id="cb17-6" data-line-number="6"> <span class="ex">/___</span>/\<span class="ex">__</span>,_/_/  /_/____/       Type :? for help</a>
+<a class="sourceLine" id="cb17-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb17-8" data-line-number="8"><span class="ex">Idris</span> is free software with ABSOLUTELY NO WARRANTY.</a>
+<a class="sourceLine" id="cb17-9" data-line-number="9"><span class="ex">For</span> details type :warranty.</a>
+<a class="sourceLine" id="cb17-10" data-line-number="10"><span class="ex">Type</span> checking ./Main.idr</a>
+<a class="sourceLine" id="cb17-11" data-line-number="11"><span class="ex">Holes</span>: Main.map</a>
+<a class="sourceLine" id="cb17-12" data-line-number="12"><span class="ex">*Main</span><span class="op">&gt;</span></a></code></pre></div>
+<p>In vim, I can use <code>&lt;localleader&gt;d</code> with the cursor on <code>map</code> to fill in a skeleton definition:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb18-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb18-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb18-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb18-10" data-line-number="10">map f x <span class="fu">=</span> <span class="ot">?map_rhs</span></a>
+<a class="sourceLine" id="cb18-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb18-12" data-line-number="12"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb18-13" data-line-number="13">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb18-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb18-15" data-line-number="15"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb18-16" data-line-number="16">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>Using <code>&lt;localleader&gt;t</code> with the cursor on the typed hole provides a type for us:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb19-1" data-line-number="1">  b : Type</a>
+<a class="sourceLine" id="cb19-2" data-line-number="2">  a : Type</a>
+<a class="sourceLine" id="cb19-3" data-line-number="3">  f : a -&gt; b</a>
+<a class="sourceLine" id="cb19-4" data-line-number="4">  length : Nat</a>
+<a class="sourceLine" id="cb19-5" data-line-number="5">  x : Vect length a</a>
+<a class="sourceLine" id="cb19-6" data-line-number="6">--------------------------------------</a>
+<a class="sourceLine" id="cb19-7" data-line-number="7">map_rhs : Vect length b</a></code></pre></div>
+<p>But we don’t need to go down this route. We can make Idris do a case-split for us with <code>&lt;localleader&gt;c</code> with the cursor on <code>x</code>:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb20-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb20-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb20-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb20-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb20-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb20-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb20-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb20-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb20-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb20-10" data-line-number="10">map f [] <span class="fu">=</span> <span class="ot">?map_rhs_1</span></a>
+<a class="sourceLine" id="cb20-11" data-line-number="11">map f (x <span class="ot">::</span> y) <span class="fu">=</span> <span class="ot">?map_rhs_2</span></a>
+<a class="sourceLine" id="cb20-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb20-13" data-line-number="13"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb20-14" data-line-number="14">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb20-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb20-16" data-line-number="16"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb20-17" data-line-number="17">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>Again, as with our Haskell example, the only sensible output when the input is an empty <code>Vect</code> is another empty <code>Vect</code>. We think so, but what does Idris think? It has a nifty feature called “proof search” that can search the space of all possible programs that fit and choose the first one. We can use this with <code>&lt;localleader&gt;o</code> (‘o’ is for obvious):</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb21-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb21-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb21-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb21-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb21-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb21-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb21-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb21-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb21-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb21-10" data-line-number="10">map f [] <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb21-11" data-line-number="11">map f (x <span class="ot">::</span> y) <span class="fu">=</span> <span class="ot">?map_rhs_2</span></a>
+<a class="sourceLine" id="cb21-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb21-13" data-line-number="13"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb21-14" data-line-number="14">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb21-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb21-16" data-line-number="16"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb21-17" data-line-number="17">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>And we get the result we expect. This works for the simple case, but does it work for the more complex one?</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb22-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb22-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb22-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb22-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb22-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb22-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb22-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb22-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb22-10" data-line-number="10">map f [] <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb22-11" data-line-number="11">map f (x <span class="ot">::</span> y) <span class="fu">=</span> f x <span class="ot">::</span> map f y</a>
+<a class="sourceLine" id="cb22-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb22-13" data-line-number="13"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb22-14" data-line-number="14">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb22-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb22-16" data-line-number="16"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb22-17" data-line-number="17">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>It does!</p>
+<p>What happens when we try to break this like we broke our Haskell program?</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb23-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb23-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb23-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb23-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb23-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb23-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb23-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb23-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb23-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb23-10" data-line-number="10">map f [] <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb23-11" data-line-number="11">map f (x <span class="ot">::</span> y) <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb23-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb23-13" data-line-number="13"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb23-14" data-line-number="14">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb23-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb23-16" data-line-number="16"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb23-17" data-line-number="17">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>This is what Idris has to say:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb24-1" data-line-number="1">*Main&gt; :r</a>
+<a class="sourceLine" id="cb24-2" data-line-number="2">Type checking ./Main.idr</a>
+<a class="sourceLine" id="cb24-3" data-line-number="3">Main.idr:11:18-19:</a>
+<a class="sourceLine" id="cb24-4" data-line-number="4">   |</a>
+<a class="sourceLine" id="cb24-5" data-line-number="5">11 | map f (x :: y) = []</a>
+<a class="sourceLine" id="cb24-6" data-line-number="6">   |                  ~~</a>
+<a class="sourceLine" id="cb24-7" data-line-number="7">When checking right hand side of Main.map with expected type</a>
+<a class="sourceLine" id="cb24-8" data-line-number="8">        Vect (1 + length) b</a>
+<a class="sourceLine" id="cb24-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb24-10" data-line-number="10">Type mismatch between</a>
+<a class="sourceLine" id="cb24-11" data-line-number="11">        Vect 0 a (Type of [])</a>
+<a class="sourceLine" id="cb24-12" data-line-number="12">and</a>
+<a class="sourceLine" id="cb24-13" data-line-number="13">        Vect (S length) b (Expected type)</a>
+<a class="sourceLine" id="cb24-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb24-15" data-line-number="15">Specifically:</a>
+<a class="sourceLine" id="cb24-16" data-line-number="16">        Type mismatch between</a>
+<a class="sourceLine" id="cb24-17" data-line-number="17">                0</a>
+<a class="sourceLine" id="cb24-18" data-line-number="18">        and</a>
+<a class="sourceLine" id="cb24-19" data-line-number="19">                S length</a>
+<a class="sourceLine" id="cb24-20" data-line-number="20"></a>
+<a class="sourceLine" id="cb24-21" data-line-number="21">Holes: Main.map</a></code></pre></div>
+<p>We get a useful and informative error message.</p>
+<p>And we’ve done it! You can download and use these languages today. When using other languages with static types, I always felt that they existed merely as busywork and I essentially had to shove them down the compiler’s throat in order to get it to accept my program, and I feel the opposite way about these languages. In other words, types are friends, not food! They can help you design your program, write that program, and even debug it if necessary.</p>
+<p>One aspect of programming that always bothered me was my perception of the compiler (or interpreter) as some sort of gatekeeper whose job was to dismiss my program until it met some arbitrary standard. Even worse, I would find myself writing a program that passed but was subtly incorrect, and I would iterate on this process, writing a series of subtly incorrect programs without any guidance from my tools. Discovering typed holes and the style of programming they enable has shown me a different approach, where I can open up a dialogue with my language and collaborate on writing a program whose correctness I am more confident of.</p>
+<p>That’s all I have to say about typed holes, but there’s recently been interesting work on untyped holes that I would like to mention briefly. Suppose you like the idea of holes but not the idea of types, or you work in a language that isn’t statically typed and you want some of these benefits. What you could do is:</p>
+<ol type="1">
+<li>Write a program with gaps where you’re unsure what should happen (we’ll call this a <em>sketch</em>)</li>
+<li>Write some test cases that the correct program should satisfy</li>
+<li>Feed both these things to a SAT/SMT solver (a clever program with a bag of tricks)</li>
+<li>???</li>
+<li>Profit!!!</li>
+</ol>
+<p>The solver churns through the space of all prossible programs and picks the one that passes the tests, giving us the correct program we wanted!</p>
+<p>This sounds great in theory, so why aren’t we doing this yet? There is (predictably) a catch, which is that this is still a research topic for now. Systems like <a href="http://comcom.csail.mit.edu/comcom/#Synquid">Synquid</a> and <a href="https://github.com/webyrd/Barliman">Barliman</a> demonstrate the current state of the art, and I think it’s especially interesting that Synquid has both typed and untyped holes, which suggests to me that it is the most promising approach.</p>
+<p>I’ll leave you with some resources about typed holes, particularly Conor McBride’s presentations at <a href="https://www.youtube.com/watch?v=3U3lV5VPmOU">YOW! Lambda Jam</a> and <a href="https://skillsmatter.com/skillscasts/8893-is-a-type-a-lifebuoy-or-a-lamp">Haskell eXchange</a> that are rich with insight. There’s also <a href="https://www.shimweasel.com/2015/02/17/typed-holes-for-beginners">a tutorial by Mark Wotton</a>, and finally <a href="http://hazel.org/">Hazel</a>, which is a live functional programming environment with typed holes!</p>
+<p>I hope I’ve encouraged you to try this style of programming for yourself. There’s never been a better time to do it.</p>
+]]></summary>
+</entry>
+<entry>
     <title>HAMTs from Scratch</title>
     <link href="https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html" />
     <id>https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html</id>
@@ -1696,47 +2087,6 @@ True</code></pre>
 <p>The possibilities are endless!</p>
 <p>If you’d like to learn more, you’re in luck! writing on this topic is plentiful and of extremely high quality. I started with the Git Book’s <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">chapter on Git Internals</a> and referred frequently to Vincent Hanquez’s <a href="https://github.com/vincenthz/hs-git/">hs-git</a> and Stefan Saasen’s <a href="http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/">overwhelmingly thorough article</a> that implements enough of Git to do a <code>git clone</code> (!). Other resources include Mary Rose Cook’s excellent <a href="https://maryrosecook.com/blog/post/git-from-the-inside-out">Git from the inside out</a> and <a href="http://gitlet.maryrosecook.com/docs/gitlet.html">Gitlet</a> as well as John Wiegley’s <a href="https://jwiegley.github.io/git-from-the-bottom-up/">Git from the Bottom Up</a>. If nothing else, I hope the sheer proliferation of Git innards writing is enough to convince you that this is a useful and rewarding approach to learning about it.</p>
 <p>Thanks to <a href="https://anniecherkaev.com/">Annie Cherkaev</a>, <a href="https://fineshambles.com/">Iain McCoy</a>, <a href="https://jaseemabid.github.io/">Jaseem Abid</a>, <a href="https://jship.github.io/">Jason Shipman</a>, <a href="http://teh.id.au/">Tim Humphries</a>, and <a href="https://viljetic.de/">Tomislav Viljetic</a> for comments, clarification, and suggestions.</p>
-]]></summary>
-</entry>
-<entry>
-    <title>Easy Pull Requests</title>
-    <link href="https://vaibhavsagar.com/blog/2017/07/31/easy-pull-requests/index.html" />
-    <id>https://vaibhavsagar.com/blog/2017/07/31/easy-pull-requests/index.html</id>
-    <published>2017-07-31T00:00:00Z</published>
-    <updated>2017-07-31T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
-    Posted on 31 July 2017
-    
-</div>
-<div class="info">
-    
-        Tags: <a href="/blog/tags/programming/index.html">programming</a>
-    
-</div>
-
-<p>There are many reasons to start contributing to open source:</p>
-<ul>
-<li>to give back to the community</li>
-<li>to fix a bug in software you depend on</li>
-<li>warm fuzzies</li>
-</ul>
-<p>But you don’t always have the time or energy to understand a new codebase well enough to make a meaningful change to it. And even if you do, it’s not clear that this is the best use of your time.</p>
-<p>Your pull request might linger untouched for months, like the source control equivalent of shouting into the void. Alternatively, the maintainer might be having a bad day and dismiss your pull request or expect you to do some arcane Git voodoo to bring it up to their exacting standards. All this can turn the gift of patches into a boring and unpleasant chore.</p>
-<p>For a long time I mistakenly believed the the only <strong>real</strong> contributions were those that included code to fix bugs or add new features. Eventually I realised there were simpler ways of getting my name in commit logs and my open source contributions vastly increased.</p>
-<p>I decided to focus on easy pull requests as a precursor to, or instead of, engaging more fully with a project. What do I mean by this?</p>
-<h2 id="documentation-and-typo-fixes">Documentation and typo fixes</h2>
-<p>Lindsey Kuper has <a href="http://composition.al/blog/2013/05/31/one-character-patches/">a great post on these</a>. They are my favourite because I am a pedant. Witness <a href="https://github.com/pulls?utf8=%E2%9C%93&amp;q=is%3Apr+author%3Avaibhavsagar+is%3Aclosed+README">the absurd number of README updates</a> I have to my name. They’re as easy as noticing a typo, clicking the pencil icon, and fixing it. Editing project documentation is similarly straightforward.</p>
-<p>This is the quickest way I know of to contribute and gauge a project’s health at the same time. If your typo fix doesn’t get merged quickly, then a more substantial change probably won’t either and you’ll have found that out quickly.</p>
-<h2 id="linter-suggestions">Linter suggestions</h2>
-<p>One day I decided to run HLint, a Haskell linter, on a couple of projects and open PRs accordingly. I had <a href="https://github.com/pulls?q=is%3Apr+author%3Avaibhavsagar+HLint+is%3Aclosed">mixed results</a>.</p>
-<p>This technique isn’t Haskell specific, and I think it is especially well-suited to Python and Go projects where there is a ‘blessed’ style to work off and tools like <code>flake8</code> and <code>gofmt</code> are available.</p>
-<p>If your change gets accepted, then you’ll be improving code quality and paving the way for future contributors. If it doesn’t, then you might have a discussion about good style that might lead to a documentation PR! If the maintainers are hostile, then you’re probably better off elsewhere.</p>
-<h2 id="automated-testing">Automated testing</h2>
-<p>I’m a big fan of automation, and I’d consider it one of the themes of this blog. A large number of projects don’t have good automated test suites, and even those that do sometimes let their CI setup rot over time. If this is the case, setting up Travis or Circle CI is a low-effort (if occasionally high-frustration) way of vastly improving a project. If information about how to test a specific project isn’t readily available, this is also a great opportunity for a README update (see above).</p>
-<p>Again: if you don’t get a quick response, or at least a positive one, I think it’s a good sign that this project is not worth your time and at least you won’t have put a ton of effort into finding that out.</p>
-<p>Of course, these aren’t the only types of easy contributions you can make: other ideas are documenting the undocumented, adding or refactoring tests, and using the issue tracker to call attention to bugs. Neil Mitchell has a great presentation on <a href="http://ndmitchell.com/downloads/slides-drive-by_haskell_contributions-09_jun_2017.pdf">‘Drive-by Haskell Contributions’</a>, although the general approach is applicable to your programming language of choice.</p>
-<p>I hope I’ve given you a few ideas about contributing to open source and how you can make effective use of your time, and I’d love to see more easy pull requests by you!</p>
-<p>Thanks to <a href="https://jvns.ca/">Julia Evans</a>, <a href="https://haroldtreen.com/">Harold Treen</a>, and <a href="http://digitalfreepen.com">Rudi Chen</a> for comments and feedback.</p>
 ]]></summary>
 </entry>
 
