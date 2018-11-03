@@ -34,7 +34,7 @@
             <h1>Moving Towards Dialogue</h1>
 
             <div class="info">
-    Posted on 25 September 2018
+    Posted on  3 November 2018
     
 </div>
 <div class="info">
@@ -361,6 +361,61 @@
 <a class="sourceLine" id="cb22-16" data-line-number="16"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
 <a class="sourceLine" id="cb22-17" data-line-number="17">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
 <p>It does!</p>
+<p>What happens when we try to break this like we broke our Haskell program?</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode idris"><code class="sourceCode idris"><a class="sourceLine" id="cb23-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb23-2" data-line-number="2">    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</a>
+<a class="sourceLine" id="cb23-3" data-line-number="3">    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</a>
+<a class="sourceLine" id="cb23-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb23-5" data-line-number="5">implementation (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb23-6" data-line-number="6">    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb23-7" data-line-number="7">    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</a>
+<a class="sourceLine" id="cb23-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb23-9" data-line-number="9"><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</a>
+<a class="sourceLine" id="cb23-10" data-line-number="10">map f [] <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb23-11" data-line-number="11">map f (x <span class="ot">::</span> y) <span class="fu">=</span> []</a>
+<a class="sourceLine" id="cb23-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb23-13" data-line-number="13"><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb23-14" data-line-number="14">plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb23-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb23-16" data-line-number="16"><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb23-17" data-line-number="17">main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</a></code></pre></div>
+<p>This is what Idris has to say:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb24-1" data-line-number="1">*Main&gt; :r</a>
+<a class="sourceLine" id="cb24-2" data-line-number="2">Type checking ./Main.idr</a>
+<a class="sourceLine" id="cb24-3" data-line-number="3">Main.idr:11:18-19:</a>
+<a class="sourceLine" id="cb24-4" data-line-number="4">   |</a>
+<a class="sourceLine" id="cb24-5" data-line-number="5">11 | map f (x :: y) = []</a>
+<a class="sourceLine" id="cb24-6" data-line-number="6">   |                  ~~</a>
+<a class="sourceLine" id="cb24-7" data-line-number="7">When checking right hand side of Main.map with expected type</a>
+<a class="sourceLine" id="cb24-8" data-line-number="8">        Vect (1 + length) b</a>
+<a class="sourceLine" id="cb24-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb24-10" data-line-number="10">Type mismatch between</a>
+<a class="sourceLine" id="cb24-11" data-line-number="11">        Vect 0 a (Type of [])</a>
+<a class="sourceLine" id="cb24-12" data-line-number="12">and</a>
+<a class="sourceLine" id="cb24-13" data-line-number="13">        Vect (S length) b (Expected type)</a>
+<a class="sourceLine" id="cb24-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb24-15" data-line-number="15">Specifically:</a>
+<a class="sourceLine" id="cb24-16" data-line-number="16">        Type mismatch between</a>
+<a class="sourceLine" id="cb24-17" data-line-number="17">                0</a>
+<a class="sourceLine" id="cb24-18" data-line-number="18">        and</a>
+<a class="sourceLine" id="cb24-19" data-line-number="19">                S length</a>
+<a class="sourceLine" id="cb24-20" data-line-number="20"></a>
+<a class="sourceLine" id="cb24-21" data-line-number="21">Holes: Main.map</a></code></pre></div>
+<p>We get a useful and informative error message.</p>
+<p>And we’ve done it! You can download and use these languages today. When using other languages with static types, I always felt that they existed merely as busywork and I essentially had to shove them down the compiler’s throat in order to get it to accept my program, and I feel the opposite way about these languages. In other words, types are friends, not food! They can help you design your program, write that program, and even debug it if necessary.</p>
+<p>One aspect of programming that always bothered me was my perception of the compiler (or interpreter) as some sort of gatekeeper whose job was to dismiss my program until it met some arbitrary standard. Even worse, I would find myself writing a program that passed but was subtly incorrect, and I would iterate on this process, writing a series of subtly incorrect programs without any guidance from my tools. Discovering typed holes and the style of programming they enable has shown me a different approach, where I can open up a dialogue with my language and collaborate on writing a program whose correctness I am more confident of.</p>
+<p>That’s all I have to say about typed holes, but there’s recently been interesting work on untyped holes that I would like to mention briefly. Suppose you like the idea of holes but not the idea of types, or you work in a language that isn’t statically typed and you want some of these benefits. What you could do is:</p>
+<ol type="1">
+<li>Write a program with gaps where you’re unsure what should happen (we’ll call this a <em>sketch</em>)</li>
+<li>Write some test cases that the correct program should satisfy</li>
+<li>Feed both these things to a SAT/SMT solver (a clever program with a bag of tricks)</li>
+<li>???</li>
+<li>Profit!!!</li>
+</ol>
+<p>The solver churns through the space of all prossible programs and picks the one that passes the tests, giving us the correct program we wanted!</p>
+<p>This sounds great in theory, so why aren’t we doing this yet? There is (predictably) a catch, which is that this is still a research topic for now. Systems like <a href="http://comcom.csail.mit.edu/comcom/#Synquid">Synquid</a> and <a href="https://github.com/webyrd/Barliman">Barliman</a> demonstrate the current state of the art, and I think it’s especially interesting that Synquid has both typed and untyped holes, which suggests to me that it is the most promising approach.</p>
+<p>I’ll leave you with some resources about typed holes, particularly Conor McBride’s presentations at <a href="https://www.youtube.com/watch?v=3U3lV5VPmOU">YOW! Lambda Jam</a> and <a href="https://skillsmatter.com/skillscasts/8893-is-a-type-a-lifebuoy-or-a-lamp">Haskell eXchange</a> that are rich with insight. There’s also <a href="https://www.shimweasel.com/2015/02/17/typed-holes-for-beginners">a tutorial by Mark Wotton</a>, and finally <a href="http://hazel.org/">Hazel</a>, which is a live functional programming environment with typed holes!</p>
+<p>I hope I’ve encouraged you to try this style of programming for yourself. There’s never been a better time to do it.</p>
 
         </div>
         <div id="footer">
