@@ -348,6 +348,7 @@
 <a class="sourceLine" id="cb3-93" data-line-number="93">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
 <a class="sourceLine" id="cb3-94" data-line-number="94">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
+<p>This is much nicer with the applicative combinators.</p>
 <details>
 <p><summary>2SAT.hs using <code>whenM</code></summary></p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
