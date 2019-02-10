@@ -34,7 +34,7 @@
             <h1>Refactoring Haskell: A Case Study</h1>
 
             <div class="info">
-    Posted on 28 February 2018
+    Posted on 10 February 2019
     
 </div>
 <div class="info">
@@ -44,7 +44,7 @@
 </div>
 
 <p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a joy</a>. I’ve certainly found this to be the case, but what does that mean in practice? I thought it might be useful to demonstrate by refactoring some of my own code.</p>
-<p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given 2SAT problem is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="http://vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
+<p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given 2-SAT problem is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="http://vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2-SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
 <p>The initial version of the code is as follows:</p>
 <details>
 <p><summary>Initial 2SAT.hs</summary></p>
@@ -149,7 +149,8 @@
 <a class="sourceLine" id="cb1-99" data-line-number="99">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
 <p>I’ve included 2SAT-specific functionality for completeness, but I’ll only be changing the <code>tarjan</code> function and the functions it depends on (<code>strongConnect</code>, <code>addSCC</code>, <code>push</code>, and <code>pop</code>).</p>
-<p>The first change is using more suitable data structures. Tarjan’s algorithm is only linear in the size of the graph when operations such as checking if <code>w</code> is on the stack and looking up indices happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees and are <span class="math inline"><em>O</em>(log <em>n</em>)</span> in these operations. A better choice would be <a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a> from the <code>vector</code> package, which does have constant-time operations.</p>
+<p>The first change is using more suitable data structures. Tarjan’s algorithm is only linear in the size of the graph when operations, such as checking if <code>w</code> is on the stack and looking up indices, happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees and are <span class="math inline"><em>O</em>(log <em>n</em>)</span> in these operations. A better choice would be <a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a> from the <code>vector</code> package, which does have constant-time operations.</p>
+<p>This refactoring mostly consists of initialising vectors with a known length and replacing calls to <code>lookup</code> and <code>insert</code> with calls to <code>read</code> and <code>write</code>.</p>
 <details>
 <p><summary>2SAT.hs using <code>vector</code></summary></p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
@@ -250,387 +251,402 @@
 <a class="sourceLine" id="cb2-96" data-line-number="96">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
 <a class="sourceLine" id="cb2-97" data-line-number="97">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
-<p>I didn’t notice a significant difference in speed on my inputs, but it’s good to know that the algorithm has been implemented correctly now.</p>
+<p>I didn’t notice a significant difference in speed on my inputs, but it’s good to know that the algorithm has been implemented with the correct asymptotics now!</p>
+<p><em>Sidenote: A <code>Vector</code> of <code>Bool</code>s can be much more compactly represented as a sequence of 0s and 1s, which are just machine words. For implementations of this in Haskell, see the <a href="hackage.haskell.org/package/bv">bv</a> or <a href="hackage.haskell.org/package/bv-little">bv-little</a> packages. Using these could be another possible refactoring.</em></p>
+<p>Looking at the code again, I notice some repetition of the form</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1">x <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup vectorX i</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">y <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup vectorY j</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">write vectorZ k (<span class="dt">Just</span> (operation x y))</a></code></pre></div>
+<p>and with the judicious use of <code>(=&lt;&lt;)</code> and <code>(&lt;*&gt;)</code> this can instead be</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">write vectorZ k <span class="fu">=&lt;&lt;</span> (operation <span class="fu">&lt;$&gt;</span> lookup vectorX i <span class="fu">&lt;*&gt;</span> lookup vectorY j)</a></code></pre></div>
+<p>There are a couple of other places we could use <code>(&lt;*&gt;)</code>:</p>
 <details>
 <p><summary>2SAT.hs using <code>(&lt;*&gt;)</code></summary></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
-<a class="sourceLine" id="cb3-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
-<a class="sourceLine" id="cb3-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_, when)</a>
-<a class="sourceLine" id="cb3-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.Maybe</span>          (isJust, isNothing, fromJust)</a>
-<a class="sourceLine" id="cb3-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
-<a class="sourceLine" id="cb3-14" data-line-number="14"></a>
-<a class="sourceLine" id="cb3-15" data-line-number="15"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
-<a class="sourceLine" id="cb3-16" data-line-number="16">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-17" data-line-number="17">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
-<a class="sourceLine" id="cb3-18" data-line-number="18">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
-<a class="sourceLine" id="cb3-19" data-line-number="19">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
-<a class="sourceLine" id="cb3-20" data-line-number="20">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb3-21" data-line-number="21">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb3-22" data-line-number="22">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
-<a class="sourceLine" id="cb3-23" data-line-number="23"></a>
-<a class="sourceLine" id="cb3-24" data-line-number="24">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-25" data-line-number="25">        vIndex <span class="ot">&lt;-</span> read indices v</a>
-<a class="sourceLine" id="cb3-26" data-line-number="26">        when (isNothing vIndex) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb3-27" data-line-number="27">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb3-28" data-line-number="28"></a>
-<a class="sourceLine" id="cb3-29" data-line-number="29">    readSTRef output</a>
-<a class="sourceLine" id="cb3-30" data-line-number="30">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-31" data-line-number="31">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-32" data-line-number="32"></a>
-<a class="sourceLine" id="cb3-33" data-line-number="33">strongConnect</a>
-<a class="sourceLine" id="cb3-34" data-line-number="34"><span class="ot">    ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-35" data-line-number="35">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-36" data-line-number="36">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
-<a class="sourceLine" id="cb3-37" data-line-number="37">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb3-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb3-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb3-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb3-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
-<a class="sourceLine" id="cb3-43" data-line-number="43">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
-<a class="sourceLine" id="cb3-44" data-line-number="44">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-45" data-line-number="45">    i <span class="ot">&lt;-</span> readSTRef index</a>
-<a class="sourceLine" id="cb3-46" data-line-number="46">    write indices  v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb3-47" data-line-number="47">    write lowlinks v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb3-48" data-line-number="48">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb3-49" data-line-number="49">    push stack stackSet v</a>
-<a class="sourceLine" id="cb3-50" data-line-number="50"></a>
-<a class="sourceLine" id="cb3-51" data-line-number="51">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb3-52" data-line-number="52">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-53" data-line-number="53">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb3-54" data-line-number="54">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
-<a class="sourceLine" id="cb3-55" data-line-number="55">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-56" data-line-number="56">            wOnStack <span class="ot">&lt;-</span> read stackSet w</a>
-<a class="sourceLine" id="cb3-57" data-line-number="57">            when wOnStack <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-58" data-line-number="58">                write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices w)</a>
-<a class="sourceLine" id="cb3-59" data-line-number="59"></a>
-<a class="sourceLine" id="cb3-60" data-line-number="60">    vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> read lowlinks v</a>
-<a class="sourceLine" id="cb3-61" data-line-number="61">    vIndex   <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> read indices  v</a>
-<a class="sourceLine" id="cb3-62" data-line-number="62">    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-63" data-line-number="63">        scc <span class="ot">&lt;-</span> addSCC n v [] stack stackSet</a>
-<a class="sourceLine" id="cb3-64" data-line-number="64">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
-<a class="sourceLine" id="cb3-65" data-line-number="65"></a>
-<a class="sourceLine" id="cb3-66" data-line-number="66"><span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
-<a class="sourceLine" id="cb3-67" data-line-number="67">addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
-<a class="sourceLine" id="cb3-68" data-line-number="68">    <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
-<a class="sourceLine" id="cb3-69" data-line-number="69">    <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc' stack stackSet</a>
-<a class="sourceLine" id="cb3-70" data-line-number="70"></a>
-<a class="sourceLine" id="cb3-71" data-line-number="71"><span class="ot">push ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb3-72" data-line-number="72">push stack stackSet e <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-73" data-line-number="73">    modifySTRef' stack (e<span class="fu">:</span>)</a>
-<a class="sourceLine" id="cb3-74" data-line-number="74">    write stackSet e <span class="dt">True</span></a>
-<a class="sourceLine" id="cb3-75" data-line-number="75"></a>
-<a class="sourceLine" id="cb3-76" data-line-number="76"><span class="ot">pop ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-77" data-line-number="77">pop stack stackSet <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-78" data-line-number="78">    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
-<a class="sourceLine" id="cb3-79" data-line-number="79">    modifySTRef' stack tail</a>
-<a class="sourceLine" id="cb3-80" data-line-number="80">    write stackSet e <span class="dt">False</span></a>
-<a class="sourceLine" id="cb3-81" data-line-number="81">    return e</a>
-<a class="sourceLine" id="cb3-82" data-line-number="82"></a>
-<a class="sourceLine" id="cb3-83" data-line-number="83">denormalise     <span class="fu">=</span> subtract</a>
-<a class="sourceLine" id="cb3-84" data-line-number="84">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
-<a class="sourceLine" id="cb3-85" data-line-number="85">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
-<a class="sourceLine" id="cb3-86" data-line-number="86">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
-<a class="sourceLine" id="cb3-87" data-line-number="87"></a>
-<a class="sourceLine" id="cb3-88" data-line-number="88"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb3-89" data-line-number="89">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-90" data-line-number="90">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
-<a class="sourceLine" id="cb3-91" data-line-number="91">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
-<a class="sourceLine" id="cb3-92" data-line-number="92">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
-<a class="sourceLine" id="cb3-93" data-line-number="93">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
-<a class="sourceLine" id="cb3-94" data-line-number="94">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
-</details>
-<p>This is much nicer with the applicative combinators.</p>
-<details>
-<p><summary>2SAT.hs using <code>whenM</code></summary></p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
-<a class="sourceLine" id="cb4-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
-<a class="sourceLine" id="cb4-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
-<a class="sourceLine" id="cb4-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
-<a class="sourceLine" id="cb4-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb4-14" data-line-number="14"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
-<a class="sourceLine" id="cb4-15" data-line-number="15">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
-<a class="sourceLine" id="cb4-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb4-17" data-line-number="17"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
-<a class="sourceLine" id="cb4-18" data-line-number="18">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-19" data-line-number="19">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
-<a class="sourceLine" id="cb4-20" data-line-number="20">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
-<a class="sourceLine" id="cb4-21" data-line-number="21">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
-<a class="sourceLine" id="cb4-22" data-line-number="22">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb4-23" data-line-number="23">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb4-24" data-line-number="24">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
-<a class="sourceLine" id="cb4-25" data-line-number="25"></a>
-<a class="sourceLine" id="cb4-26" data-line-number="26">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb4-27" data-line-number="27">        whenM ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read indices v) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb4-28" data-line-number="28">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb4-29" data-line-number="29"></a>
-<a class="sourceLine" id="cb4-30" data-line-number="30">    readSTRef output</a>
-<a class="sourceLine" id="cb4-31" data-line-number="31">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-32" data-line-number="32">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb4-33" data-line-number="33"></a>
-<a class="sourceLine" id="cb4-34" data-line-number="34">strongConnect</a>
-<a class="sourceLine" id="cb4-35" data-line-number="35"><span class="ot">    ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-36" data-line-number="36">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-37" data-line-number="37">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
-<a class="sourceLine" id="cb4-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb4-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb4-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb4-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb4-43" data-line-number="43">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
-<a class="sourceLine" id="cb4-44" data-line-number="44">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
-<a class="sourceLine" id="cb4-45" data-line-number="45">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-46" data-line-number="46">    i <span class="ot">&lt;-</span> readSTRef index</a>
-<a class="sourceLine" id="cb4-47" data-line-number="47">    write indices  v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb4-48" data-line-number="48">    write lowlinks v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb4-49" data-line-number="49">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb4-50" data-line-number="50">    push stack stackSet v</a>
-<a class="sourceLine" id="cb4-51" data-line-number="51"></a>
-<a class="sourceLine" id="cb4-52" data-line-number="52">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb4-53" data-line-number="53">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-54" data-line-number="54">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb4-55" data-line-number="55">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
-<a class="sourceLine" id="cb4-56" data-line-number="56">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb4-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
-<a class="sourceLine" id="cb4-58" data-line-number="58"></a>
-<a class="sourceLine" id="cb4-59" data-line-number="59">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-60" data-line-number="60">        scc <span class="ot">&lt;-</span> addSCC n v [] stack stackSet</a>
-<a class="sourceLine" id="cb4-61" data-line-number="61">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
-<a class="sourceLine" id="cb4-62" data-line-number="62"></a>
-<a class="sourceLine" id="cb4-63" data-line-number="63"><span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
-<a class="sourceLine" id="cb4-64" data-line-number="64">addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
-<a class="sourceLine" id="cb4-65" data-line-number="65">    <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
-<a class="sourceLine" id="cb4-66" data-line-number="66">    <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc' stack stackSet</a>
-<a class="sourceLine" id="cb4-67" data-line-number="67"></a>
-<a class="sourceLine" id="cb4-68" data-line-number="68"><span class="ot">push ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb4-69" data-line-number="69">push stack stackSet e <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-70" data-line-number="70">    modifySTRef' stack (e<span class="fu">:</span>)</a>
-<a class="sourceLine" id="cb4-71" data-line-number="71">    write stackSet e <span class="dt">True</span></a>
-<a class="sourceLine" id="cb4-72" data-line-number="72"></a>
-<a class="sourceLine" id="cb4-73" data-line-number="73"><span class="ot">pop ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-74" data-line-number="74">pop stack stackSet <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-75" data-line-number="75">    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
-<a class="sourceLine" id="cb4-76" data-line-number="76">    modifySTRef' stack tail</a>
-<a class="sourceLine" id="cb4-77" data-line-number="77">    write stackSet e <span class="dt">False</span></a>
-<a class="sourceLine" id="cb4-78" data-line-number="78">    return e</a>
-<a class="sourceLine" id="cb4-79" data-line-number="79"></a>
-<a class="sourceLine" id="cb4-80" data-line-number="80">denormalise     <span class="fu">=</span> subtract</a>
-<a class="sourceLine" id="cb4-81" data-line-number="81">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
-<a class="sourceLine" id="cb4-82" data-line-number="82">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
-<a class="sourceLine" id="cb4-83" data-line-number="83">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
-<a class="sourceLine" id="cb4-84" data-line-number="84"></a>
-<a class="sourceLine" id="cb4-85" data-line-number="85"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb4-86" data-line-number="86">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-87" data-line-number="87">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
-<a class="sourceLine" id="cb4-88" data-line-number="88">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
-<a class="sourceLine" id="cb4-89" data-line-number="89">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
-<a class="sourceLine" id="cb4-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
-<a class="sourceLine" id="cb4-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
-</details>
-<details>
-<p><summary>2SAT.hs using <code>where</code></summary></p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
-<a class="sourceLine" id="cb5-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
-<a class="sourceLine" id="cb5-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
-<a class="sourceLine" id="cb5-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
+<a class="sourceLine" id="cb5-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
+<a class="sourceLine" id="cb5-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_, when)</a>
+<a class="sourceLine" id="cb5-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.Maybe</span>          (isJust, isNothing, fromJust)</a>
 <a class="sourceLine" id="cb5-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
 <a class="sourceLine" id="cb5-14" data-line-number="14"></a>
-<a class="sourceLine" id="cb5-15" data-line-number="15"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
-<a class="sourceLine" id="cb5-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb5-18" data-line-number="18"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
-<a class="sourceLine" id="cb5-21" data-line-number="21">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
-<a class="sourceLine" id="cb5-22" data-line-number="22">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
-<a class="sourceLine" id="cb5-23" data-line-number="23">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb5-24" data-line-number="24">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb5-25" data-line-number="25">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
-<a class="sourceLine" id="cb5-26" data-line-number="26"></a>
-<a class="sourceLine" id="cb5-27" data-line-number="27">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb5-28" data-line-number="28">        whenM ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read indices v) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb5-29" data-line-number="29">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb5-30" data-line-number="30"></a>
-<a class="sourceLine" id="cb5-31" data-line-number="31">    readSTRef output</a>
-<a class="sourceLine" id="cb5-32" data-line-number="32">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-33" data-line-number="33">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-34" data-line-number="34"></a>
-<a class="sourceLine" id="cb5-35" data-line-number="35">strongConnect</a>
-<a class="sourceLine" id="cb5-36" data-line-number="36"><span class="ot">    ::</span> forall s</a>
-<a class="sourceLine" id="cb5-37" data-line-number="37">    <span class="fu">.</span>  <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
-<a class="sourceLine" id="cb5-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb5-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb5-43" data-line-number="43">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb5-44" data-line-number="44">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb5-45" data-line-number="45">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
-<a class="sourceLine" id="cb5-46" data-line-number="46">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
-<a class="sourceLine" id="cb5-47" data-line-number="47">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-48" data-line-number="48">    i <span class="ot">&lt;-</span> readSTRef index</a>
-<a class="sourceLine" id="cb5-49" data-line-number="49">    write indices  v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb5-50" data-line-number="50">    write lowlinks v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb5-51" data-line-number="51">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb5-52" data-line-number="52">    push v</a>
-<a class="sourceLine" id="cb5-53" data-line-number="53"></a>
-<a class="sourceLine" id="cb5-54" data-line-number="54">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb5-55" data-line-number="55">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-56" data-line-number="56">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
-<a class="sourceLine" id="cb5-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
-<a class="sourceLine" id="cb5-58" data-line-number="58">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb5-59" data-line-number="59">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
-<a class="sourceLine" id="cb5-60" data-line-number="60"></a>
-<a class="sourceLine" id="cb5-61" data-line-number="61">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-62" data-line-number="62">        scc <span class="ot">&lt;-</span> addSCC n v []</a>
-<a class="sourceLine" id="cb5-63" data-line-number="63">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
-<a class="sourceLine" id="cb5-64" data-line-number="64">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-65" data-line-number="65"><span class="ot">        addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
-<a class="sourceLine" id="cb5-66" data-line-number="66">        addSCC n v scc <span class="fu">=</span> pop <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
-<a class="sourceLine" id="cb5-67" data-line-number="67">            <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
-<a class="sourceLine" id="cb5-68" data-line-number="68">            <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc'</a>
-<a class="sourceLine" id="cb5-69" data-line-number="69"><span class="ot">        push ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb5-70" data-line-number="70">        push e <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-71" data-line-number="71">            modifySTRef' stack (e<span class="fu">:</span>)</a>
-<a class="sourceLine" id="cb5-72" data-line-number="72">            write stackSet e <span class="dt">True</span></a>
-<a class="sourceLine" id="cb5-73" data-line-number="73"><span class="ot">        pop ::</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-74" data-line-number="74">        pop <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-75" data-line-number="75">            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
-<a class="sourceLine" id="cb5-76" data-line-number="76">            modifySTRef' stack tail</a>
-<a class="sourceLine" id="cb5-77" data-line-number="77">            write stackSet e <span class="dt">False</span></a>
-<a class="sourceLine" id="cb5-78" data-line-number="78">            return e</a>
-<a class="sourceLine" id="cb5-79" data-line-number="79"></a>
-<a class="sourceLine" id="cb5-80" data-line-number="80">denormalise     <span class="fu">=</span> subtract</a>
-<a class="sourceLine" id="cb5-81" data-line-number="81">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
-<a class="sourceLine" id="cb5-82" data-line-number="82">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
-<a class="sourceLine" id="cb5-83" data-line-number="83">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
-<a class="sourceLine" id="cb5-84" data-line-number="84"></a>
-<a class="sourceLine" id="cb5-85" data-line-number="85"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb5-86" data-line-number="86">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb5-87" data-line-number="87">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
-<a class="sourceLine" id="cb5-88" data-line-number="88">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
-<a class="sourceLine" id="cb5-89" data-line-number="89">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
-<a class="sourceLine" id="cb5-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
-<a class="sourceLine" id="cb5-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
+<a class="sourceLine" id="cb5-15" data-line-number="15"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
+<a class="sourceLine" id="cb5-16" data-line-number="16">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-17" data-line-number="17">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-18" data-line-number="18">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
+<a class="sourceLine" id="cb5-19" data-line-number="19">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
+<a class="sourceLine" id="cb5-20" data-line-number="20">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb5-21" data-line-number="21">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb5-22" data-line-number="22">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
+<a class="sourceLine" id="cb5-23" data-line-number="23"></a>
+<a class="sourceLine" id="cb5-24" data-line-number="24">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-25" data-line-number="25">        vIndex <span class="ot">&lt;-</span> read indices v</a>
+<a class="sourceLine" id="cb5-26" data-line-number="26">        when (isNothing vIndex) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb5-27" data-line-number="27">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb5-28" data-line-number="28"></a>
+<a class="sourceLine" id="cb5-29" data-line-number="29">    readSTRef output</a>
+<a class="sourceLine" id="cb5-30" data-line-number="30">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb5-31" data-line-number="31">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-32" data-line-number="32"></a>
+<a class="sourceLine" id="cb5-33" data-line-number="33">strongConnect</a>
+<a class="sourceLine" id="cb5-34" data-line-number="34"><span class="ot">    ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-35" data-line-number="35">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-36" data-line-number="36">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
+<a class="sourceLine" id="cb5-37" data-line-number="37">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb5-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb5-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb5-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb5-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
+<a class="sourceLine" id="cb5-43" data-line-number="43">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
+<a class="sourceLine" id="cb5-44" data-line-number="44">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-45" data-line-number="45">    i <span class="ot">&lt;-</span> readSTRef index</a>
+<a class="sourceLine" id="cb5-46" data-line-number="46">    write indices  v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb5-47" data-line-number="47">    write lowlinks v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb5-48" data-line-number="48">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb5-49" data-line-number="49">    push stack stackSet v</a>
+<a class="sourceLine" id="cb5-50" data-line-number="50"></a>
+<a class="sourceLine" id="cb5-51" data-line-number="51">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb5-52" data-line-number="52">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-53" data-line-number="53">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb5-54" data-line-number="54">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
+<a class="sourceLine" id="cb5-55" data-line-number="55">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-56" data-line-number="56">            wOnStack <span class="ot">&lt;-</span> read stackSet w</a>
+<a class="sourceLine" id="cb5-57" data-line-number="57">            when wOnStack <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-58" data-line-number="58">                write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices w)</a>
+<a class="sourceLine" id="cb5-59" data-line-number="59"></a>
+<a class="sourceLine" id="cb5-60" data-line-number="60">    vLowLink <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> read lowlinks v</a>
+<a class="sourceLine" id="cb5-61" data-line-number="61">    vIndex   <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> read indices  v</a>
+<a class="sourceLine" id="cb5-62" data-line-number="62">    when (vLowLink <span class="fu">==</span> vIndex) <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-63" data-line-number="63">        scc <span class="ot">&lt;-</span> addSCC n v [] stack stackSet</a>
+<a class="sourceLine" id="cb5-64" data-line-number="64">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
+<a class="sourceLine" id="cb5-65" data-line-number="65"></a>
+<a class="sourceLine" id="cb5-66" data-line-number="66"><span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
+<a class="sourceLine" id="cb5-67" data-line-number="67">addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
+<a class="sourceLine" id="cb5-68" data-line-number="68">    <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
+<a class="sourceLine" id="cb5-69" data-line-number="69">    <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc' stack stackSet</a>
+<a class="sourceLine" id="cb5-70" data-line-number="70"></a>
+<a class="sourceLine" id="cb5-71" data-line-number="71"><span class="ot">push ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb5-72" data-line-number="72">push stack stackSet e <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-73" data-line-number="73">    modifySTRef' stack (e<span class="fu">:</span>)</a>
+<a class="sourceLine" id="cb5-74" data-line-number="74">    write stackSet e <span class="dt">True</span></a>
+<a class="sourceLine" id="cb5-75" data-line-number="75"></a>
+<a class="sourceLine" id="cb5-76" data-line-number="76"><span class="ot">pop ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-77" data-line-number="77">pop stack stackSet <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-78" data-line-number="78">    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
+<a class="sourceLine" id="cb5-79" data-line-number="79">    modifySTRef' stack tail</a>
+<a class="sourceLine" id="cb5-80" data-line-number="80">    write stackSet e <span class="dt">False</span></a>
+<a class="sourceLine" id="cb5-81" data-line-number="81">    return e</a>
+<a class="sourceLine" id="cb5-82" data-line-number="82"></a>
+<a class="sourceLine" id="cb5-83" data-line-number="83">denormalise     <span class="fu">=</span> subtract</a>
+<a class="sourceLine" id="cb5-84" data-line-number="84">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
+<a class="sourceLine" id="cb5-85" data-line-number="85">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
+<a class="sourceLine" id="cb5-86" data-line-number="86">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
+<a class="sourceLine" id="cb5-87" data-line-number="87"></a>
+<a class="sourceLine" id="cb5-88" data-line-number="88"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb5-89" data-line-number="89">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-90" data-line-number="90">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
+<a class="sourceLine" id="cb5-91" data-line-number="91">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
+<a class="sourceLine" id="cb5-92" data-line-number="92">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
+<a class="sourceLine" id="cb5-93" data-line-number="93">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
+<a class="sourceLine" id="cb5-94" data-line-number="94">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
+<p>This is much nicer with the applicative combinators.</p>
+<p>I would like to clean up that <code>when</code> as well, but I’d need a function like</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a></code></pre></div>
+<p>which is <a href="hackage.haskell.org/package/extra/docs/Control-Monad-Extra.html#v:whenM">available in Neil Mitchell’s <code>extra</code> package</a>.</p>
+<p>I don’t think it’s worth pulling in that dependency though, so I’ll just copy that definition:</p>
+<details>
+<p><summary>2SAT.hs using <code>whenM</code></summary></p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb7-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
+<a class="sourceLine" id="cb7-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb7-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb7-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
+<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
+<a class="sourceLine" id="cb7-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
+<a class="sourceLine" id="cb7-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb7-14" data-line-number="14"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
+<a class="sourceLine" id="cb7-15" data-line-number="15">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
+<a class="sourceLine" id="cb7-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb7-17" data-line-number="17"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
+<a class="sourceLine" id="cb7-18" data-line-number="18">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-19" data-line-number="19">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
+<a class="sourceLine" id="cb7-20" data-line-number="20">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
+<a class="sourceLine" id="cb7-21" data-line-number="21">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
+<a class="sourceLine" id="cb7-22" data-line-number="22">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb7-23" data-line-number="23">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb7-24" data-line-number="24">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
+<a class="sourceLine" id="cb7-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb7-26" data-line-number="26">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb7-27" data-line-number="27">        whenM ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read indices v) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb7-28" data-line-number="28">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb7-29" data-line-number="29"></a>
+<a class="sourceLine" id="cb7-30" data-line-number="30">    readSTRef output</a>
+<a class="sourceLine" id="cb7-31" data-line-number="31">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-32" data-line-number="32">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb7-33" data-line-number="33"></a>
+<a class="sourceLine" id="cb7-34" data-line-number="34">strongConnect</a>
+<a class="sourceLine" id="cb7-35" data-line-number="35"><span class="ot">    ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-36" data-line-number="36">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-37" data-line-number="37">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
+<a class="sourceLine" id="cb7-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb7-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb7-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb7-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb7-43" data-line-number="43">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
+<a class="sourceLine" id="cb7-44" data-line-number="44">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
+<a class="sourceLine" id="cb7-45" data-line-number="45">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-46" data-line-number="46">    i <span class="ot">&lt;-</span> readSTRef index</a>
+<a class="sourceLine" id="cb7-47" data-line-number="47">    write indices  v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb7-48" data-line-number="48">    write lowlinks v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb7-49" data-line-number="49">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb7-50" data-line-number="50">    push stack stackSet v</a>
+<a class="sourceLine" id="cb7-51" data-line-number="51"></a>
+<a class="sourceLine" id="cb7-52" data-line-number="52">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb7-53" data-line-number="53">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-54" data-line-number="54">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb7-55" data-line-number="55">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
+<a class="sourceLine" id="cb7-56" data-line-number="56">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb7-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
+<a class="sourceLine" id="cb7-58" data-line-number="58"></a>
+<a class="sourceLine" id="cb7-59" data-line-number="59">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-60" data-line-number="60">        scc <span class="ot">&lt;-</span> addSCC n v [] stack stackSet</a>
+<a class="sourceLine" id="cb7-61" data-line-number="61">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
+<a class="sourceLine" id="cb7-62" data-line-number="62"></a>
+<a class="sourceLine" id="cb7-63" data-line-number="63"><span class="ot">addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
+<a class="sourceLine" id="cb7-64" data-line-number="64">addSCC n v scc stack stackSet <span class="fu">=</span> pop stack stackSet <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
+<a class="sourceLine" id="cb7-65" data-line-number="65">    <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
+<a class="sourceLine" id="cb7-66" data-line-number="66">    <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc' stack stackSet</a>
+<a class="sourceLine" id="cb7-67" data-line-number="67"></a>
+<a class="sourceLine" id="cb7-68" data-line-number="68"><span class="ot">push ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb7-69" data-line-number="69">push stack stackSet e <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-70" data-line-number="70">    modifySTRef' stack (e<span class="fu">:</span>)</a>
+<a class="sourceLine" id="cb7-71" data-line-number="71">    write stackSet e <span class="dt">True</span></a>
+<a class="sourceLine" id="cb7-72" data-line-number="72"></a>
+<a class="sourceLine" id="cb7-73" data-line-number="73"><span class="ot">pop ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-74" data-line-number="74">pop stack stackSet <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-75" data-line-number="75">    e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
+<a class="sourceLine" id="cb7-76" data-line-number="76">    modifySTRef' stack tail</a>
+<a class="sourceLine" id="cb7-77" data-line-number="77">    write stackSet e <span class="dt">False</span></a>
+<a class="sourceLine" id="cb7-78" data-line-number="78">    return e</a>
+<a class="sourceLine" id="cb7-79" data-line-number="79"></a>
+<a class="sourceLine" id="cb7-80" data-line-number="80">denormalise     <span class="fu">=</span> subtract</a>
+<a class="sourceLine" id="cb7-81" data-line-number="81">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
+<a class="sourceLine" id="cb7-82" data-line-number="82">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
+<a class="sourceLine" id="cb7-83" data-line-number="83">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
+<a class="sourceLine" id="cb7-84" data-line-number="84"></a>
+<a class="sourceLine" id="cb7-85" data-line-number="85"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb7-86" data-line-number="86">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-87" data-line-number="87">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
+<a class="sourceLine" id="cb7-88" data-line-number="88">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
+<a class="sourceLine" id="cb7-89" data-line-number="89">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
+<a class="sourceLine" id="cb7-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
+<a class="sourceLine" id="cb7-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
+</details>
+<p>Since most of the auxiliary functions aren’t used outside <code>strongConnect</code>, it might make sense to put them under a <code>where</code> clause. This would also make the parameters passed to <code>strongConnect</code> available to these functions. This is one place that the <code>ScopedTypeVariables</code> language extension is necessary, otherwise GHC can’t tell that the <code>s</code> in the type signature of <code>strongConnect</code> is the same <code>s</code> as the one in each type signature under the <code>where</code> clause.</p>
+<details>
+<p><summary>2SAT.hs using <code>where</code></summary></p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb8-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
+<a class="sourceLine" id="cb8-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
+<a class="sourceLine" id="cb8-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
+<a class="sourceLine" id="cb8-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
+<a class="sourceLine" id="cb8-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb8-15" data-line-number="15"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
+<a class="sourceLine" id="cb8-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb8-18" data-line-number="18"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">    index    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">    stack    <span class="ot">&lt;-</span> newSTRef []</a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">    stackSet <span class="ot">&lt;-</span> replicate size <span class="dt">False</span></a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">    indices  <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">    lowlinks <span class="ot">&lt;-</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">    output   <span class="ot">&lt;-</span> newSTRef (<span class="dt">Just</span> [])</a>
+<a class="sourceLine" id="cb8-26" data-line-number="26"></a>
+<a class="sourceLine" id="cb8-27" data-line-number="27">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb8-28" data-line-number="28">        whenM ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read indices v) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb8-29" data-line-number="29">            strongConnect n v graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb8-30" data-line-number="30"></a>
+<a class="sourceLine" id="cb8-31" data-line-number="31">    readSTRef output</a>
+<a class="sourceLine" id="cb8-32" data-line-number="32">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-33" data-line-number="33">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb8-34" data-line-number="34"></a>
+<a class="sourceLine" id="cb8-35" data-line-number="35">strongConnect</a>
+<a class="sourceLine" id="cb8-36" data-line-number="36"><span class="ot">    ::</span> forall s</a>
+<a class="sourceLine" id="cb8-37" data-line-number="37">    <span class="fu">.</span>  <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb8-38" data-line-number="38">    <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb8-39" data-line-number="39">    <span class="ot">-&gt;</span> <span class="dt">G.Graph</span></a>
+<a class="sourceLine" id="cb8-40" data-line-number="40">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb8-41" data-line-number="41">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb8-42" data-line-number="42">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb8-43" data-line-number="43">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb8-44" data-line-number="44">    <span class="ot">-&gt;</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb8-45" data-line-number="45">    <span class="ot">-&gt;</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
+<a class="sourceLine" id="cb8-46" data-line-number="46">    <span class="ot">-&gt;</span> <span class="dt">ST</span>    s ()</a>
+<a class="sourceLine" id="cb8-47" data-line-number="47">strongConnect n v graph index stack stackSet indices lowlinks output <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-48" data-line-number="48">    i <span class="ot">&lt;-</span> readSTRef index</a>
+<a class="sourceLine" id="cb8-49" data-line-number="49">    write indices  v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb8-50" data-line-number="50">    write lowlinks v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb8-51" data-line-number="51">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb8-52" data-line-number="52">    push v</a>
+<a class="sourceLine" id="cb8-53" data-line-number="53"></a>
+<a class="sourceLine" id="cb8-54" data-line-number="54">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb8-55" data-line-number="55">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-56" data-line-number="56">            strongConnect n w graph index stack stackSet indices lowlinks output</a>
+<a class="sourceLine" id="cb8-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
+<a class="sourceLine" id="cb8-58" data-line-number="58">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb8-59" data-line-number="59">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
+<a class="sourceLine" id="cb8-60" data-line-number="60"></a>
+<a class="sourceLine" id="cb8-61" data-line-number="61">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-62" data-line-number="62">        scc <span class="ot">&lt;-</span> addSCC n v []</a>
+<a class="sourceLine" id="cb8-63" data-line-number="63">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
+<a class="sourceLine" id="cb8-64" data-line-number="64">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-65" data-line-number="65"><span class="ot">        addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
+<a class="sourceLine" id="cb8-66" data-line-number="66">        addSCC n v scc <span class="fu">=</span> pop <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
+<a class="sourceLine" id="cb8-67" data-line-number="67">            <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
+<a class="sourceLine" id="cb8-68" data-line-number="68">            <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc'</a>
+<a class="sourceLine" id="cb8-69" data-line-number="69"><span class="ot">        push ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb8-70" data-line-number="70">        push e <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-71" data-line-number="71">            modifySTRef' stack (e<span class="fu">:</span>)</a>
+<a class="sourceLine" id="cb8-72" data-line-number="72">            write stackSet e <span class="dt">True</span></a>
+<a class="sourceLine" id="cb8-73" data-line-number="73"><span class="ot">        pop ::</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb8-74" data-line-number="74">        pop <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-75" data-line-number="75">            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
+<a class="sourceLine" id="cb8-76" data-line-number="76">            modifySTRef' stack tail</a>
+<a class="sourceLine" id="cb8-77" data-line-number="77">            write stackSet e <span class="dt">False</span></a>
+<a class="sourceLine" id="cb8-78" data-line-number="78">            return e</a>
+<a class="sourceLine" id="cb8-79" data-line-number="79"></a>
+<a class="sourceLine" id="cb8-80" data-line-number="80">denormalise     <span class="fu">=</span> subtract</a>
+<a class="sourceLine" id="cb8-81" data-line-number="81">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
+<a class="sourceLine" id="cb8-82" data-line-number="82">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
+<a class="sourceLine" id="cb8-83" data-line-number="83">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
+<a class="sourceLine" id="cb8-84" data-line-number="84"></a>
+<a class="sourceLine" id="cb8-85" data-line-number="85"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb8-86" data-line-number="86">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-87" data-line-number="87">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
+<a class="sourceLine" id="cb8-88" data-line-number="88">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
+<a class="sourceLine" id="cb8-89" data-line-number="89">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
+<a class="sourceLine" id="cb8-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
+<a class="sourceLine" id="cb8-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
+</details>
+<p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>RecordWildCards</code> only minimal code changes are required:</p>
 <details>
 <p><summary>2SAT.hs using <code>RecordWildCards</code></summary></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
-<a class="sourceLine" id="cb6-14" data-line-number="14"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
-<a class="sourceLine" id="cb6-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16"><span class="kw">data</span> <span class="dt">TarjanEnv</span> s <span class="fu">=</span> <span class="dt">TarjanEnv</span></a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">    {<span class="ot"> index    ::</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">    ,<span class="ot"> stack    ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">    ,<span class="ot"> stackSet ::</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb6-20" data-line-number="20">    ,<span class="ot"> indices  ::</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb6-21" data-line-number="21">    ,<span class="ot"> lowlinks ::</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">    ,<span class="ot"> output   ::</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">    }</a>
-<a class="sourceLine" id="cb6-24" data-line-number="24"></a>
-<a class="sourceLine" id="cb6-25" data-line-number="25"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
-<a class="sourceLine" id="cb6-27" data-line-number="27"></a>
-<a class="sourceLine" id="cb6-28" data-line-number="28"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
-<a class="sourceLine" id="cb6-29" data-line-number="29">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-30" data-line-number="30">    tarjanEnv <span class="ot">&lt;-</span> <span class="dt">TarjanEnv</span></a>
-<a class="sourceLine" id="cb6-31" data-line-number="31">        <span class="fu">&lt;$&gt;</span> newSTRef <span class="dv">0</span></a>
-<a class="sourceLine" id="cb6-32" data-line-number="32">        <span class="fu">&lt;*&gt;</span> newSTRef []</a>
-<a class="sourceLine" id="cb6-33" data-line-number="33">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">False</span></a>
-<a class="sourceLine" id="cb6-34" data-line-number="34">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb6-35" data-line-number="35">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb6-36" data-line-number="36">        <span class="fu">&lt;*&gt;</span> newSTRef (<span class="dt">Just</span> [])</a>
-<a class="sourceLine" id="cb6-37" data-line-number="37"></a>
-<a class="sourceLine" id="cb6-38" data-line-number="38">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb6-39" data-line-number="39">        whenM ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read (indices tarjanEnv) v) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb6-40" data-line-number="40">            strongConnect n v graph tarjanEnv</a>
-<a class="sourceLine" id="cb6-41" data-line-number="41"></a>
-<a class="sourceLine" id="cb6-42" data-line-number="42">    readSTRef (output tarjanEnv)</a>
-<a class="sourceLine" id="cb6-43" data-line-number="43">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-44" data-line-number="44">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb6-45" data-line-number="45"></a>
-<a class="sourceLine" id="cb6-46" data-line-number="46"><span class="ot">strongConnect ::</span> forall s<span class="fu">.</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">TarjanEnv</span> s <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb6-47" data-line-number="47">strongConnect n v graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>} <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-48" data-line-number="48">    i <span class="ot">&lt;-</span> readSTRef index</a>
-<a class="sourceLine" id="cb6-49" data-line-number="49">    write indices  v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb6-50" data-line-number="50">    write lowlinks v (<span class="dt">Just</span> i)</a>
-<a class="sourceLine" id="cb6-51" data-line-number="51">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb6-52" data-line-number="52">    push v</a>
-<a class="sourceLine" id="cb6-53" data-line-number="53"></a>
-<a class="sourceLine" id="cb6-54" data-line-number="54">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb6-55" data-line-number="55">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-56" data-line-number="56">            strongConnect n w graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>}</a>
-<a class="sourceLine" id="cb6-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
-<a class="sourceLine" id="cb6-58" data-line-number="58">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb6-59" data-line-number="59">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
-<a class="sourceLine" id="cb6-60" data-line-number="60"></a>
-<a class="sourceLine" id="cb6-61" data-line-number="61">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-62" data-line-number="62">        scc <span class="ot">&lt;-</span> addSCC n v []</a>
-<a class="sourceLine" id="cb6-63" data-line-number="63">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
-<a class="sourceLine" id="cb6-64" data-line-number="64">    <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-65" data-line-number="65"><span class="ot">        addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
-<a class="sourceLine" id="cb6-66" data-line-number="66">        addSCC n v scc <span class="fu">=</span> pop <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
-<a class="sourceLine" id="cb6-67" data-line-number="67">            <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
-<a class="sourceLine" id="cb6-68" data-line-number="68">            <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc'</a>
-<a class="sourceLine" id="cb6-69" data-line-number="69"><span class="ot">        push ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb6-70" data-line-number="70">        push e <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-71" data-line-number="71">            modifySTRef' stack (e<span class="fu">:</span>)</a>
-<a class="sourceLine" id="cb6-72" data-line-number="72">            write stackSet e <span class="dt">True</span></a>
-<a class="sourceLine" id="cb6-73" data-line-number="73"><span class="ot">        pop ::</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb6-74" data-line-number="74">        pop <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-75" data-line-number="75">            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
-<a class="sourceLine" id="cb6-76" data-line-number="76">            modifySTRef' stack tail</a>
-<a class="sourceLine" id="cb6-77" data-line-number="77">            write stackSet e <span class="dt">False</span></a>
-<a class="sourceLine" id="cb6-78" data-line-number="78">            return e</a>
-<a class="sourceLine" id="cb6-79" data-line-number="79"></a>
-<a class="sourceLine" id="cb6-80" data-line-number="80">denormalise     <span class="fu">=</span> subtract</a>
-<a class="sourceLine" id="cb6-81" data-line-number="81">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
-<a class="sourceLine" id="cb6-82" data-line-number="82">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
-<a class="sourceLine" id="cb6-83" data-line-number="83">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
-<a class="sourceLine" id="cb6-84" data-line-number="84"></a>
-<a class="sourceLine" id="cb6-85" data-line-number="85"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb6-86" data-line-number="86">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-87" data-line-number="87">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
-<a class="sourceLine" id="cb6-88" data-line-number="88">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
-<a class="sourceLine" id="cb6-89" data-line-number="89">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
-<a class="sourceLine" id="cb6-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
-<a class="sourceLine" id="cb6-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
+<a class="sourceLine" id="cb9-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
+<a class="sourceLine" id="cb9-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
+<a class="sourceLine" id="cb9-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
+<a class="sourceLine" id="cb9-14" data-line-number="14"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
+<a class="sourceLine" id="cb9-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb9-16" data-line-number="16"><span class="kw">data</span> <span class="dt">TarjanEnv</span> s <span class="fu">=</span> <span class="dt">TarjanEnv</span></a>
+<a class="sourceLine" id="cb9-17" data-line-number="17">    {<span class="ot"> index    ::</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb9-18" data-line-number="18">    ,<span class="ot"> stack    ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb9-19" data-line-number="19">    ,<span class="ot"> stackSet ::</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb9-20" data-line-number="20">    ,<span class="ot"> indices  ::</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb9-21" data-line-number="21">    ,<span class="ot"> lowlinks ::</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb9-22" data-line-number="22">    ,<span class="ot"> output   ::</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
+<a class="sourceLine" id="cb9-23" data-line-number="23">    }</a>
+<a class="sourceLine" id="cb9-24" data-line-number="24"></a>
+<a class="sourceLine" id="cb9-25" data-line-number="25"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
+<a class="sourceLine" id="cb9-26" data-line-number="26">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
+<a class="sourceLine" id="cb9-27" data-line-number="27"></a>
+<a class="sourceLine" id="cb9-28" data-line-number="28"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
+<a class="sourceLine" id="cb9-29" data-line-number="29">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-30" data-line-number="30">    tarjanEnv <span class="ot">&lt;-</span> <span class="dt">TarjanEnv</span></a>
+<a class="sourceLine" id="cb9-31" data-line-number="31">        <span class="fu">&lt;$&gt;</span> newSTRef <span class="dv">0</span></a>
+<a class="sourceLine" id="cb9-32" data-line-number="32">        <span class="fu">&lt;*&gt;</span> newSTRef []</a>
+<a class="sourceLine" id="cb9-33" data-line-number="33">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">False</span></a>
+<a class="sourceLine" id="cb9-34" data-line-number="34">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb9-35" data-line-number="35">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb9-36" data-line-number="36">        <span class="fu">&lt;*&gt;</span> newSTRef (<span class="dt">Just</span> [])</a>
+<a class="sourceLine" id="cb9-37" data-line-number="37"></a>
+<a class="sourceLine" id="cb9-38" data-line-number="38">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb9-39" data-line-number="39">        whenM ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read (indices tarjanEnv) v) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb9-40" data-line-number="40">            strongConnect n v graph tarjanEnv</a>
+<a class="sourceLine" id="cb9-41" data-line-number="41"></a>
+<a class="sourceLine" id="cb9-42" data-line-number="42">    readSTRef (output tarjanEnv)</a>
+<a class="sourceLine" id="cb9-43" data-line-number="43">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-44" data-line-number="44">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb9-45" data-line-number="45"></a>
+<a class="sourceLine" id="cb9-46" data-line-number="46"><span class="ot">strongConnect ::</span> forall s<span class="fu">.</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">TarjanEnv</span> s <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb9-47" data-line-number="47">strongConnect n v graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>} <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-48" data-line-number="48">    i <span class="ot">&lt;-</span> readSTRef index</a>
+<a class="sourceLine" id="cb9-49" data-line-number="49">    write indices  v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb9-50" data-line-number="50">    write lowlinks v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb9-51" data-line-number="51">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb9-52" data-line-number="52">    push v</a>
+<a class="sourceLine" id="cb9-53" data-line-number="53"></a>
+<a class="sourceLine" id="cb9-54" data-line-number="54">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb9-55" data-line-number="55">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-56" data-line-number="56">            strongConnect n w graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>}</a>
+<a class="sourceLine" id="cb9-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
+<a class="sourceLine" id="cb9-58" data-line-number="58">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb9-59" data-line-number="59">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
+<a class="sourceLine" id="cb9-60" data-line-number="60"></a>
+<a class="sourceLine" id="cb9-61" data-line-number="61">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-62" data-line-number="62">        scc <span class="ot">&lt;-</span> addSCC n v []</a>
+<a class="sourceLine" id="cb9-63" data-line-number="63">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
+<a class="sourceLine" id="cb9-64" data-line-number="64">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-65" data-line-number="65"><span class="ot">        addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
+<a class="sourceLine" id="cb9-66" data-line-number="66">        addSCC n v scc <span class="fu">=</span> pop <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc) <span class="kw">then</span> return <span class="dt">Nothing</span> <span class="kw">else</span></a>
+<a class="sourceLine" id="cb9-67" data-line-number="67">            <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
+<a class="sourceLine" id="cb9-68" data-line-number="68">            <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc'</a>
+<a class="sourceLine" id="cb9-69" data-line-number="69"><span class="ot">        push ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb9-70" data-line-number="70">        push e <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-71" data-line-number="71">            modifySTRef' stack (e<span class="fu">:</span>)</a>
+<a class="sourceLine" id="cb9-72" data-line-number="72">            write stackSet e <span class="dt">True</span></a>
+<a class="sourceLine" id="cb9-73" data-line-number="73"><span class="ot">        pop ::</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb9-74" data-line-number="74">        pop <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-75" data-line-number="75">            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
+<a class="sourceLine" id="cb9-76" data-line-number="76">            modifySTRef' stack tail</a>
+<a class="sourceLine" id="cb9-77" data-line-number="77">            write stackSet e <span class="dt">False</span></a>
+<a class="sourceLine" id="cb9-78" data-line-number="78">            return e</a>
+<a class="sourceLine" id="cb9-79" data-line-number="79"></a>
+<a class="sourceLine" id="cb9-80" data-line-number="80">denormalise     <span class="fu">=</span> subtract</a>
+<a class="sourceLine" id="cb9-81" data-line-number="81">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
+<a class="sourceLine" id="cb9-82" data-line-number="82">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
+<a class="sourceLine" id="cb9-83" data-line-number="83">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
+<a class="sourceLine" id="cb9-84" data-line-number="84"></a>
+<a class="sourceLine" id="cb9-85" data-line-number="85"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb9-86" data-line-number="86">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-87" data-line-number="87">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
+<a class="sourceLine" id="cb9-88" data-line-number="88">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
+<a class="sourceLine" id="cb9-89" data-line-number="89">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
+<a class="sourceLine" id="cb9-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
+<a class="sourceLine" id="cb9-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
+<p>I think this is a good place to stop. Although more refactoring is certainly possible, my last two steps did not reduce the line count and may have in fact made the code harder to understand. If you’d like to follow along, I have the code (and some test data) available <a href="https://gist.github.com/vaibhavsagar/2418c9dd79da431065ad0d80e690b12f">at this gist</a> with each commit representing a refactoring step.</p>
 
         </div>
         <div id="footer">
