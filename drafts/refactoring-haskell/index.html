@@ -45,7 +45,7 @@
 
 <p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a joy</a>. I’ve certainly found this to be the case, but what does that mean in practice? I thought it might be useful to demonstrate by refactoring some of my own code.</p>
 <p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given <a href="https://en.wikipedia.org/wiki/2-satisfiability">2-SAT problem</a> is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="http://vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2-SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
-<p>The initial version of the code is as follows:</p>
+<p>The initial version of the code is as follows (expand by clicking the arrow):</p>
 <details>
 <p><summary>Initial 2SAT.hs</summary></p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
@@ -252,7 +252,7 @@
 <a class="sourceLine" id="cb2-97" data-line-number="97">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
 <p>I didn’t notice a significant difference in speed on my inputs, but it’s good to know that the algorithm has been implemented with the correct asymptotics now!</p>
-<p><em>Sidenote: A <code>Vector</code> of <code>Bool</code>s can be much more compactly represented as a sequence of 0s and 1s, which are just machine words. For implementations of this in Haskell, see the <a href="hackage.haskell.org/package/bv">bv</a> or <a href="hackage.haskell.org/package/bv-little">bv-little</a> packages. Using these could be another possible refactoring.</em></p>
+<p><em>Sidenote: A <code>Vector</code> of <code>Bool</code>s can be much more compactly represented as a sequence of 0s and 1s, which are just machine words. For implementations of this in Haskell, see the <a href="https://hackage.haskell.org/package/bv">bv</a> or <a href="https://hackage.haskell.org/package/bv-little">bv-little</a> packages. Using these could be another possible refactoring.</em></p>
 <p>Looking at the code again, I notice some repetition of the form</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1">x <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup vectorX i</a>
 <a class="sourceLine" id="cb3-2" data-line-number="2">y <span class="ot">&lt;-</span> fromJust <span class="fu">&lt;$&gt;</span> lookup vectorY j</a>
