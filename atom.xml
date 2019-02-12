@@ -537,7 +537,7 @@
 <a class="sourceLine" id="cb8-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
 <p>I think the logic is clearer now that the auxiliary functions take fewer arguments.</p>
-<p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>RecordWildCards</code> only minimal code changes are required:</p>
+<p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>RecordWildCards</code> only minimal code changes are required (although I strongly recommend against using this extension for anything other than cute blog posts, please use <code>NamedFieldPuns</code> instead):</p>
 <details>
 <p><summary style="cursor: pointer">2SAT.hs using <code>RecordWildCards</code></summary></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
