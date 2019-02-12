@@ -45,9 +45,11 @@
 
 <p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a joy</a>. I’ve certainly found this to be the case, but what does that mean in practice? I thought it might be useful to demonstrate by refactoring some of my own code.</p>
 <p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given <a href="https://en.wikipedia.org/wiki/2-satisfiability">2-SAT problem</a> is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="http://vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2-SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
-<p>The initial version of the code is as follows (expand by clicking the arrow):</p>
+<p>This code isn’t particularly elegant or easy to follow, and it’s lousy with mutable state. Despite these drawbacks, it is still relatively straightforward to refactor.</p>
+<p>If you’d like to follow along, I have the code (and some test data) available <a href="https://gist.github.com/vaibhavsagar/2418c9dd79da431065ad0d80e690b12f">at this gist</a> with each revision representing a refactoring step.</p>
+<p>The initial version of the code is as follows:</p>
 <details>
-<p><summary>Initial 2SAT.hs</summary></p>
+<p><summary style="cursor: pointer">Initial 2SAT.hs</summary></p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
 <a class="sourceLine" id="cb1-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span>      <span class="kw">as</span> <span class="dt">G</span></a>
@@ -152,7 +154,7 @@
 <p>The first change is using more suitable data structures. Tarjan’s algorithm is only linear in the size of the graph when operations, such as checking if <code>w</code> is on the stack and looking up indices, happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees and are <span class="math inline"><em>O</em>(log <em>n</em>)</span> in these operations. A better choice would be <a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a> from the <code>vector</code> package, which does have constant-time operations.</p>
 <p>This refactoring mostly consists of initialising vectors with a known length and replacing calls to <code>lookup</code> and <code>insert</code> with calls to <code>read</code> and <code>write</code>.</p>
 <details>
-<p><summary>2SAT.hs using <code>vector</code></summary></p>
+<p><summary style="cursor: pointer">2SAT.hs using <code>vector</code></summary></p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
 <a class="sourceLine" id="cb2-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
@@ -261,7 +263,7 @@
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">write vectorZ k <span class="fu">=&lt;&lt;</span> (operation <span class="fu">&lt;$&gt;</span> lookup vectorX i <span class="fu">&lt;*&gt;</span> lookup vectorY j)</a></code></pre></div>
 <p>There are a couple of other places we could use <code>(&lt;*&gt;)</code>:</p>
 <details>
-<p><summary>2SAT.hs using <code>(&lt;*&gt;)</code></summary></p>
+<p><summary style="cursor: pointer">2SAT.hs using <code>(&lt;*&gt;)</code></summary></p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
 <a class="sourceLine" id="cb5-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
@@ -358,12 +360,12 @@
 <a class="sourceLine" id="cb5-94" data-line-number="94">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
 <p>This is much nicer with the applicative combinators.</p>
-<p>I would like to clean up that <code>when</code> as well, but I’d need a function like</p>
+<p>I would like to clean up that <code>when</code> as well, and for that I’d need a function like</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a></code></pre></div>
 <p>which is <a href="hackage.haskell.org/package/extra/docs/Control-Monad-Extra.html#v:whenM">available in Neil Mitchell’s <code>extra</code> package</a>.</p>
 <p>I don’t think it’s worth pulling in that dependency though, so I’ll just copy that definition:</p>
 <details>
-<p><summary>2SAT.hs using <code>whenM</code></summary></p>
+<p><summary style="cursor: pointer">2SAT.hs using <code>whenM</code></summary></p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
 <a class="sourceLine" id="cb7-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb7-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
@@ -456,9 +458,10 @@
 <a class="sourceLine" id="cb7-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
 <a class="sourceLine" id="cb7-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
+<p>Now I don’t actually even need <code>when</code> anymore!</p>
 <p>Since most of the auxiliary functions aren’t used outside <code>strongConnect</code>, it might make sense to put them under a <code>where</code> clause. This would also make the parameters passed to <code>strongConnect</code> available to these functions. This is one place that the <code>ScopedTypeVariables</code> language extension is necessary, otherwise GHC can’t tell that the <code>s</code> in the type signature of <code>strongConnect</code> is the same <code>s</code> as the one in each type signature under the <code>where</code> clause.</p>
 <details>
-<p><summary>2SAT.hs using <code>where</code></summary></p>
+<p><summary style="cursor: pointer">2SAT.hs using <code>where</code></summary></p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
 <a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
 <a class="sourceLine" id="cb8-3" data-line-number="3"></a>
@@ -551,9 +554,10 @@
 <a class="sourceLine" id="cb8-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
 <a class="sourceLine" id="cb8-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
+<p>I think the logic is clearer now that the auxiliary functions take fewer arguments.</p>
 <p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>RecordWildCards</code> only minimal code changes are required:</p>
 <details>
-<p><summary>2SAT.hs using <code>RecordWildCards</code></summary></p>
+<p><summary style="cursor: pointer">2SAT.hs using <code>RecordWildCards</code></summary></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
 <a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span></a>
 <a class="sourceLine" id="cb9-3" data-line-number="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
@@ -646,8 +650,111 @@
 <a class="sourceLine" id="cb9-90" data-line-number="90">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
 <a class="sourceLine" id="cb9-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
-<p>I think this is a good place to stop. Although more refactoring is certainly possible, my last two steps did not reduce the line count and may have in fact made the code harder to understand. If you’d like to follow along, I have the code (and some test data) available <a href="https://gist.github.com/vaibhavsagar/2418c9dd79da431065ad0d80e690b12f">at this gist</a> with each revision representing a refactoring step.</p>
-<p><em>Thanks to <a href="http://www.matfournier.com/">Mat Fournier</a> for suggestions and feedback.</em></p>
+<p>Let’s pause here. Although more refactoring is certainly possible, my last two steps did not reduce the line count and may have in fact made the code harder to understand.</p>
+<p>How have we benefited from this refactoring? Aside from the code being shorter and better structured, it’s now easier to make meaningful improvements. For example, this implementation is more inefficient than it needs to be, because it doesn’t short-circuit when it finds that the current problem is unsatisfiable. Instead it works through the rest of the problem, only to throw all that work away. A sophisticated solution to this problem might involve the use of the <a href="https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-Except.html"><code>ExceptT</code></a> monad transformer to throw an exception and exit early, but there is a simpler approach: we can store an extra boolean variable denoting whether or not the current problem is possibly satisfiable, and only continue working if it is. I’ll call this variable <code>possible</code>, update it in <code>addSCC</code>, and check for it before each call to <code>strongConnect</code> in <code>tarjan</code>. It takes more effort to reformat the code than to make this change:</p>
+<details>
+<p><summary style="cursor: pointer">2SAT.hs with short-circuiting</summary></p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
+<a class="sourceLine" id="cb10-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Prelude</span>    <span class="kw">as</span> <span class="dt">P</span></a>
+<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (lookup, read, replicate)</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb10-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></a>
+<a class="sourceLine" id="cb10-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Data.STRef</span></a>
+<a class="sourceLine" id="cb10-13" data-line-number="13"><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_)</a>
+<a class="sourceLine" id="cb10-14" data-line-number="14"><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</a>
+<a class="sourceLine" id="cb10-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb10-16" data-line-number="16"><span class="kw">data</span> <span class="dt">TarjanEnv</span> s <span class="fu">=</span> <span class="dt">TarjanEnv</span></a>
+<a class="sourceLine" id="cb10-17" data-line-number="17">    {<span class="ot"> index    ::</span> <span class="dt">STRef</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb10-18" data-line-number="18">    ,<span class="ot"> stack    ::</span> <span class="dt">STRef</span> s [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb10-19" data-line-number="19">    ,<span class="ot"> stackSet ::</span> <span class="dt">STVector</span> s <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb10-20" data-line-number="20">    ,<span class="ot"> indices  ::</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb10-21" data-line-number="21">    ,<span class="ot"> lowlinks ::</span> <span class="dt">STVector</span> s (<span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb10-22" data-line-number="22">    ,<span class="ot"> output   ::</span> <span class="dt">STRef</span> s (<span class="dt">Maybe</span> [[<span class="dt">Int</span>]])</a>
+<a class="sourceLine" id="cb10-23" data-line-number="23">    ,<span class="ot"> possible ::</span> <span class="dt">STRef</span> s <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb10-24" data-line-number="24">    }</a>
+<a class="sourceLine" id="cb10-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb10-26" data-line-number="26"><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</a>
+<a class="sourceLine" id="cb10-27" data-line-number="27">whenM condM block <span class="fu">=</span> condM <span class="fu">&gt;&gt;=</span> \cond <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> block <span class="kw">else</span> return ()</a>
+<a class="sourceLine" id="cb10-28" data-line-number="28"></a>
+<a class="sourceLine" id="cb10-29" data-line-number="29"><span class="ot">tarjan ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [[<span class="dt">Int</span>]]</a>
+<a class="sourceLine" id="cb10-30" data-line-number="30">tarjan n graph <span class="fu">=</span> runST <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-31" data-line-number="31">    tarjanEnv <span class="ot">&lt;-</span> <span class="dt">TarjanEnv</span></a>
+<a class="sourceLine" id="cb10-32" data-line-number="32">        <span class="fu">&lt;$&gt;</span> newSTRef <span class="dv">0</span></a>
+<a class="sourceLine" id="cb10-33" data-line-number="33">        <span class="fu">&lt;*&gt;</span> newSTRef []</a>
+<a class="sourceLine" id="cb10-34" data-line-number="34">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">False</span></a>
+<a class="sourceLine" id="cb10-35" data-line-number="35">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-36" data-line-number="36">        <span class="fu">&lt;*&gt;</span> replicate size <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-37" data-line-number="37">        <span class="fu">&lt;*&gt;</span> newSTRef (<span class="dt">Just</span> [])</a>
+<a class="sourceLine" id="cb10-38" data-line-number="38">        <span class="fu">&lt;*&gt;</span> newSTRef <span class="dt">True</span></a>
+<a class="sourceLine" id="cb10-39" data-line-number="39"></a>
+<a class="sourceLine" id="cb10-40" data-line-number="40">    forM_ (G.vertices graph) <span class="fu">$</span> \v <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb10-41" data-line-number="41">        whenM ((<span class="fu">&amp;&amp;</span>)</a>
+<a class="sourceLine" id="cb10-42" data-line-number="42">            <span class="fu">&lt;$&gt;</span> ((<span class="fu">==</span>) <span class="dt">Nothing</span> <span class="fu">&lt;$&gt;</span> read (indices tarjanEnv) v)</a>
+<a class="sourceLine" id="cb10-43" data-line-number="43">            <span class="fu">&lt;*&gt;</span> readSTRef (possible tarjanEnv)) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb10-44" data-line-number="44">                strongConnect n v graph tarjanEnv</a>
+<a class="sourceLine" id="cb10-45" data-line-number="45"></a>
+<a class="sourceLine" id="cb10-46" data-line-number="46">    readSTRef (output tarjanEnv)</a>
+<a class="sourceLine" id="cb10-47" data-line-number="47">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-48" data-line-number="48">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb10-49" data-line-number="49"></a>
+<a class="sourceLine" id="cb10-50" data-line-number="50"><span class="ot">strongConnect ::</span> forall s<span class="fu">.</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">TarjanEnv</span> s <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb10-51" data-line-number="51">strongConnect n v graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>} <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-52" data-line-number="52">    i <span class="ot">&lt;-</span> readSTRef index</a>
+<a class="sourceLine" id="cb10-53" data-line-number="53">    write indices  v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb10-54" data-line-number="54">    write lowlinks v (<span class="dt">Just</span> i)</a>
+<a class="sourceLine" id="cb10-55" data-line-number="55">    modifySTRef' index (<span class="fu">+</span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb10-56" data-line-number="56">    push v</a>
+<a class="sourceLine" id="cb10-57" data-line-number="57"></a>
+<a class="sourceLine" id="cb10-58" data-line-number="58">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb10-59" data-line-number="59">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-60" data-line-number="60">            strongConnect n w graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>}</a>
+<a class="sourceLine" id="cb10-61" data-line-number="61">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
+<a class="sourceLine" id="cb10-62" data-line-number="62">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb10-63" data-line-number="63">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
+<a class="sourceLine" id="cb10-64" data-line-number="64"></a>
+<a class="sourceLine" id="cb10-65" data-line-number="65">    whenM ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices v) <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-66" data-line-number="66">        scc <span class="ot">&lt;-</span> addSCC n v []</a>
+<a class="sourceLine" id="cb10-67" data-line-number="67">        modifySTRef' output <span class="fu">$</span> \sccs <span class="ot">-&gt;</span> (<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> scc <span class="fu">&lt;*&gt;</span> sccs</a>
+<a class="sourceLine" id="cb10-68" data-line-number="68">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-69" data-line-number="69"><span class="ot">        addSCC ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">Maybe</span> [<span class="dt">Int</span>])</a>
+<a class="sourceLine" id="cb10-70" data-line-number="70">        addSCC n v scc <span class="fu">=</span> pop <span class="fu">&gt;&gt;=</span> \w <span class="ot">-&gt;</span> <span class="kw">if</span> ((other n w) <span class="ot">`elem`</span> scc)</a>
+<a class="sourceLine" id="cb10-71" data-line-number="71">            <span class="kw">then</span> writeSTRef possible <span class="dt">False</span> <span class="fu">&gt;&gt;</span> return <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-72" data-line-number="72">            <span class="kw">else</span></a>
+<a class="sourceLine" id="cb10-73" data-line-number="73">                <span class="kw">let</span> scc' <span class="fu">=</span> w<span class="fu">:</span>scc</a>
+<a class="sourceLine" id="cb10-74" data-line-number="74">                <span class="kw">in</span> <span class="kw">if</span> w <span class="fu">==</span> v <span class="kw">then</span> return (<span class="dt">Just</span> scc') <span class="kw">else</span> addSCC n v scc'</a>
+<a class="sourceLine" id="cb10-75" data-line-number="75"><span class="ot">        push ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
+<a class="sourceLine" id="cb10-76" data-line-number="76">        push e <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-77" data-line-number="77">            modifySTRef' stack (e<span class="fu">:</span>)</a>
+<a class="sourceLine" id="cb10-78" data-line-number="78">            write stackSet e <span class="dt">True</span></a>
+<a class="sourceLine" id="cb10-79" data-line-number="79"><span class="ot">        pop ::</span> <span class="dt">ST</span> s <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb10-80" data-line-number="80">        pop <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-81" data-line-number="81">            e <span class="ot">&lt;-</span> head <span class="fu">&lt;$&gt;</span> readSTRef stack</a>
+<a class="sourceLine" id="cb10-82" data-line-number="82">            modifySTRef' stack tail</a>
+<a class="sourceLine" id="cb10-83" data-line-number="83">            write stackSet e <span class="dt">False</span></a>
+<a class="sourceLine" id="cb10-84" data-line-number="84">            return e</a>
+<a class="sourceLine" id="cb10-85" data-line-number="85"></a>
+<a class="sourceLine" id="cb10-86" data-line-number="86">denormalise     <span class="fu">=</span> subtract</a>
+<a class="sourceLine" id="cb10-87" data-line-number="87">normalise       <span class="fu">=</span> (<span class="fu">+</span>)</a>
+<a class="sourceLine" id="cb10-88" data-line-number="88">other n v       <span class="fu">=</span> <span class="dv">2</span><span class="fu">*</span>n <span class="fu">-</span> v</a>
+<a class="sourceLine" id="cb10-89" data-line-number="89">clauses n [u,v] <span class="fu">=</span> [(other n u, v), (other n v, u)]</a>
+<a class="sourceLine" id="cb10-90" data-line-number="90"></a>
+<a class="sourceLine" id="cb10-91" data-line-number="91"><span class="ot">checkSat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb10-92" data-line-number="92">checkSat name <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-93" data-line-number="93">    p <span class="ot">&lt;-</span> map (map P.read <span class="fu">.</span> words) <span class="fu">.</span> lines <span class="fu">&lt;$&gt;</span> readFile name</a>
+<a class="sourceLine" id="cb10-94" data-line-number="94">    <span class="kw">let</span> pNo    <span class="fu">=</span> head <span class="fu">$</span> head p</a>
+<a class="sourceLine" id="cb10-95" data-line-number="95">        pn     <span class="fu">=</span> map (map (normalise pNo)) <span class="fu">$</span> tail p</a>
+<a class="sourceLine" id="cb10-96" data-line-number="96">        pGraph <span class="fu">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="fu">*</span>pNo) <span class="fu">$</span> concatMap (clauses pNo) pn</a>
+<a class="sourceLine" id="cb10-97" data-line-number="97">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
+</details>
+<p>This change does seem to make a significant difference, and it’s good to know we’re not doing useless work.</p>
+<p>I think this is a good place to stop, and I hope I’ve been able to demonstrate some of Haskell’s strengths when it comes to refactoring. In my experience, it’s not usually necessary to deeply understand Haskell code in order to attempt a refactoring, especially if it’s backed by well-chosen types and a good test suite. I also find that I’m able to be more daring when writing new code, because bad up-front design is less costly and even the jankiest working code can be gently massaged into something presentable.</p>
+<p><em>Thanks to <a href="https://joelburget.com/">Joel Burget</a>, <a href="http://www.matfournier.com/">Mat Fournier</a>, <a href="https://eskimor.gonimo.com/">Robert Klotzner</a>, <a href="https://github.com/L8D">Tenor</a>, <a href="http://www.tomharding.me/">Tom Harding</a>, and <a href="http://www.tylerweir.com/">Tyler Weir</a> for suggestions and feedback.</em></p>
 
         </div>
         <div id="footer">
