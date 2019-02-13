@@ -555,11 +555,11 @@
 <a class="sourceLine" id="cb8-91" data-line-number="91">    return <span class="fu">$</span> (<span class="dt">Nothing</span> <span class="fu">/=</span>) <span class="fu">$</span> tarjan pNo pGraph</a></code></pre></div>
 </details>
 <p>I think the logic is clearer now that the auxiliary functions take fewer arguments.</p>
-<p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>RecordWildCards</code> only minimal code changes are required (although I strongly recommend against using this extension for anything other than cute blog posts, please use <code>NamedFieldPuns</code> instead):</p>
+<p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>NamedFieldPuns</code> only minimal code changes are required:</p>
 <details>
-<p><summary style="cursor: pointer">2SAT.hs using <code>RecordWildCards</code></summary></p>
+<p><summary style="cursor: pointer">2SAT.hs using <code>NamedFieldPuns</code></summary></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">{-# LANGUAGE NamedFieldPuns #-}</span></a>
 <a class="sourceLine" id="cb9-3" data-line-number="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
 <a class="sourceLine" id="cb9-4" data-line-number="4"></a>
 <a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
@@ -604,7 +604,7 @@
 <a class="sourceLine" id="cb9-44" data-line-number="44">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
 <a class="sourceLine" id="cb9-45" data-line-number="45"></a>
 <a class="sourceLine" id="cb9-46" data-line-number="46"><span class="ot">strongConnect ::</span> forall s<span class="fu">.</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">TarjanEnv</span> s <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb9-47" data-line-number="47">strongConnect n v graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>} <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-47" data-line-number="47">strongConnect n v graph tarjanEnv<span class="fu">@</span><span class="dt">TarjanEnv</span>{ index, stack, stackSet, indices, lowlinks, output } <span class="fu">=</span> <span class="kw">do</span></a>
 <a class="sourceLine" id="cb9-48" data-line-number="48">    i <span class="ot">&lt;-</span> readSTRef index</a>
 <a class="sourceLine" id="cb9-49" data-line-number="49">    write indices  v (<span class="dt">Just</span> i)</a>
 <a class="sourceLine" id="cb9-50" data-line-number="50">    write lowlinks v (<span class="dt">Just</span> i)</a>
@@ -613,7 +613,7 @@
 <a class="sourceLine" id="cb9-53" data-line-number="53"></a>
 <a class="sourceLine" id="cb9-54" data-line-number="54">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
 <a class="sourceLine" id="cb9-55" data-line-number="55">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb9-56" data-line-number="56">            strongConnect n w graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>}</a>
+<a class="sourceLine" id="cb9-56" data-line-number="56">            strongConnect n w graph tarjanEnv</a>
 <a class="sourceLine" id="cb9-57" data-line-number="57">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
 <a class="sourceLine" id="cb9-58" data-line-number="58">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
 <a class="sourceLine" id="cb9-59" data-line-number="59">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
@@ -655,7 +655,7 @@
 <details>
 <p><summary style="cursor: pointer">2SAT.hs with short-circuiting</summary></p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ot">{-# LANGUAGE LambdaCase #-}</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="ot">{-# LANGUAGE NamedFieldPuns #-}</span></a>
 <a class="sourceLine" id="cb10-3" data-line-number="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
 <a class="sourceLine" id="cb10-4" data-line-number="4"></a>
 <a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></a>
@@ -704,7 +704,7 @@
 <a class="sourceLine" id="cb10-48" data-line-number="48">        size <span class="fu">=</span> snd (A.bounds graph) <span class="fu">+</span> <span class="dv">1</span></a>
 <a class="sourceLine" id="cb10-49" data-line-number="49"></a>
 <a class="sourceLine" id="cb10-50" data-line-number="50"><span class="ot">strongConnect ::</span> forall s<span class="fu">.</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">G.Graph</span> <span class="ot">-&gt;</span> <span class="dt">TarjanEnv</span> s <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()</a>
-<a class="sourceLine" id="cb10-51" data-line-number="51">strongConnect n v graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>} <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-51" data-line-number="51">strongConnect n v graph tarjanEnv<span class="fu">@</span><span class="dt">TarjanEnv</span>{ index, stack, stackSet, indices, lowlinks, output, possible } <span class="fu">=</span> <span class="kw">do</span></a>
 <a class="sourceLine" id="cb10-52" data-line-number="52">    i <span class="ot">&lt;-</span> readSTRef index</a>
 <a class="sourceLine" id="cb10-53" data-line-number="53">    write indices  v (<span class="dt">Just</span> i)</a>
 <a class="sourceLine" id="cb10-54" data-line-number="54">    write lowlinks v (<span class="dt">Just</span> i)</a>
@@ -713,7 +713,7 @@
 <a class="sourceLine" id="cb10-57" data-line-number="57"></a>
 <a class="sourceLine" id="cb10-58" data-line-number="58">    forM_ (graph <span class="fu">A.!</span> v) <span class="fu">$</span> \w <span class="ot">-&gt;</span> read indices w <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
 <a class="sourceLine" id="cb10-59" data-line-number="59">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb10-60" data-line-number="60">            strongConnect n w graph <span class="dt">TarjanEnv</span>{<span class="fu">..</span>}</a>
+<a class="sourceLine" id="cb10-60" data-line-number="60">            strongConnect n w graph tarjanEnv</a>
 <a class="sourceLine" id="cb10-61" data-line-number="61">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read lowlinks w)</a>
 <a class="sourceLine" id="cb10-62" data-line-number="62">        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> whenM (read stackSet w) <span class="fu">$</span></a>
 <a class="sourceLine" id="cb10-63" data-line-number="63">            write lowlinks v <span class="fu">=&lt;&lt;</span> (min <span class="fu">&lt;$&gt;</span> read lowlinks v <span class="fu">&lt;*&gt;</span> read indices  w)</a>
