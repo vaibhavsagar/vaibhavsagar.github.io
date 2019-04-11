@@ -51,15 +51,15 @@
 </blockquote>
 <p>I’m going to try to convince you that data is code. Strap yourselves in!</p>
 <p>A <a href="https://en.wikipedia.org/wiki/Cons">cons cell</a> is a way of representing a pair, and it has two operations, <a href="https://en.wikipedia.org/wiki/CAR_and_CDR"><code>car</code> and <code>cdr</code></a>, to access the first and second elements of the pair respectively. In Python, we could construct and access cons cells as follows:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb1-1" data-line-number="1">cons <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: (a, b)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">car  <span class="op">=</span> <span class="kw">lambda</span> cell: cell[<span class="dv">0</span>]</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">cdr  <span class="op">=</span> <span class="kw">lambda</span> cell: cell[<span class="dv">1</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb1-1" title="1">cons <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: (a, b)</a>
+<a class="sourceLine" id="cb1-2" title="2">car  <span class="op">=</span> <span class="kw">lambda</span> cell: cell[<span class="dv">0</span>]</a>
+<a class="sourceLine" id="cb1-3" title="3">cdr  <span class="op">=</span> <span class="kw">lambda</span> cell: cell[<span class="dv">1</span>]</a></code></pre></div>
 <p>Let’s create a pair and get the second element:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> p <span class="op">=</span> cons(<span class="dv">1</span>)(cons(<span class="dv">2</span>)(()))</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="op">&gt;&gt;&gt;</span> car(cdr(p))</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="dv">2</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb2-1" title="1"><span class="op">&gt;&gt;&gt;</span> p <span class="op">=</span> cons(<span class="dv">1</span>)(cons(<span class="dv">2</span>)(()))</a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="op">&gt;&gt;&gt;</span> car(cdr(p))</a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="dv">2</span></a></code></pre></div>
 <p>It turns out that cons cells are all you need to implement singly linked lists. For example, lists in Lisp are implemented as a series of nested cons cells. A list is either empty (represented above by <code>()</code>) or a cons cell where the first element of the pair is the head of the list and the second element of the pair is the rest of the list. Using our above definitions in Python, the list <code>[0, 1, 2, 3]</code> would be represented as (0, (1, (2, (3, ())))). In code, this would be:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb3-1" data-line-number="1">cons(<span class="dv">0</span>)(cons(<span class="dv">1</span>)(cons(<span class="dv">2</span>)(cons(<span class="dv">3</span>)(()))))</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb3-1" title="1">cons(<span class="dv">0</span>)(cons(<span class="dv">1</span>)(cons(<span class="dv">2</span>)(cons(<span class="dv">3</span>)(()))))</a></code></pre></div>
 <p>One way of visualising the above list is as follows:</p>
 <pre><code>  cons
   / \
@@ -71,29 +71,29 @@
      / \
     3  ()</code></pre>
 <p>Suppose we wanted to access the second element of this list. We could express this as the <code>car</code> of the <code>cdr</code> of this list. In code:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> example <span class="op">=</span> cons(<span class="dv">0</span>)(cons(<span class="dv">1</span>)(cons(<span class="dv">2</span>)(cons(<span class="dv">3</span>)(()))))</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="op">&gt;&gt;&gt;</span> car(cdr(example))</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="dv">1</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb5-1" title="1"><span class="op">&gt;&gt;&gt;</span> example <span class="op">=</span> cons(<span class="dv">0</span>)(cons(<span class="dv">1</span>)(cons(<span class="dv">2</span>)(cons(<span class="dv">3</span>)(()))))</a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="op">&gt;&gt;&gt;</span> car(cdr(example))</a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="dv">1</span></a></code></pre></div>
 <p>So far we’ve defined functions that wrap Python’s tuples, and we’re still in data land, working with those tuples. But it doesn’t have to be this way.</p>
 <p>You may have noticed that my definitions above were all functions of one argument. This was not entirely coincidental: cons cells as described above are very similar to <a href="https://en.wikipedia.org/wiki/Church_encoding#Church_pairs">Church pairs</a>, which are a way of representing pairs in the lambda calculus. Let’s make a minor change to the above definitions:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb6-1" data-line-number="1">pair <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: <span class="kw">lambda</span> f: f(a)(b)</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">fst  <span class="op">=</span> <span class="kw">lambda</span> p: p(<span class="kw">lambda</span> a: <span class="kw">lambda</span> b: a)</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">snd  <span class="op">=</span> <span class="kw">lambda</span> p: p(<span class="kw">lambda</span> a: <span class="kw">lambda</span> b: b)</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">nil  <span class="op">=</span> <span class="kw">lambda</span> a: a</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb6-1" title="1">pair <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: <span class="kw">lambda</span> f: f(a)(b)</a>
+<a class="sourceLine" id="cb6-2" title="2">fst  <span class="op">=</span> <span class="kw">lambda</span> p: p(<span class="kw">lambda</span> a: <span class="kw">lambda</span> b: a)</a>
+<a class="sourceLine" id="cb6-3" title="3">snd  <span class="op">=</span> <span class="kw">lambda</span> p: p(<span class="kw">lambda</span> a: <span class="kw">lambda</span> b: b)</a>
+<a class="sourceLine" id="cb6-4" title="4">nil  <span class="op">=</span> <span class="kw">lambda</span> a: a</a></code></pre></div>
 <p>We can recreate the pair above:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> p <span class="op">=</span> pair(<span class="dv">1</span>)(pair(<span class="dv">2</span>)(nil))</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="op">&gt;&gt;&gt;</span> fst(snd(p))</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="dv">2</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb7-1" title="1"><span class="op">&gt;&gt;&gt;</span> p <span class="op">=</span> pair(<span class="dv">1</span>)(pair(<span class="dv">2</span>)(nil))</a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="op">&gt;&gt;&gt;</span> fst(snd(p))</a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="dv">2</span></a></code></pre></div>
 <p>Our pair <code>p</code> is now a function, but it is representing the same data as above.</p>
 <p>As an aside, the functions we use in <code>fst</code> and <code>snd</code> are <a href="https://en.wikipedia.org/wiki/Church_encoding#Church_Booleans">Church booleans</a> that encode <code>true</code> and <code>false</code> in the lambda calculus. We can rewrite our definitions with this new knowledge:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb8-1" data-line-number="1">true  <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: a</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">false <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: b</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">fst   <span class="op">=</span> <span class="kw">lambda</span> p: p(true)</a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">snd   <span class="op">=</span> <span class="kw">lambda</span> p: p(false)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb8-1" title="1">true  <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: a</a>
+<a class="sourceLine" id="cb8-2" title="2">false <span class="op">=</span> <span class="kw">lambda</span> a: <span class="kw">lambda</span> b: b</a>
+<a class="sourceLine" id="cb8-3" title="3">fst   <span class="op">=</span> <span class="kw">lambda</span> p: p(true)</a>
+<a class="sourceLine" id="cb8-4" title="4">snd   <span class="op">=</span> <span class="kw">lambda</span> p: p(false)</a></code></pre></div>
 <p>We can perform the same operations as before to get the second element of our list:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="op">&gt;&gt;&gt;</span> example <span class="op">=</span> pair(<span class="dv">0</span>)(pair(<span class="dv">1</span>)(pair(<span class="dv">2</span>)(pair(<span class="dv">3</span>)(nil))))</a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="op">&gt;&gt;&gt;</span> fst(snd(example))</a>
-<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="dv">1</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb9-1" title="1"><span class="op">&gt;&gt;&gt;</span> example <span class="op">=</span> pair(<span class="dv">0</span>)(pair(<span class="dv">1</span>)(pair(<span class="dv">2</span>)(pair(<span class="dv">3</span>)(nil))))</a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="op">&gt;&gt;&gt;</span> fst(snd(example))</a>
+<a class="sourceLine" id="cb9-3" title="3"><span class="dv">1</span></a></code></pre></div>
 <p>Now we’ve moved to function land, and there are no tuples in sight. All we need are functions of one argument, which is convenient because this is all that lambda calculus gives us. Fortunately, lambda calculus is <a href="https://en.wikipedia.org/wiki/Turing_completeness">Turing complete</a> and therefore enough.</p>
 <p>Our code is represented as bits in memory i.e. data, but our data can be represented as functions i.e. code. You might say that bits and bytes are the lowest level representation and therefore somehow more fundamental than code, but even our data is just an undistinguished pattern of 1s and 0s without some code to make sense of it. It really is turtles all the way down.</p>
 <p>There are much more comprehensive treatments of this material available online. I’m aware of <a href="http://matt.might.net/articles/js-church/">Matt Might’s</a> and <a href="http://jtauber.com/blog/2008/11/26/church_encoding_in_python/">James Tauber’s</a>.</p>

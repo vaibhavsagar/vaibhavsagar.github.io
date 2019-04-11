@@ -46,20 +46,20 @@
 <p><em>This blog post is also available as an <a href="https://github.com/vaibhavsagar/notebooks/blob/master/trees-that-shrink/TreesThatShrink.ipynb">IHaskell notebook</a>.</em></p>
 <p>I read <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">this paper</a> a while ago and people seemed pretty excited about it, although I couldn’t see why. Fortunately, someone posed me an interesting problem recently and in the process of tackling it I think I understand now.</p>
 <p>Suppose we have a simple algebraic data type representing the lambda calculus with <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">de Bruijn indices</a>, which are a way of avoiding the messy problem of variable names:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Expr</span> a</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Lit</span> a</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">Var</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">Abs</span> (<span class="dt">Expr</span> a)</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">App</span> (<span class="dt">Expr</span> a) (<span class="dt">Expr</span> a)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Expr</span> a</a>
+<a class="sourceLine" id="cb1-2" title="2">    <span class="ot">=</span> <span class="dt">Lit</span> a</a>
+<a class="sourceLine" id="cb1-3" title="3">    <span class="op">|</span> <span class="dt">Var</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-4" title="4">    <span class="op">|</span> <span class="dt">Abs</span> (<span class="dt">Expr</span> a)</a>
+<a class="sourceLine" id="cb1-5" title="5">    <span class="op">|</span> <span class="dt">App</span> (<span class="dt">Expr</span> a) (<span class="dt">Expr</span> a)</a>
+<a class="sourceLine" id="cb1-6" title="6">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
 <p>So far so good! Now we want to have let bindings in this language, and we’ve decided that we want named variables as well while we’re at it because de Bruijn indices are not so much fun to work with. We dutifully define another data type:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Expr'</span> a</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Lit'</span> a</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">Var'</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">Abs'</span> (<span class="dt">Expr'</span> a)</a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">App'</span> (<span class="dt">Expr'</span> a) (<span class="dt">Expr'</span> a)</a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">Let'</span> <span class="dt">String</span> (<span class="dt">Expr'</span> a) (<span class="dt">Expr'</span> a)</a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">data</span> <span class="dt">Expr'</span> a</a>
+<a class="sourceLine" id="cb2-2" title="2">    <span class="ot">=</span> <span class="dt">Lit'</span> a</a>
+<a class="sourceLine" id="cb2-3" title="3">    <span class="op">|</span> <span class="dt">Var'</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    <span class="op">|</span> <span class="dt">Abs'</span> (<span class="dt">Expr'</span> a)</a>
+<a class="sourceLine" id="cb2-5" title="5">    <span class="op">|</span> <span class="dt">App'</span> (<span class="dt">Expr'</span> a) (<span class="dt">Expr'</span> a)</a>
+<a class="sourceLine" id="cb2-6" title="6">    <span class="op">|</span> <span class="dt">Let'</span> <span class="dt">String</span> (<span class="dt">Expr'</span> a) (<span class="dt">Expr'</span> a)</a>
+<a class="sourceLine" id="cb2-7" title="7">    <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
 <p>Let bindings can be easily desugared into lambda abstractions as follows:</p>
 <pre><code>let &lt;n&gt; = &lt;x&gt; in &lt;y&gt; &lt;=&gt; (\n -&gt; y) x</code></pre>
 <p>which will help us to write a simpler evaluator. However, we’d also like to make sure the desugaring has been implemented correctly, perhaps by converting to some intermediate state where both the name and the correct de Bruijn index coexist peacefully. We have a couple of options, none of which are great:</p>
@@ -69,19 +69,19 @@
 <li>Combine the desugaring and indexing passes into one, and forget about keeping track of the desugaring.</li>
 </ol>
 <p>Let’s implement the third:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Map.Strict</span> <span class="kw">as</span> <span class="dt">Map</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Map.Map</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="ot">desugarAndAnonymise ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr'</span> a <span class="ot">-&gt;</span> <span class="dt">Expr</span> a</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6">desugarAndAnonymise env expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7">    <span class="dt">Lit'</span> a <span class="ot">-&gt;</span> <span class="dt">Lit</span> a</a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">    <span class="dt">Var'</span> name <span class="ot">-&gt;</span> <span class="dt">Var</span> (env <span class="fu">Map.!</span> name)</a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">    <span class="dt">Abs'</span> expr' <span class="ot">-&gt;</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">        env'  <span class="fu">=</span> Map.map succ env</a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">        <span class="kw">in</span> <span class="dt">Abs</span> (desugarAndAnonymise env' expr')</a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">    <span class="dt">App'</span> f x <span class="ot">-&gt;</span> <span class="dt">App</span> (desugarAndAnonymise env f) (desugarAndAnonymise env x)</a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">    <span class="dt">Let'</span> n v expr' <span class="ot">-&gt;</span> desugarAndAnonymise env (<span class="dt">App'</span> (<span class="dt">Abs'</span> expr') v)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Map.Strict</span> <span class="kw">as</span> <span class="dt">Map</span></a>
+<a class="sourceLine" id="cb4-2" title="2"></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="kw">type</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Map.Map</span> <span class="dt">String</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb4-4" title="4"></a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="ot">desugarAndAnonymise ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr'</span> a <span class="ot">-&gt;</span> <span class="dt">Expr</span> a</a>
+<a class="sourceLine" id="cb4-6" title="6">desugarAndAnonymise env expr <span class="ot">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb4-7" title="7">    <span class="dt">Lit'</span> a <span class="ot">-&gt;</span> <span class="dt">Lit</span> a</a>
+<a class="sourceLine" id="cb4-8" title="8">    <span class="dt">Var'</span> name <span class="ot">-&gt;</span> <span class="dt">Var</span> (env <span class="op">Map.!</span> name)</a>
+<a class="sourceLine" id="cb4-9" title="9">    <span class="dt">Abs'</span> expr' <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb4-10" title="10">        env'  <span class="ot">=</span> Map.map <span class="fu">succ</span> env</a>
+<a class="sourceLine" id="cb4-11" title="11">        <span class="kw">in</span> <span class="dt">Abs</span> (desugarAndAnonymise env' expr')</a>
+<a class="sourceLine" id="cb4-12" title="12">    <span class="dt">App'</span> f x <span class="ot">-&gt;</span> <span class="dt">App</span> (desugarAndAnonymise env f) (desugarAndAnonymise env x)</a>
+<a class="sourceLine" id="cb4-13" title="13">    <span class="dt">Let'</span> n v expr' <span class="ot">-&gt;</span> desugarAndAnonymise env (<span class="dt">App'</span> (<span class="dt">Abs'</span> expr') v)</a></code></pre></div>
 <p>That wasn’t a lot of fun to write, I have no idea if I did the conversion from names to indices correctly, and there’s no easy way to check if I did.</p>
 <p>These problems are (barely) manageable in this case, but what if we want to add more syntax sugar or share this data type with other libraries that have different use cases? We’d either have to write variations on a theme over and over again or say goodbye to type safety. It also becomes harder and harder to decompose our functions into smaller ones that only do one thing. There has to be a better way!</p>
 <p>This is the subject of <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/trees-that-grow.pdf">Trees that Grow</a> by Shayan Najd and Simon Peyton Jones. They noticed the need for this approach when looking at GHC’s abstract syntax tree type but the idiom is generally applicable.</p>
@@ -89,8 +89,8 @@
 <p>The second insight is that we can use some of GHC’s fancier features to ease the pain of working with this ridiculously extensible data type, such as type families and pattern synonyms.</p>
 <p>The third insight is that this can be made to work with other language features, such as generalised abstract data types and existentials! We won’t use this here, but it’s great to know that it’s possible.</p>
 <p>Let’s see how we can use it to solve our problem. The first thing to do is turn on some language extensions, as with anything moderately fun in Haskell:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE TypeFamilies      #-}</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">{-# LANGUAGE PatternSynonyms   #-}</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">{-# LANGUAGE TypeFamilies      #-}</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="ot">{-# LANGUAGE PatternSynonyms   #-}</span></a></code></pre></div>
 <p>The next steps are:</p>
 <ol type="1">
 <li>Add a type parameter to the data type declaration.</li>
@@ -99,187 +99,187 @@
 <li>Define type families for each of the new data types you declared in steps 2 and 3.</li>
 </ol>
 <p>And we’re done! This is what that looks like for our example:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">data</span> <span class="dt">ExpX</span> i a</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">LitX</span> (<span class="dt">XLit</span> i a) a</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">VarX</span> (<span class="dt">XVar</span> i a)</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">AbsX</span> (<span class="dt">XAbs</span> i a) (<span class="dt">ExpX</span> i a)</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">AppX</span> (<span class="dt">XApp</span> i a) (<span class="dt">ExpX</span> i a) (<span class="dt">ExpX</span> i a)</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">ExpX</span> (<span class="dt">XExp</span> i a)</a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8"><span class="kw">type</span> family <span class="dt">XLit</span> i a</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9"><span class="kw">type</span> family <span class="dt">XVar</span> i a</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10"><span class="kw">type</span> family <span class="dt">XAbs</span> i a</a>
-<a class="sourceLine" id="cb6-11" data-line-number="11"><span class="kw">type</span> family <span class="dt">XApp</span> i a</a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="kw">type</span> family <span class="dt">XExp</span> i a</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">data</span> <span class="dt">ExpX</span> i a</a>
+<a class="sourceLine" id="cb6-2" title="2">    <span class="ot">=</span> <span class="dt">LitX</span> (<span class="dt">XLit</span> i a) a</a>
+<a class="sourceLine" id="cb6-3" title="3">    <span class="op">|</span> <span class="dt">VarX</span> (<span class="dt">XVar</span> i a)</a>
+<a class="sourceLine" id="cb6-4" title="4">    <span class="op">|</span> <span class="dt">AbsX</span> (<span class="dt">XAbs</span> i a) (<span class="dt">ExpX</span> i a)</a>
+<a class="sourceLine" id="cb6-5" title="5">    <span class="op">|</span> <span class="dt">AppX</span> (<span class="dt">XApp</span> i a) (<span class="dt">ExpX</span> i a) (<span class="dt">ExpX</span> i a)</a>
+<a class="sourceLine" id="cb6-6" title="6">    <span class="op">|</span> <span class="dt">ExpX</span> (<span class="dt">XExp</span> i a)</a>
+<a class="sourceLine" id="cb6-7" title="7"></a>
+<a class="sourceLine" id="cb6-8" title="8"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XLit</span> i a</a>
+<a class="sourceLine" id="cb6-9" title="9"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XVar</span> i a</a>
+<a class="sourceLine" id="cb6-10" title="10"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XAbs</span> i a</a>
+<a class="sourceLine" id="cb6-11" title="11"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XApp</span> i a</a>
+<a class="sourceLine" id="cb6-12" title="12"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XExp</span> i a</a></code></pre></div>
 <p>The next thing to do is to reconstruct our original data type with no extensions. To do this we’ll need to use the <a href="http://hackage.haskell.org/package/base/docs/Data-Void.html"><code>Data.Void</code></a> package:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Void</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="ot">void ::</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">void <span class="fu">=</span> error <span class="st">&quot;Attempt to evaluate void&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">import</span> <span class="dt">Data.Void</span></a>
+<a class="sourceLine" id="cb7-2" title="2"></a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="ot">void ::</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb7-4" title="4">void <span class="ot">=</span> <span class="fu">error</span> <span class="st">&quot;Attempt to evaluate void&quot;</span></a></code></pre></div>
 <p>Now we can define <code>ExpUD</code> (UD for “undecorated”) using <code>Int</code> for our <code>Var</code> like we originally wanted and <code>Void</code> for all other extension points. It might get frustrating to construct and work with these values by hand, so we can use pattern synonyms to ease this pain.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpUD</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">UD</span> a</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="kw">data</span> <span class="dt">UD</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb8-6" data-line-number="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb8-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9">pattern <span class="dt">LitUD</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">pattern <span class="dt">LitUD</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
-<a class="sourceLine" id="cb8-11" data-line-number="11">    <span class="kw">where</span> <span class="dt">LitUD</span> a <span class="fu">=</span> <span class="dt">LitX</span> void a</a>
-<a class="sourceLine" id="cb8-12" data-line-number="12">pattern <span class="dt">VarUD</span><span class="ot"> ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb8-13" data-line-number="13">pattern <span class="dt">VarUD</span> i <span class="ot">&lt;-</span> <span class="dt">VarX</span> i</a>
-<a class="sourceLine" id="cb8-14" data-line-number="14">    <span class="kw">where</span> <span class="dt">VarUD</span> i <span class="fu">=</span> <span class="dt">VarX</span> i</a>
-<a class="sourceLine" id="cb8-15" data-line-number="15">pattern <span class="dt">AbsUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb8-16" data-line-number="16">pattern <span class="dt">AbsUD</span> a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> _ a</a>
-<a class="sourceLine" id="cb8-17" data-line-number="17">    <span class="kw">where</span> <span class="dt">AbsUD</span> a <span class="fu">=</span> <span class="dt">AbsX</span> void a</a>
-<a class="sourceLine" id="cb8-18" data-line-number="18">pattern <span class="dt">AppUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb8-19" data-line-number="19">pattern <span class="dt">AppUD</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
-<a class="sourceLine" id="cb8-20" data-line-number="20">    <span class="kw">where</span> <span class="dt">AppUD</span> f a <span class="fu">=</span> <span class="dt">AppX</span> void f a</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">type</span> <span class="dt">ExpUD</span> a <span class="ot">=</span> <span class="dt">ExpX</span> <span class="dt">UD</span> a</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="kw">data</span> <span class="dt">UD</span></a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-4" title="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-6" title="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-7" title="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb8-8" title="8"></a>
+<a class="sourceLine" id="cb8-9" title="9"><span class="kw">pattern</span> <span class="dt">LitUD</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-10" title="10"><span class="kw">pattern</span> <span class="dt">LitUD</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
+<a class="sourceLine" id="cb8-11" title="11">    <span class="kw">where</span> <span class="dt">LitUD</span> a <span class="ot">=</span> <span class="dt">LitX</span> void a</a>
+<a class="sourceLine" id="cb8-12" title="12"><span class="kw">pattern</span> <span class="dt">VarUD</span><span class="ot"> ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-13" title="13"><span class="kw">pattern</span> <span class="dt">VarUD</span> i <span class="ot">&lt;-</span> <span class="dt">VarX</span> i</a>
+<a class="sourceLine" id="cb8-14" title="14">    <span class="kw">where</span> <span class="dt">VarUD</span> i <span class="ot">=</span> <span class="dt">VarX</span> i</a>
+<a class="sourceLine" id="cb8-15" title="15"><span class="kw">pattern</span> <span class="dt">AbsUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-16" title="16"><span class="kw">pattern</span> <span class="dt">AbsUD</span> a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> _ a</a>
+<a class="sourceLine" id="cb8-17" title="17">    <span class="kw">where</span> <span class="dt">AbsUD</span> a <span class="ot">=</span> <span class="dt">AbsX</span> void a</a>
+<a class="sourceLine" id="cb8-18" title="18"><span class="kw">pattern</span> <span class="dt">AppUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb8-19" title="19"><span class="kw">pattern</span> <span class="dt">AppUD</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
+<a class="sourceLine" id="cb8-20" title="20">    <span class="kw">where</span> <span class="dt">AppUD</span> f a <span class="ot">=</span> <span class="dt">AppX</span> void f a</a></code></pre></div>
 <p>This is unfortunately a bit boilerplate-y, but now we can define that intermediate data type that uses named variables as well as de Bruijn indices! As a bonus, we can now have named parameters to lambdas, which would not have been possible with the approach we tried to use above.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpAnn</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">Ann</span> a</a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw">data</span> <span class="dt">Ann</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Ann</span> a <span class="fu">=</span> (<span class="dt">String</span>, <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb9-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb9-9" data-line-number="9">pattern <span class="dt">LitAnn</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb9-10" data-line-number="10">pattern <span class="dt">LitAnn</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
-<a class="sourceLine" id="cb9-11" data-line-number="11">    <span class="kw">where</span> <span class="dt">LitAnn</span> a <span class="fu">=</span> <span class="dt">LitX</span> void a</a>
-<a class="sourceLine" id="cb9-12" data-line-number="12">pattern <span class="dt">VarAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb9-13" data-line-number="13">pattern <span class="dt">VarAnn</span> s i <span class="ot">&lt;-</span> <span class="dt">VarX</span> (s,i)</a>
-<a class="sourceLine" id="cb9-14" data-line-number="14">    <span class="kw">where</span> <span class="dt">VarAnn</span> s i <span class="fu">=</span> <span class="dt">VarX</span> (s, i)</a>
-<a class="sourceLine" id="cb9-15" data-line-number="15">pattern <span class="dt">AbsAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb9-16" data-line-number="16">pattern <span class="dt">AbsAnn</span> s a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> s a</a>
-<a class="sourceLine" id="cb9-17" data-line-number="17">    <span class="kw">where</span> <span class="dt">AbsAnn</span> s a <span class="fu">=</span> <span class="dt">AbsX</span> s a</a>
-<a class="sourceLine" id="cb9-18" data-line-number="18">pattern <span class="dt">AppAnn</span><span class="ot"> ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb9-19" data-line-number="19">pattern <span class="dt">AppAnn</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
-<a class="sourceLine" id="cb9-20" data-line-number="20">    <span class="kw">where</span> <span class="dt">AppAnn</span> f a <span class="fu">=</span> <span class="dt">AppX</span> void f a</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">type</span> <span class="dt">ExpAnn</span> a <span class="ot">=</span> <span class="dt">ExpX</span> <span class="dt">Ann</span> a</a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="kw">data</span> <span class="dt">Ann</span></a>
+<a class="sourceLine" id="cb9-3" title="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Ann</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Ann</span> a <span class="ot">=</span> (<span class="dt">String</span>, <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb9-5" title="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Ann</span> a <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb9-6" title="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Ann</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb9-7" title="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Ann</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb9-8" title="8"></a>
+<a class="sourceLine" id="cb9-9" title="9"><span class="kw">pattern</span> <span class="dt">LitAnn</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-10" title="10"><span class="kw">pattern</span> <span class="dt">LitAnn</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
+<a class="sourceLine" id="cb9-11" title="11">    <span class="kw">where</span> <span class="dt">LitAnn</span> a <span class="ot">=</span> <span class="dt">LitX</span> void a</a>
+<a class="sourceLine" id="cb9-12" title="12"><span class="kw">pattern</span> <span class="dt">VarAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-13" title="13"><span class="kw">pattern</span> <span class="dt">VarAnn</span> s i <span class="ot">&lt;-</span> <span class="dt">VarX</span> (s,i)</a>
+<a class="sourceLine" id="cb9-14" title="14">    <span class="kw">where</span> <span class="dt">VarAnn</span> s i <span class="ot">=</span> <span class="dt">VarX</span> (s, i)</a>
+<a class="sourceLine" id="cb9-15" title="15"><span class="kw">pattern</span> <span class="dt">AbsAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-16" title="16"><span class="kw">pattern</span> <span class="dt">AbsAnn</span> s a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb9-17" title="17">    <span class="kw">where</span> <span class="dt">AbsAnn</span> s a <span class="ot">=</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb9-18" title="18"><span class="kw">pattern</span> <span class="dt">AppAnn</span><span class="ot"> ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb9-19" title="19"><span class="kw">pattern</span> <span class="dt">AppAnn</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
+<a class="sourceLine" id="cb9-20" title="20">    <span class="kw">where</span> <span class="dt">AppAnn</span> f a <span class="ot">=</span> <span class="dt">AppX</span> void f a</a></code></pre></div>
 <p>Now for my favourite part, where we add let bindings! We achieve this by using a tuple to represent <code>let &lt;name&gt; = &lt;expr&gt; in &lt;expr&gt;</code> as <code>(&lt;name&gt;, &lt;expr&gt;, &lt;expr&gt;)</code>, and we use named variables and parameters in this representation.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ExpLet</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">Let</span> a</a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw">data</span> <span class="dt">Let</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Let</span> a <span class="fu">=</span> (<span class="dt">String</span>, <span class="dt">ExpLet</span> a, <span class="dt">ExpLet</span> a)</a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9">pattern <span class="dt">LitLet</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb10-10" data-line-number="10">pattern <span class="dt">LitLet</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
-<a class="sourceLine" id="cb10-11" data-line-number="11">    <span class="kw">where</span> <span class="dt">LitLet</span> a <span class="fu">=</span> <span class="dt">LitX</span> void a</a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">pattern <span class="dt">VarLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb10-13" data-line-number="13">pattern <span class="dt">VarLet</span> s <span class="ot">&lt;-</span> <span class="dt">VarX</span> s</a>
-<a class="sourceLine" id="cb10-14" data-line-number="14">    <span class="kw">where</span> <span class="dt">VarLet</span> s <span class="fu">=</span> <span class="dt">VarX</span> s</a>
-<a class="sourceLine" id="cb10-15" data-line-number="15">pattern <span class="dt">AbsLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb10-16" data-line-number="16">pattern <span class="dt">AbsLet</span> s a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> s a</a>
-<a class="sourceLine" id="cb10-17" data-line-number="17">    <span class="kw">where</span> <span class="dt">AbsLet</span> s a <span class="fu">=</span> <span class="dt">AbsX</span> s a</a>
-<a class="sourceLine" id="cb10-18" data-line-number="18">pattern <span class="dt">AppLet</span><span class="ot"> ::</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb10-19" data-line-number="19">pattern <span class="dt">AppLet</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
-<a class="sourceLine" id="cb10-20" data-line-number="20">    <span class="kw">where</span> <span class="dt">AppLet</span> f a <span class="fu">=</span> <span class="dt">AppX</span> void f a</a>
-<a class="sourceLine" id="cb10-21" data-line-number="21">pattern <span class="dt">LetLet</span> n v e <span class="ot">&lt;-</span> <span class="dt">ExpX</span> (n,v,e)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">type</span> <span class="dt">ExpLet</span> a <span class="ot">=</span> <span class="dt">ExpX</span> <span class="dt">Let</span> a</a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw">data</span> <span class="dt">Let</span></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Let</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Let</span> a <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Let</span> a <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-6" title="6"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Let</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb10-7" title="7"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Let</span> a <span class="ot">=</span> (<span class="dt">String</span>, <span class="dt">ExpLet</span> a, <span class="dt">ExpLet</span> a)</a>
+<a class="sourceLine" id="cb10-8" title="8"></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="kw">pattern</span> <span class="dt">LitLet</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-10" title="10"><span class="kw">pattern</span> <span class="dt">LitLet</span> a <span class="ot">&lt;-</span> <span class="dt">LitX</span> _ a</a>
+<a class="sourceLine" id="cb10-11" title="11">    <span class="kw">where</span> <span class="dt">LitLet</span> a <span class="ot">=</span> <span class="dt">LitX</span> void a</a>
+<a class="sourceLine" id="cb10-12" title="12"><span class="kw">pattern</span> <span class="dt">VarLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-13" title="13"><span class="kw">pattern</span> <span class="dt">VarLet</span> s <span class="ot">&lt;-</span> <span class="dt">VarX</span> s</a>
+<a class="sourceLine" id="cb10-14" title="14">    <span class="kw">where</span> <span class="dt">VarLet</span> s <span class="ot">=</span> <span class="dt">VarX</span> s</a>
+<a class="sourceLine" id="cb10-15" title="15"><span class="kw">pattern</span> <span class="dt">AbsLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-16" title="16"><span class="kw">pattern</span> <span class="dt">AbsLet</span> s a <span class="ot">&lt;-</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb10-17" title="17">    <span class="kw">where</span> <span class="dt">AbsLet</span> s a <span class="ot">=</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb10-18" title="18"><span class="kw">pattern</span> <span class="dt">AppLet</span><span class="ot"> ::</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb10-19" title="19"><span class="kw">pattern</span> <span class="dt">AppLet</span> f a <span class="ot">&lt;-</span> <span class="dt">AppX</span> _ f a</a>
+<a class="sourceLine" id="cb10-20" title="20">    <span class="kw">where</span> <span class="dt">AppLet</span> f a <span class="ot">=</span> <span class="dt">AppX</span> void f a</a>
+<a class="sourceLine" id="cb10-21" title="21"><span class="kw">pattern</span> <span class="dt">LetLet</span> n v e <span class="ot">&lt;-</span> <span class="dt">ExpX</span> (n,v,e)</a></code></pre></div>
 <p>Now instead of writing a single giant pass, we can write smaller ones!</p>
 <p>We can write a desugarer that preserves names and rewrites our let bindings as follows:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="ot">desugar ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">desugar env expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3">    <span class="dt">LitLet</span> a <span class="ot">-&gt;</span> <span class="dt">LitAnn</span> a</a>
-<a class="sourceLine" id="cb11-4" data-line-number="4">    <span class="dt">VarLet</span> name <span class="ot">-&gt;</span> <span class="dt">VarAnn</span> name (env <span class="fu">Map.!</span> name)</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">    <span class="dt">AbsLet</span> name expr' <span class="ot">-&gt;</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb11-6" data-line-number="6">        env'  <span class="fu">=</span> Map.map succ env</a>
-<a class="sourceLine" id="cb11-7" data-line-number="7">        env'' <span class="fu">=</span> Map.insert name <span class="dv">0</span> env'</a>
-<a class="sourceLine" id="cb11-8" data-line-number="8">        <span class="kw">in</span> <span class="dt">AbsAnn</span> name (desugar env'' expr')</a>
-<a class="sourceLine" id="cb11-9" data-line-number="9">    <span class="dt">AppLet</span> f x <span class="ot">-&gt;</span> <span class="dt">AppAnn</span> (desugar env f) (desugar env x)</a>
-<a class="sourceLine" id="cb11-10" data-line-number="10">    <span class="dt">LetLet</span> n v expr' <span class="ot">-&gt;</span> desugar env (<span class="dt">AppLet</span> (<span class="dt">AbsLet</span> n expr') v)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">desugar ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb11-2" title="2">desugar env expr <span class="ot">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb11-3" title="3">    <span class="dt">LitLet</span> a <span class="ot">-&gt;</span> <span class="dt">LitAnn</span> a</a>
+<a class="sourceLine" id="cb11-4" title="4">    <span class="dt">VarLet</span> name <span class="ot">-&gt;</span> <span class="dt">VarAnn</span> name (env <span class="op">Map.!</span> name)</a>
+<a class="sourceLine" id="cb11-5" title="5">    <span class="dt">AbsLet</span> name expr' <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb11-6" title="6">        env'  <span class="ot">=</span> Map.map <span class="fu">succ</span> env</a>
+<a class="sourceLine" id="cb11-7" title="7">        env'' <span class="ot">=</span> Map.insert name <span class="dv">0</span> env'</a>
+<a class="sourceLine" id="cb11-8" title="8">        <span class="kw">in</span> <span class="dt">AbsAnn</span> name (desugar env'' expr')</a>
+<a class="sourceLine" id="cb11-9" title="9">    <span class="dt">AppLet</span> f x <span class="ot">-&gt;</span> <span class="dt">AppAnn</span> (desugar env f) (desugar env x)</a>
+<a class="sourceLine" id="cb11-10" title="10">    <span class="dt">LetLet</span> n v expr' <span class="ot">-&gt;</span> desugar env (<span class="dt">AppLet</span> (<span class="dt">AbsLet</span> n expr') v)</a></code></pre></div>
 <p>We can also write an anonymiser that throws the names away:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">anonymise ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb12-2" data-line-number="2">anonymise expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">    <span class="dt">LitAnn</span> a <span class="ot">-&gt;</span> <span class="dt">LitUD</span> a</a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">    <span class="dt">VarAnn</span> _ i <span class="ot">-&gt;</span> <span class="dt">VarUD</span> i</a>
-<a class="sourceLine" id="cb12-5" data-line-number="5">    <span class="dt">AbsAnn</span> _ e <span class="ot">-&gt;</span> <span class="dt">AbsUD</span> (anonymise e)</a>
-<a class="sourceLine" id="cb12-6" data-line-number="6">    <span class="dt">AppAnn</span> f x <span class="ot">-&gt;</span> <span class="dt">AppUD</span> (anonymise f) (anonymise x)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">anonymise ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb12-2" title="2">anonymise expr <span class="ot">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb12-3" title="3">    <span class="dt">LitAnn</span> a <span class="ot">-&gt;</span> <span class="dt">LitUD</span> a</a>
+<a class="sourceLine" id="cb12-4" title="4">    <span class="dt">VarAnn</span> _ i <span class="ot">-&gt;</span> <span class="dt">VarUD</span> i</a>
+<a class="sourceLine" id="cb12-5" title="5">    <span class="dt">AbsAnn</span> _ e <span class="ot">-&gt;</span> <span class="dt">AbsUD</span> (anonymise e)</a>
+<a class="sourceLine" id="cb12-6" title="6">    <span class="dt">AppAnn</span> f x <span class="ot">-&gt;</span> <span class="dt">AppUD</span> (anonymise f) (anonymise x)</a></code></pre></div>
 <p>And finally an evaluator that operates on undecorated expressions:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="ot">eval ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb13-2" data-line-number="2">eval env expr <span class="fu">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
-<a class="sourceLine" id="cb13-3" data-line-number="3">    <span class="dt">LitUD</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb13-4" data-line-number="4">    <span class="dt">VarUD</span> i <span class="ot">-&gt;</span> env <span class="fu">!!</span> i</a>
-<a class="sourceLine" id="cb13-5" data-line-number="5">    <span class="dt">AbsUD</span> f <span class="ot">-&gt;</span> eval env f</a>
-<a class="sourceLine" id="cb13-6" data-line-number="6">    <span class="dt">AppUD</span> f x <span class="ot">-&gt;</span> <span class="kw">let</span></a>
-<a class="sourceLine" id="cb13-7" data-line-number="7">        x' <span class="fu">=</span> eval env x</a>
-<a class="sourceLine" id="cb13-8" data-line-number="8">        <span class="kw">in</span> eval (x'<span class="fu">:</span>env) f</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">eval ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb13-2" title="2">eval env expr <span class="ot">=</span> <span class="kw">case</span> expr <span class="kw">of</span></a>
+<a class="sourceLine" id="cb13-3" title="3">    <span class="dt">LitUD</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb13-4" title="4">    <span class="dt">VarUD</span> i <span class="ot">-&gt;</span> env <span class="op">!!</span> i</a>
+<a class="sourceLine" id="cb13-5" title="5">    <span class="dt">AbsUD</span> f <span class="ot">-&gt;</span> eval env f</a>
+<a class="sourceLine" id="cb13-6" title="6">    <span class="dt">AppUD</span> f x <span class="ot">-&gt;</span> <span class="kw">let</span></a>
+<a class="sourceLine" id="cb13-7" title="7">        x' <span class="ot">=</span> eval env x</a>
+<a class="sourceLine" id="cb13-8" title="8">        <span class="kw">in</span> eval (x'<span class="op">:</span>env) f</a></code></pre></div>
 <p>Let’s see it in action!</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1">identity <span class="fu">=</span> <span class="dt">AbsLet</span> <span class="st">&quot;i&quot;</span> (<span class="dt">VarLet</span> <span class="st">&quot;i&quot;</span>)</a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">konst <span class="fu">=</span> (<span class="dt">AbsLet</span> <span class="st">&quot;x&quot;</span> (<span class="dt">AbsLet</span> <span class="st">&quot;y&quot;</span> (<span class="dt">VarLet</span> <span class="st">&quot;x&quot;</span>)))</a>
-<a class="sourceLine" id="cb14-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4">eval [] <span class="fu">.</span> anonymise <span class="fu">.</span> desugar Map.empty <span class="fu">$</span> <span class="dt">AppLet</span> (<span class="dt">AppLet</span> konst (<span class="dt">LitLet</span> <span class="dv">1</span>)) (<span class="dt">LitLet</span> <span class="dv">2</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1">identity <span class="ot">=</span> <span class="dt">AbsLet</span> <span class="st">&quot;i&quot;</span> (<span class="dt">VarLet</span> <span class="st">&quot;i&quot;</span>)</a>
+<a class="sourceLine" id="cb14-2" title="2">konst <span class="ot">=</span> (<span class="dt">AbsLet</span> <span class="st">&quot;x&quot;</span> (<span class="dt">AbsLet</span> <span class="st">&quot;y&quot;</span> (<span class="dt">VarLet</span> <span class="st">&quot;x&quot;</span>)))</a>
+<a class="sourceLine" id="cb14-3" title="3"></a>
+<a class="sourceLine" id="cb14-4" title="4">eval [] <span class="op">.</span> anonymise <span class="op">.</span> desugar Map.empty <span class="op">$</span> <span class="dt">AppLet</span> (<span class="dt">AppLet</span> konst (<span class="dt">LitLet</span> <span class="dv">1</span>)) (<span class="dt">LitLet</span> <span class="dv">2</span>)</a></code></pre></div>
 <pre><code>2</code></pre>
 <p>Awesome! We have composable compiler passes that are easier to write and to think about. Even with this small example, I hope the benefits are clear.</p>
 <p>Edit: <a href="https://www.reddit.com/r/haskell/comments/8s75n3/trees_that_shrink/e0x8se2">Edward Kmett points out</a> that using <code>Void</code> makes this approach unnecessarily footgun-prone and suggests using strict fields and <code>()</code> instead. This allows for simpler pattern synonyms and comes with the additional benefit that we can disable constructors with <code>Void</code> so we can actually have trees that shrink:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">data</span> <span class="dt">ExpX</span> i a</a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">LitX</span> <span class="fu">!</span>(<span class="dt">XLit</span> i a) a</a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">VarX</span> <span class="fu">!</span>(<span class="dt">XVar</span> i a)</a>
-<a class="sourceLine" id="cb16-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">AbsX</span> <span class="fu">!</span>(<span class="dt">XAbs</span> i a) (<span class="dt">ExpX</span> i a)</a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">AppX</span> <span class="fu">!</span>(<span class="dt">XApp</span> i a) (<span class="dt">ExpX</span> i a) (<span class="dt">ExpX</span> i a)</a>
-<a class="sourceLine" id="cb16-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">ExpX</span> <span class="fu">!</span>(<span class="dt">XExp</span> i a)</a>
-<a class="sourceLine" id="cb16-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb16-8" data-line-number="8"><span class="kw">type</span> family <span class="dt">XLit</span> i a</a>
-<a class="sourceLine" id="cb16-9" data-line-number="9"><span class="kw">type</span> family <span class="dt">XVar</span> i a</a>
-<a class="sourceLine" id="cb16-10" data-line-number="10"><span class="kw">type</span> family <span class="dt">XAbs</span> i a</a>
-<a class="sourceLine" id="cb16-11" data-line-number="11"><span class="kw">type</span> family <span class="dt">XApp</span> i a</a>
-<a class="sourceLine" id="cb16-12" data-line-number="12"><span class="kw">type</span> family <span class="dt">XExp</span> i a</a>
-<a class="sourceLine" id="cb16-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb16-14" data-line-number="14"><span class="kw">type</span> <span class="dt">ExpUD</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">UD</span> a</a>
-<a class="sourceLine" id="cb16-15" data-line-number="15"><span class="kw">data</span> <span class="dt">UD</span></a>
-<a class="sourceLine" id="cb16-16" data-line-number="16"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">UD</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-17" data-line-number="17"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb16-18" data-line-number="18"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">UD</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-19" data-line-number="19"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">UD</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-20" data-line-number="20"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">UD</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb16-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb16-22" data-line-number="22">pattern <span class="dt">LitUD</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb16-23" data-line-number="23">pattern <span class="dt">LitUD</span> a <span class="fu">=</span> <span class="dt">LitX</span> () a</a>
-<a class="sourceLine" id="cb16-24" data-line-number="24">pattern <span class="dt">VarUD</span><span class="ot"> ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb16-25" data-line-number="25">pattern <span class="dt">VarUD</span> i <span class="fu">=</span> <span class="dt">VarX</span> i</a>
-<a class="sourceLine" id="cb16-26" data-line-number="26">pattern <span class="dt">AbsUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb16-27" data-line-number="27">pattern <span class="dt">AbsUD</span> a <span class="fu">=</span> <span class="dt">AbsX</span> () a</a>
-<a class="sourceLine" id="cb16-28" data-line-number="28">pattern <span class="dt">AppUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
-<a class="sourceLine" id="cb16-29" data-line-number="29">pattern <span class="dt">AppUD</span> f a <span class="fu">=</span> <span class="dt">AppX</span> () f a</a>
-<a class="sourceLine" id="cb16-30" data-line-number="30"></a>
-<a class="sourceLine" id="cb16-31" data-line-number="31"><span class="kw">type</span> <span class="dt">ExpAnn</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">Ann</span> a</a>
-<a class="sourceLine" id="cb16-32" data-line-number="32"><span class="kw">data</span> <span class="dt">Ann</span></a>
-<a class="sourceLine" id="cb16-33" data-line-number="33"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Ann</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-34" data-line-number="34"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Ann</span> a <span class="fu">=</span> (<span class="dt">String</span>, <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb16-35" data-line-number="35"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb16-36" data-line-number="36"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Ann</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-37" data-line-number="37"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Ann</span> a <span class="fu">=</span> <span class="dt">Void</span></a>
-<a class="sourceLine" id="cb16-38" data-line-number="38"></a>
-<a class="sourceLine" id="cb16-39" data-line-number="39">pattern <span class="dt">LitAnn</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb16-40" data-line-number="40">pattern <span class="dt">LitAnn</span> a <span class="fu">=</span> <span class="dt">LitX</span> () a</a>
-<a class="sourceLine" id="cb16-41" data-line-number="41">pattern <span class="dt">VarAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb16-42" data-line-number="42">pattern <span class="dt">VarAnn</span> s i <span class="fu">=</span> <span class="dt">VarX</span> (s, i)</a>
-<a class="sourceLine" id="cb16-43" data-line-number="43">pattern <span class="dt">AbsAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb16-44" data-line-number="44">pattern <span class="dt">AbsAnn</span> s a <span class="fu">=</span> <span class="dt">AbsX</span> s a</a>
-<a class="sourceLine" id="cb16-45" data-line-number="45">pattern <span class="dt">AppAnn</span><span class="ot"> ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
-<a class="sourceLine" id="cb16-46" data-line-number="46">pattern <span class="dt">AppAnn</span> f a <span class="fu">=</span> <span class="dt">AppX</span> () f a</a>
-<a class="sourceLine" id="cb16-47" data-line-number="47"></a>
-<a class="sourceLine" id="cb16-48" data-line-number="48"><span class="kw">type</span> <span class="dt">ExpLet</span> a <span class="fu">=</span> <span class="dt">ExpX</span> <span class="dt">Let</span> a</a>
-<a class="sourceLine" id="cb16-49" data-line-number="49"><span class="kw">data</span> <span class="dt">Let</span></a>
-<a class="sourceLine" id="cb16-50" data-line-number="50"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Let</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-51" data-line-number="51"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb16-52" data-line-number="52"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Let</span> a <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb16-53" data-line-number="53"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Let</span> a <span class="fu">=</span> ()</a>
-<a class="sourceLine" id="cb16-54" data-line-number="54"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Let</span> a <span class="fu">=</span> (<span class="dt">String</span>, <span class="dt">ExpLet</span> a, <span class="dt">ExpLet</span> a)</a>
-<a class="sourceLine" id="cb16-55" data-line-number="55"></a>
-<a class="sourceLine" id="cb16-56" data-line-number="56">pattern <span class="dt">LitLet</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb16-57" data-line-number="57">pattern <span class="dt">LitLet</span> a <span class="fu">=</span> <span class="dt">LitX</span> () a</a>
-<a class="sourceLine" id="cb16-58" data-line-number="58">pattern <span class="dt">VarLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb16-59" data-line-number="59">pattern <span class="dt">VarLet</span> s <span class="fu">=</span> <span class="dt">VarX</span> s</a>
-<a class="sourceLine" id="cb16-60" data-line-number="60">pattern <span class="dt">AbsLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb16-61" data-line-number="61">pattern <span class="dt">AbsLet</span> s a <span class="fu">=</span> <span class="dt">AbsX</span> s a</a>
-<a class="sourceLine" id="cb16-62" data-line-number="62">pattern <span class="dt">AppLet</span><span class="ot"> ::</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
-<a class="sourceLine" id="cb16-63" data-line-number="63">pattern <span class="dt">AppLet</span> f a <span class="fu">=</span> <span class="dt">AppX</span> () f a</a>
-<a class="sourceLine" id="cb16-64" data-line-number="64">pattern <span class="dt">LetLet</span> n v e <span class="ot">&lt;-</span> <span class="dt">ExpX</span> (n,v,e)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">data</span> <span class="dt">ExpX</span> i a</a>
+<a class="sourceLine" id="cb16-2" title="2">    <span class="ot">=</span> <span class="dt">LitX</span> <span class="op">!</span>(<span class="dt">XLit</span> i a) a</a>
+<a class="sourceLine" id="cb16-3" title="3">    <span class="op">|</span> <span class="dt">VarX</span> <span class="op">!</span>(<span class="dt">XVar</span> i a)</a>
+<a class="sourceLine" id="cb16-4" title="4">    <span class="op">|</span> <span class="dt">AbsX</span> <span class="op">!</span>(<span class="dt">XAbs</span> i a) (<span class="dt">ExpX</span> i a)</a>
+<a class="sourceLine" id="cb16-5" title="5">    <span class="op">|</span> <span class="dt">AppX</span> <span class="op">!</span>(<span class="dt">XApp</span> i a) (<span class="dt">ExpX</span> i a) (<span class="dt">ExpX</span> i a)</a>
+<a class="sourceLine" id="cb16-6" title="6">    <span class="op">|</span> <span class="dt">ExpX</span> <span class="op">!</span>(<span class="dt">XExp</span> i a)</a>
+<a class="sourceLine" id="cb16-7" title="7"></a>
+<a class="sourceLine" id="cb16-8" title="8"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XLit</span> i a</a>
+<a class="sourceLine" id="cb16-9" title="9"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XVar</span> i a</a>
+<a class="sourceLine" id="cb16-10" title="10"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XAbs</span> i a</a>
+<a class="sourceLine" id="cb16-11" title="11"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XApp</span> i a</a>
+<a class="sourceLine" id="cb16-12" title="12"><span class="kw">type</span> <span class="kw">family</span> <span class="dt">XExp</span> i a</a>
+<a class="sourceLine" id="cb16-13" title="13"></a>
+<a class="sourceLine" id="cb16-14" title="14"><span class="kw">type</span> <span class="dt">ExpUD</span> a <span class="ot">=</span> <span class="dt">ExpX</span> <span class="dt">UD</span> a</a>
+<a class="sourceLine" id="cb16-15" title="15"><span class="kw">data</span> <span class="dt">UD</span></a>
+<a class="sourceLine" id="cb16-16" title="16"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">UD</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-17" title="17"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb16-18" title="18"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">UD</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-19" title="19"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">UD</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-20" title="20"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">UD</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb16-21" title="21"></a>
+<a class="sourceLine" id="cb16-22" title="22"><span class="kw">pattern</span> <span class="dt">LitUD</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb16-23" title="23"><span class="kw">pattern</span> <span class="dt">LitUD</span> a <span class="ot">=</span> <span class="dt">LitX</span> () a</a>
+<a class="sourceLine" id="cb16-24" title="24"><span class="kw">pattern</span> <span class="dt">VarUD</span><span class="ot"> ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb16-25" title="25"><span class="kw">pattern</span> <span class="dt">VarUD</span> i <span class="ot">=</span> <span class="dt">VarX</span> i</a>
+<a class="sourceLine" id="cb16-26" title="26"><span class="kw">pattern</span> <span class="dt">AbsUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb16-27" title="27"><span class="kw">pattern</span> <span class="dt">AbsUD</span> a <span class="ot">=</span> <span class="dt">AbsX</span> () a</a>
+<a class="sourceLine" id="cb16-28" title="28"><span class="kw">pattern</span> <span class="dt">AppUD</span><span class="ot"> ::</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a <span class="ot">-&gt;</span> <span class="dt">ExpUD</span> a</a>
+<a class="sourceLine" id="cb16-29" title="29"><span class="kw">pattern</span> <span class="dt">AppUD</span> f a <span class="ot">=</span> <span class="dt">AppX</span> () f a</a>
+<a class="sourceLine" id="cb16-30" title="30"></a>
+<a class="sourceLine" id="cb16-31" title="31"><span class="kw">type</span> <span class="dt">ExpAnn</span> a <span class="ot">=</span> <span class="dt">ExpX</span> <span class="dt">Ann</span> a</a>
+<a class="sourceLine" id="cb16-32" title="32"><span class="kw">data</span> <span class="dt">Ann</span></a>
+<a class="sourceLine" id="cb16-33" title="33"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Ann</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-34" title="34"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Ann</span> a <span class="ot">=</span> (<span class="dt">String</span>, <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb16-35" title="35"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Ann</span> a <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb16-36" title="36"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Ann</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-37" title="37"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Ann</span> a <span class="ot">=</span> <span class="dt">Void</span></a>
+<a class="sourceLine" id="cb16-38" title="38"></a>
+<a class="sourceLine" id="cb16-39" title="39"><span class="kw">pattern</span> <span class="dt">LitAnn</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb16-40" title="40"><span class="kw">pattern</span> <span class="dt">LitAnn</span> a <span class="ot">=</span> <span class="dt">LitX</span> () a</a>
+<a class="sourceLine" id="cb16-41" title="41"><span class="kw">pattern</span> <span class="dt">VarAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb16-42" title="42"><span class="kw">pattern</span> <span class="dt">VarAnn</span> s i <span class="ot">=</span> <span class="dt">VarX</span> (s, i)</a>
+<a class="sourceLine" id="cb16-43" title="43"><span class="kw">pattern</span> <span class="dt">AbsAnn</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb16-44" title="44"><span class="kw">pattern</span> <span class="dt">AbsAnn</span> s a <span class="ot">=</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb16-45" title="45"><span class="kw">pattern</span> <span class="dt">AppAnn</span><span class="ot"> ::</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a <span class="ot">-&gt;</span> <span class="dt">ExpAnn</span> a</a>
+<a class="sourceLine" id="cb16-46" title="46"><span class="kw">pattern</span> <span class="dt">AppAnn</span> f a <span class="ot">=</span> <span class="dt">AppX</span> () f a</a>
+<a class="sourceLine" id="cb16-47" title="47"></a>
+<a class="sourceLine" id="cb16-48" title="48"><span class="kw">type</span> <span class="dt">ExpLet</span> a <span class="ot">=</span> <span class="dt">ExpX</span> <span class="dt">Let</span> a</a>
+<a class="sourceLine" id="cb16-49" title="49"><span class="kw">data</span> <span class="dt">Let</span></a>
+<a class="sourceLine" id="cb16-50" title="50"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XLit</span> <span class="dt">Let</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-51" title="51"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XVar</span> <span class="dt">Let</span> a <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb16-52" title="52"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XAbs</span> <span class="dt">Let</span> a <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb16-53" title="53"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XApp</span> <span class="dt">Let</span> a <span class="ot">=</span> ()</a>
+<a class="sourceLine" id="cb16-54" title="54"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">XExp</span> <span class="dt">Let</span> a <span class="ot">=</span> (<span class="dt">String</span>, <span class="dt">ExpLet</span> a, <span class="dt">ExpLet</span> a)</a>
+<a class="sourceLine" id="cb16-55" title="55"></a>
+<a class="sourceLine" id="cb16-56" title="56"><span class="kw">pattern</span> <span class="dt">LitLet</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb16-57" title="57"><span class="kw">pattern</span> <span class="dt">LitLet</span> a <span class="ot">=</span> <span class="dt">LitX</span> () a</a>
+<a class="sourceLine" id="cb16-58" title="58"><span class="kw">pattern</span> <span class="dt">VarLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb16-59" title="59"><span class="kw">pattern</span> <span class="dt">VarLet</span> s <span class="ot">=</span> <span class="dt">VarX</span> s</a>
+<a class="sourceLine" id="cb16-60" title="60"><span class="kw">pattern</span> <span class="dt">AbsLet</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb16-61" title="61"><span class="kw">pattern</span> <span class="dt">AbsLet</span> s a <span class="ot">=</span> <span class="dt">AbsX</span> s a</a>
+<a class="sourceLine" id="cb16-62" title="62"><span class="kw">pattern</span> <span class="dt">AppLet</span><span class="ot"> ::</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a <span class="ot">-&gt;</span> <span class="dt">ExpLet</span> a</a>
+<a class="sourceLine" id="cb16-63" title="63"><span class="kw">pattern</span> <span class="dt">AppLet</span> f a <span class="ot">=</span> <span class="dt">AppX</span> () f a</a>
+<a class="sourceLine" id="cb16-64" title="64"><span class="kw">pattern</span> <span class="dt">LetLet</span> n v e <span class="ot">&lt;-</span> <span class="dt">ExpX</span> (n,v,e)</a></code></pre></div>
 <p>The definitions of <code>desugar</code>, <code>anonymise</code>, and <code>eval</code> are unchanged.</p>
 <p>Thanks to <a href="http://andychu.net/">Andy Chu</a> and <a href="https://push.cx/">Peter Bhat Harkins</a> for comments and feedback.</p>
 

@@ -43,14 +43,14 @@
     
 </div>
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">RC</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</a></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">RC</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="ot">    pure  ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">RC</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</a></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">RC</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="ot">    return ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="ot">    (&gt;&gt;=)  ::</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">RC</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> b</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">RC</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">RC</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="ot">    pure  ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">RC</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">RC</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="ot">    return ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="ot">    (&gt;&gt;=)  ::</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">RC</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> b</a></code></pre></div>
 
         </div>
         <div id="footer">

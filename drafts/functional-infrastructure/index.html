@@ -49,102 +49,102 @@
 <h2 id="packaging">Packaging</h2>
 <p>Suppose we are in ops, and have been given a small Haskell app to get up and running:</p>
 <p><em>Main.hs</em></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Web.Scotty</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Monoid</span> (mconcat)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7">main <span class="fu">=</span> scotty <span class="dv">3000</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-8" data-line-number="8">    get <span class="st">&quot;/:word&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9">        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10">        html <span class="fu">$</span> mconcat [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
+<a class="sourceLine" id="cb1-2" title="2"></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">import</span> <span class="dt">Web.Scotty</span></a>
+<a class="sourceLine" id="cb1-4" title="4"></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">import</span> <span class="dt">Data.Monoid</span> (mconcat)</a>
+<a class="sourceLine" id="cb1-6" title="6"></a>
+<a class="sourceLine" id="cb1-7" title="7">main <span class="ot">=</span> scotty <span class="dv">3000</span> <span class="op">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-8" title="8">    get <span class="st">&quot;/:word&quot;</span> <span class="op">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-9" title="9">        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span></a>
+<a class="sourceLine" id="cb1-10" title="10">        html <span class="op">$</span> <span class="fu">mconcat</span> [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</a></code></pre></div>
 <p><em>blank-me-up.cabal</em></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1">name<span class="fu">:</span>                blank<span class="fu">-</span>me<span class="fu">-</span>up</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">version<span class="fu">:</span>             <span class="fl">0.1</span><span class="fu">.</span><span class="fl">0.0</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">license<span class="fu">:</span>             <span class="dt">BSD3</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">build<span class="fu">-</span><span class="kw">type</span><span class="fu">:</span>          <span class="dt">Simple</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">cabal<span class="fu">-</span>version<span class="fu">:</span>       <span class="fu">&gt;=</span><span class="fl">1.10</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">executable blank<span class="fu">-</span>me<span class="fu">-</span>up</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">  main<span class="fu">-</span>is<span class="fu">:</span>             Main.hs</a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">  build<span class="fu">-</span>depends<span class="fu">:</span>       base <span class="fu">&gt;=</span><span class="fl">4.9</span> <span class="fu">&amp;&amp;</span> <span class="fu">&lt;</span><span class="dv">5</span></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">                     , scotty</a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">  default<span class="fu">-</span>language<span class="fu">:</span>    <span class="dt">Haskell2010</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1">name<span class="op">:</span>                blank<span class="op">-</span>me<span class="op">-</span>up</a>
+<a class="sourceLine" id="cb2-2" title="2">version<span class="op">:</span>             <span class="fl">0.1</span><span class="op">.</span><span class="fl">0.0</span></a>
+<a class="sourceLine" id="cb2-3" title="3">license<span class="op">:</span>             <span class="dt">BSD3</span></a>
+<a class="sourceLine" id="cb2-4" title="4">build<span class="op">-</span><span class="kw">type</span><span class="op">:</span>          <span class="dt">Simple</span></a>
+<a class="sourceLine" id="cb2-5" title="5">cabal<span class="op">-</span>version<span class="op">:</span>       <span class="op">&gt;=</span><span class="fl">1.10</span></a>
+<a class="sourceLine" id="cb2-6" title="6"></a>
+<a class="sourceLine" id="cb2-7" title="7">executable blank<span class="op">-</span>me<span class="op">-</span>up</a>
+<a class="sourceLine" id="cb2-8" title="8">  main<span class="op">-</span>is<span class="op">:</span>             Main.hs</a>
+<a class="sourceLine" id="cb2-9" title="9">  build<span class="op">-</span>depends<span class="op">:</span>       base <span class="op">&gt;=</span><span class="fl">4.9</span> <span class="op">&amp;&amp;</span> <span class="op">&lt;</span><span class="dv">5</span></a>
+<a class="sourceLine" id="cb2-10" title="10">                     , scotty</a>
+<a class="sourceLine" id="cb2-11" title="11">  default<span class="op">-</span>language<span class="op">:</span>    <span class="dt">Haskell2010</span></a></code></pre></div>
 <p>(Any resemblance to <a href="https://github.com/scotty-web/scotty/blob/306fee7121dc41a55bd4e9b785f8366198de7e3c/README.md#scotty-">the first example in Scotty’s README</a> is purely coincidental.)</p>
 <p>Our first step is to build this app and quickly check that it works. We’ll need Nix and <code>cabal2nix</code>, which turns <code>.cabal</code> files into configuration for the Nix package manager. Assuming we’ve</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" data-line-number="1">$ <span class="ex">nix-env</span> -i cabal2nix</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="op">&lt;</span><span class="ex">a</span> lot of output<span class="op">&gt;</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="ex">created</span> <span class="op">&lt;</span>number<span class="op">&gt;</span> symlinks in user environment</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1">$ <span class="ex">nix-env</span> -i cabal2nix</a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="op">&lt;</span><span class="ex">a</span> lot of output<span class="op">&gt;</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="ex">created</span> <span class="op">&lt;</span>number<span class="op">&gt;</span> symlinks in user environment</a></code></pre></div>
 <p>How do we know it worked? Try <code>nix-env -q</code> (short for <code>--query</code>):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1">$ <span class="ex">nix-env</span> -q</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="ex">cabal2nix</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1">$ <span class="ex">nix-env</span> -q</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="ex">cabal2nix</span></a></code></pre></div>
 <p>Okay, assuming the app is in the <code>app</code> subdirectory, let’s create a directory called <code>nix</code> to store our <code>.nix</code> files and begin:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" data-line-number="1">$ <span class="bu">cd</span> nix</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">$ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span> default.nix</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1">$ <span class="bu">cd</span> nix</a>
+<a class="sourceLine" id="cb5-2" title="2">$ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span> default.nix</a></code></pre></div>
 <p><code>default.nix</code> should look something like</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">{</span> <span class="ex">nixpkgs</span> ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span>, compiler ? <span class="st">&quot;default&quot;</span> <span class="kw">}</span>:</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="bu">let</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">  <span class="ex">inherit</span> (nixpkgs) <span class="ex">pkgs</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">  <span class="ex">f</span> = { mkDerivation, base, scotty, stdenv }:</a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">      <span class="ex">mkDerivation</span> {</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">        <span class="ex">pname</span> = <span class="st">&quot;blank-me-up&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">        <span class="ex">version</span> = <span class="st">&quot;0.1.0.0&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">        <span class="ex">src</span> = ../app<span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">        <span class="ex">isLibrary</span> = false<span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">        <span class="ex">isExecutable</span> = true<span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">        <span class="ex">executableHaskellDepends</span> = [ base scotty ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">        <span class="ex">license</span> = stdenv.lib.licenses.bsd3<span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">      };</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">  <span class="ex">haskellPackages</span> = if compiler == <span class="st">&quot;default&quot;</span></a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">                       <span class="kw">then</span> <span class="ex">pkgs.haskellPackages</span></a>
-<a class="sourceLine" id="cb6-20" data-line-number="20">                       <span class="kw">else</span> <span class="ex">pkgs.haskell.packages.</span><span class="va">${compiler}</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">  <span class="ex">drv</span> = haskellPackages.callPackage f <span class="dt">{}</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-23" data-line-number="23"></a>
-<a class="sourceLine" id="cb6-24" data-line-number="24"><span class="kw">in</span></a>
-<a class="sourceLine" id="cb6-25" data-line-number="25"></a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">  <span class="kw">if</span> <span class="ex">pkgs.lib.inNixShell</span> then drv.env else drv</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">{</span> <span class="ex">nixpkgs</span> ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {<span class="kw">}</span>, <span class="ex">compiler</span> ? <span class="st">&quot;default&quot;</span> }:</a>
+<a class="sourceLine" id="cb6-2" title="2"></a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="bu">let</span></a>
+<a class="sourceLine" id="cb6-4" title="4"></a>
+<a class="sourceLine" id="cb6-5" title="5">  <span class="ex">inherit</span> (nixpkgs) <span class="ex">pkgs</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-6" title="6"></a>
+<a class="sourceLine" id="cb6-7" title="7">  <span class="ex">f</span> = { mkDerivation, base, scotty, stdenv }:</a>
+<a class="sourceLine" id="cb6-8" title="8">      <span class="ex">mkDerivation</span> {</a>
+<a class="sourceLine" id="cb6-9" title="9">        <span class="ex">pname</span> = <span class="st">&quot;blank-me-up&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-10" title="10">        <span class="ex">version</span> = <span class="st">&quot;0.1.0.0&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-11" title="11">        <span class="ex">src</span> = ../app<span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-12" title="12">        <span class="ex">isLibrary</span> = false<span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-13" title="13">        <span class="ex">isExecutable</span> = true<span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-14" title="14">        <span class="ex">executableHaskellDepends</span> = [ base scotty ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-15" title="15">        <span class="ex">license</span> = stdenv.lib.licenses.bsd3<span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-16" title="16">      };</a>
+<a class="sourceLine" id="cb6-17" title="17"></a>
+<a class="sourceLine" id="cb6-18" title="18">  <span class="ex">haskellPackages</span> = if compiler == <span class="st">&quot;default&quot;</span></a>
+<a class="sourceLine" id="cb6-19" title="19">                       <span class="kw">then</span> <span class="ex">pkgs.haskellPackages</span></a>
+<a class="sourceLine" id="cb6-20" title="20">                       <span class="kw">else</span> <span class="ex">pkgs.haskell.packages.</span><span class="va">${compiler}</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb6-21" title="21"></a>
+<a class="sourceLine" id="cb6-22" title="22">  <span class="ex">drv</span> = haskellPackages.callPackage f {};</a>
+<a class="sourceLine" id="cb6-23" title="23"></a>
+<a class="sourceLine" id="cb6-24" title="24"><span class="kw">in</span></a>
+<a class="sourceLine" id="cb6-25" title="25"></a>
+<a class="sourceLine" id="cb6-26" title="26">  <span class="kw">if</span> <span class="ex">pkgs.lib.inNixShell</span> then drv.env else drv</a></code></pre></div>
 <p>Now we can build our project by running <code>nix-build</code>, which tries to build <code>default.nix</code> in the current directory if no arguments are provided:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" data-line-number="1">$ <span class="ex">nix-build</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="op">&lt;</span><span class="ex">lots</span> of output<span class="op">&gt;</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" title="1">$ <span class="ex">nix-build</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="op">&lt;</span><span class="ex">lots</span> of output<span class="op">&gt;</span></a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
 <p>There should also be a new <code>result</code> symlink in the current directory, which points to the path above:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" data-line-number="1">$ <span class="fu">readlink</span> result</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1">$ <span class="fu">readlink</span> result</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
 <p>What happens if we run <code>nix-build</code> again without changing anything?</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" data-line-number="1">$ <span class="ex">nix-build</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" title="1">$ <span class="ex">nix-build</span></a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
 <p>It should be nearly instantaneous and not require rebuilding anything. Nix tries to think of build outputs as a pure function of its inputs, and since our inputs are unchanged, it is able to give us back the same path that it did before. This is what we mean when we say Nix is declarative.</p>
 <h2 id="service-configuration">Service Configuration</h2>
 <p>Okay, now that we’re able to successfully build the app, let’s configure a service file so that <code>systemd</code> can manage our app. I don’t know of any tools that automatically generate this so I always find myself copying and pasting from an existing service file. Here’s one I prepared earlier.</p>
 <p><em>nix/service.nix</em></p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:                                               #<span class="ex">1</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="bu">let</span>                                                                       #2</a>
-<a class="sourceLine" id="cb10-4" data-line-number="4">  <span class="ex">blank-me-up</span> = pkgs.callPackage ./default.nix <span class="dt">{}</span><span class="kw">;</span>                        #<span class="ex">3</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">in</span> <span class="kw">{</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">  <span class="ex">options.services.blank-me-up.enable</span> = lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span> <span class="co">#4</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8">  <span class="ex">config</span> = lib.mkIf config.services.blank-me-up.enable {                  #5</a>
-<a class="sourceLine" id="cb10-9" data-line-number="9">    <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 3000 ]<span class="kw">;</span>                       #<span class="ex">6</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11">    <span class="ex">systemd.services.blank-me-up</span> = {                                      #7</a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">      <span class="ex">description</span> = <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-13" data-line-number="13">      <span class="ex">after</span> = [ <span class="st">&quot;network.target&quot;</span> ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-14" data-line-number="14">      <span class="ex">wantedBy</span> = [ <span class="st">&quot;multi-user.target&quot;</span> ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-15" data-line-number="15">      <span class="ex">serviceConfig</span> = {</a>
-<a class="sourceLine" id="cb10-16" data-line-number="16">        <span class="ex">ExecStart</span> = <span class="st">&quot;</span><span class="va">${blank-</span>me-up<span class="va">}</span><span class="st">/bin/blank-me-up&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-17" data-line-number="17">        <span class="ex">Restart</span> = <span class="st">&quot;always&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-18" data-line-number="18">        <span class="ex">KillMode</span> = <span class="st">&quot;process&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-19" data-line-number="19">      <span class="kw">}</span>;</a>
-<a class="sourceLine" id="cb10-20" data-line-number="20">    };</a>
-<a class="sourceLine" id="cb10-21" data-line-number="21">  };</a>
-<a class="sourceLine" id="cb10-22" data-line-number="22">}</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:                                               <span class="co">#1</span></a>
+<a class="sourceLine" id="cb10-2" title="2"></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="bu">let</span>                                                                       <span class="co">#2</span></a>
+<a class="sourceLine" id="cb10-4" title="4">  <span class="ex">blank-me-up</span> = pkgs.callPackage ./default.nix {};                        <span class="co">#3</span></a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="kw">in</span> <span class="kw">{</span></a>
+<a class="sourceLine" id="cb10-6" title="6">  <span class="ex">options.services.blank-me-up.enable</span> = lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span> <span class="co">#4</span></a>
+<a class="sourceLine" id="cb10-7" title="7"></a>
+<a class="sourceLine" id="cb10-8" title="8">  <span class="ex">config</span> = lib.mkIf config.services.blank-me-up.enable {                  <span class="co">#5</span></a>
+<a class="sourceLine" id="cb10-9" title="9">    <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 3000 ]<span class="kw">;</span>                       <span class="co">#6</span></a>
+<a class="sourceLine" id="cb10-10" title="10"></a>
+<a class="sourceLine" id="cb10-11" title="11">    <span class="ex">systemd.services.blank-me-up</span> = {                                      <span class="co">#7</span></a>
+<a class="sourceLine" id="cb10-12" title="12">      <span class="ex">description</span> = <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-13" title="13">      <span class="ex">after</span> = [ <span class="st">&quot;network.target&quot;</span> ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-14" title="14">      <span class="ex">wantedBy</span> = [ <span class="st">&quot;multi-user.target&quot;</span> ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-15" title="15">      <span class="ex">serviceConfig</span> = {</a>
+<a class="sourceLine" id="cb10-16" title="16">        <span class="ex">ExecStart</span> = <span class="st">&quot;</span><span class="va">${blank-</span>me-up<span class="va">}</span><span class="st">/bin/blank-me-up&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-17" title="17">        <span class="ex">Restart</span> = <span class="st">&quot;always&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-18" title="18">        <span class="ex">KillMode</span> = <span class="st">&quot;process&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-19" title="19">      <span class="kw">}</span>;</a>
+<a class="sourceLine" id="cb10-20" title="20">    };</a>
+<a class="sourceLine" id="cb10-21" title="21">  };</a>
+<a class="sourceLine" id="cb10-22" title="22">}</a></code></pre></div>
 <p>This isn’t intended to be a Nix language tutorial, but there are a few interesting things that I want to point out. For a more comprehensive overview of the language, see <a href="https://medium.com/@MrJamesFisher/nix-by-example-a0063a1a4c55">here</a> or <a href="https://nixos.org/nix/manual/#ch-expression-language">here</a>.</p>
 <ol type="1">
 <li>These are the arguments to this expression that the caller will pass.</li>
@@ -157,61 +157,61 @@
 </ol>
 <p>It would be useful to look at the systemd service file that gets generated from this configuraation. To do this, we’ll need one more file:</p>
 <p><em>ops/webserver.nix</em></p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">{</span> <span class="ex">...</span> <span class="kw">}</span>: <span class="kw">{</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">  <span class="ex">imports</span> = [ ../nix/service.nix ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3">  <span class="ex">services.blank-me-up.enable</span> = true<span class="kw">;</span></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="kw">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">{</span> <span class="ex">...</span> <span class="kw">}</span>: <span class="kw">{</span></a>
+<a class="sourceLine" id="cb11-2" title="2">  <span class="ex">imports</span> = [ ../nix/service.nix ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb11-3" title="3">  <span class="ex">services.blank-me-up.enable</span> = true<span class="kw">;</span></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="kw">}</span></a></code></pre></div>
 <p>This is a function that imports the above configuration and enables the <code>blank-me-up</code> service. With this in place, we can do</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" data-line-number="1">$ <span class="ex">nix-instantiate</span> --eval -E <span class="st">'(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text'</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1">$ <span class="ex">nix-instantiate</span> --eval -E <span class="st">'(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text'</span></a></code></pre></div>
 <p>We’re using <code>nix-instantiate</code> to evaluate (<code>--eval</code>) an expression (<code>-E</code>) that uses <code>eval-config.nix</code> from the library to import the file we created and output the text of the final unit file. The output of this is pretty messy, but we can use <code>jq</code> to clean it up:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" data-line-number="1">$ <span class="ex">nix-instantiate</span> --eval -E <span class="st">'(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text'</span> <span class="kw">|</span> <span class="ex">jq</span> -r</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" title="1">$ <span class="ex">nix-instantiate</span> --eval -E <span class="st">'(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text'</span> <span class="kw">|</span> <span class="ex">jq</span> -r</a></code></pre></div>
 <p>Hopefully at this point you’re convinced that Nix can take some quasi-JSON and turn it into a binary and a systemd service file. Let’s deploy this!</p>
 <h2 id="deploying">Deploying</h2>
 <p>First, we install NixOps:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb14-1" data-line-number="1">$ <span class="ex">nix-env</span> -i nixops</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb14-1" title="1">$ <span class="ex">nix-env</span> -i nixops</a></code></pre></div>
 <p>We also have to set up VirtualBox, which I’ll be using as my deploy target. If you’re using NixOS this is as simple as adding the following lines to <code>configuration.nix</code>:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="ex">virtualisation.virtualbox.host.enable</span> = true<span class="kw">;</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="ex">virtualisation.virtualbox.guest.enable</span> = true<span class="kw">;</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb15-1" title="1"><span class="ex">virtualisation.virtualbox.host.enable</span> = true<span class="kw">;</span></a>
+<a class="sourceLine" id="cb15-2" title="2"><span class="ex">virtualisation.virtualbox.guest.enable</span> = true<span class="kw">;</span></a></code></pre></div>
 <p>and running <code>sudo nixos-rebuild switch</code>. If you’re using another Linux distro, install VirtualBox and set up a host-only network called <code>vboxnet0</code>.</p>
 <p>We’ll be using the <a href="https://nixos.org/nixops/manual/#idm140737318606176">instructions from the manual</a> as our starting point. Create the two files indicated there:</p>
 <p><em>ops/trivial.nix</em></p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">{</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">  <span class="ex">network.description</span> = <span class="st">&quot;Web server&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb16-4" data-line-number="4">  <span class="ex">webserver</span> =</a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">    <span class="kw">{</span> <span class="ex">config</span>, pkgs, ... <span class="kw">}</span>:</a>
-<a class="sourceLine" id="cb16-6" data-line-number="6">    <span class="kw">{</span> <span class="ex">services.httpd.enable</span> = true<span class="kw">;</span></a>
-<a class="sourceLine" id="cb16-7" data-line-number="7">      <span class="ex">services.httpd.adminAddr</span> = <span class="st">&quot;alice@example.org&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb16-8" data-line-number="8">      <span class="ex">services.httpd.documentRoot</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.valgrind.doc</span><span class="va">}</span><span class="st">/share/doc/valgrind/html&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb16-9" data-line-number="9">      <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 80 ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb16-10" data-line-number="10">    <span class="kw">}</span>;</a>
-<a class="sourceLine" id="cb16-11" data-line-number="11"><span class="kw">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">{</span></a>
+<a class="sourceLine" id="cb16-2" title="2">  <span class="ex">network.description</span> = <span class="st">&quot;Web server&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb16-3" title="3"></a>
+<a class="sourceLine" id="cb16-4" title="4">  <span class="ex">webserver</span> =</a>
+<a class="sourceLine" id="cb16-5" title="5">    <span class="kw">{</span> <span class="ex">config</span>, pkgs, ... <span class="kw">}</span>:</a>
+<a class="sourceLine" id="cb16-6" title="6">    <span class="kw">{</span> <span class="ex">services.httpd.enable</span> = true<span class="kw">;</span></a>
+<a class="sourceLine" id="cb16-7" title="7">      <span class="ex">services.httpd.adminAddr</span> = <span class="st">&quot;alice@example.org&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb16-8" title="8">      <span class="ex">services.httpd.documentRoot</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.valgrind.doc</span><span class="va">}</span><span class="st">/share/doc/valgrind/html&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb16-9" title="9">      <span class="ex">networking.firewall.allowedTCPPorts</span> = [ 80 ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb16-10" title="10">    <span class="kw">}</span>;</a>
+<a class="sourceLine" id="cb16-11" title="11"><span class="kw">}</span></a></code></pre></div>
 <p><em>ops/trivial-vbox.nix</em></p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">{</span></a>
-<a class="sourceLine" id="cb17-2" data-line-number="2">  <span class="ex">webserver</span> =</a>
-<a class="sourceLine" id="cb17-3" data-line-number="3">    <span class="kw">{</span> <span class="ex">config</span>, pkgs, ... <span class="kw">}</span>:</a>
-<a class="sourceLine" id="cb17-4" data-line-number="4">    <span class="kw">{</span> <span class="ex">deployment.targetEnv</span> = <span class="st">&quot;virtualbox&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb17-5" data-line-number="5">      <span class="ex">deployment.virtualbox.memorySize</span> = 1024<span class="kw">;</span> <span class="co"># megabytes</span></a>
-<a class="sourceLine" id="cb17-6" data-line-number="6">      <span class="ex">deployment.virtualbox.vcpu</span> = 2<span class="kw">;</span> <span class="co"># number of cpus</span></a>
-<a class="sourceLine" id="cb17-7" data-line-number="7">    <span class="kw">}</span>;</a>
-<a class="sourceLine" id="cb17-8" data-line-number="8"><span class="kw">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">{</span></a>
+<a class="sourceLine" id="cb17-2" title="2">  <span class="ex">webserver</span> =</a>
+<a class="sourceLine" id="cb17-3" title="3">    <span class="kw">{</span> <span class="ex">config</span>, pkgs, ... <span class="kw">}</span>:</a>
+<a class="sourceLine" id="cb17-4" title="4">    <span class="kw">{</span> <span class="ex">deployment.targetEnv</span> = <span class="st">&quot;virtualbox&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb17-5" title="5">      <span class="ex">deployment.virtualbox.memorySize</span> = 1024<span class="kw">;</span> <span class="co"># megabytes</span></a>
+<a class="sourceLine" id="cb17-6" title="6">      <span class="ex">deployment.virtualbox.vcpu</span> = 2<span class="kw">;</span> <span class="co"># number of cpus</span></a>
+<a class="sourceLine" id="cb17-7" title="7">    <span class="kw">}</span>;</a>
+<a class="sourceLine" id="cb17-8" title="8"><span class="kw">}</span></a></code></pre></div>
 <p>We need to make a small change to <code>ops/trivial.nix</code>: we already have the service configuration we want in <code>ops/webserver.nix</code> so we can import and use that:</p>
 <p><em>ops/trivial.nix</em></p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw">{</span></a>
-<a class="sourceLine" id="cb18-2" data-line-number="2">  <span class="ex">network.description</span> = <span class="st">&quot;Web server&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb18-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb18-4" data-line-number="4">  <span class="ex">webserver</span> = import ./webserver.nix<span class="kw">;</span></a>
-<a class="sourceLine" id="cb18-5" data-line-number="5"><span class="kw">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb18-1" title="1"><span class="kw">{</span></a>
+<a class="sourceLine" id="cb18-2" title="2">  <span class="ex">network.description</span> = <span class="st">&quot;Web server&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb18-3" title="3"></a>
+<a class="sourceLine" id="cb18-4" title="4">  <span class="ex">webserver</span> = import ./webserver.nix<span class="kw">;</span></a>
+<a class="sourceLine" id="cb18-5" title="5"><span class="kw">}</span></a></code></pre></div>
 <p>We should now be able to create a new deployment:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb19-1" data-line-number="1">$ <span class="ex">nixops</span> create ops/trivial.nix ops/trivial-vbox.nix -d trivial</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb19-1" title="1">$ <span class="ex">nixops</span> create ops/trivial.nix ops/trivial-vbox.nix -d trivial</a></code></pre></div>
 <p>and deploy it:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb20-1" data-line-number="1">$ <span class="ex">nixops</span> deploy -d trivial</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb20-1" title="1">$ <span class="ex">nixops</span> deploy -d trivial</a></code></pre></div>
 <p>and assuming that everything goes well, we should see a lot of terminal output and at least one mention of <code>ssh://root@&lt;ip&gt;</code>, which is the IP of our target.</p>
 <p>We should then be able to go to <code>http://&lt;ip&gt;:3000</code> and see our web app in action!</p>
 <p>NixOps also allows us to SSH in for troubleshooting purposes or to view logs:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb21-1" data-line-number="1">$ <span class="ex">nixops</span> ssh -d trivial webserver</a>
-<a class="sourceLine" id="cb21-2" data-line-number="2"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a>
-<a class="sourceLine" id="cb21-3" data-line-number="3">[<span class="ex">root@webserver</span>:~]# systemctl status blank-me-up</a></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb21-1" title="1">$ <span class="ex">nixops</span> ssh -d trivial webserver</a>
+<a class="sourceLine" id="cb21-2" title="2"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a>
+<a class="sourceLine" id="cb21-3" title="3">[<span class="ex">root@webserver</span>:~]# systemctl status blank-me-up</a></code></pre></div>
 <h2 id="responding-to-change">Responding to change</h2>
 <p>This is fantastic, but deployments are rarely fire-and-forget. How does</p>
 

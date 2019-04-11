@@ -47,50 +47,50 @@
 <p>When I started this blog, I was reluctant to put a continuous integration system like Travis-CI in charge of deployment because it seemed like a frivolous use of resources and so I settled for the approach outlined <a href="http://mathamy.com/migrating-to-github-pages-using-pelican.html">here</a> which worked reasonably well. As my understanding of continuous integration and the possibilities of Travis improved, I changed my mind and decided it would be a good idea to automate this process. I also realised that automating my deployment would allow me to theoretically create or update a post using the GitHub web interface which would automatically get turned into a new post on my blog. This would allow me to use this blog from any web browser! In other words, I wanted a convoluted reimplementation of half of a CMS’s functionality.</p>
 <p>I found a very helpful <a href="http://zonca.github.io/2013/09/automatically-build-pelican-and-publish-to-github-pages.html">blog post</a> that covered most of the details I needed. Let me go through the changes I made.</p>
 <p>First off, I use Python 3 wherever possible so I simplified my <code>requirements.txt</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode markdown"><code class="sourceCode markdown"><a class="sourceLine" id="cb1-1" data-line-number="1">pelican</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">Markdown</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode markdown"><code class="sourceCode markdown"><a class="sourceLine" id="cb1-1" title="1">pelican</a>
+<a class="sourceLine" id="cb1-2" title="2">Markdown</a></code></pre></div>
 <p>My <code>.travis.yml</code> is different too (I removed unnecessary nesting to make it shorter):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="fu">branches:</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="fu">only:</span><span class="at"> master</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="fu">language:</span><span class="at"> python</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="fu">python:</span><span class="at"> 3.6</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5"><span class="fu">cache:</span><span class="at"> pip</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="fu">script:</span><span class="at"> make html</span></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7"><span class="fu">notifications:</span></a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">  <span class="fu">email:</span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">    <span class="fu">on_success:</span><span class="at"> always</span></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">    <span class="fu">on_failure:</span><span class="at"> always</span></a>
-<a class="sourceLine" id="cb2-11" data-line-number="11"><span class="fu">before_install:</span><span class="at"> git submodule update --init --recursive</span></a>
-<a class="sourceLine" id="cb2-12" data-line-number="12"><span class="fu">after_success:</span><span class="at"> bash deploy.sh</span></a>
-<a class="sourceLine" id="cb2-13" data-line-number="13"><span class="fu">env:</span></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14">  <span class="fu">global:</span></a>
-<a class="sourceLine" id="cb2-15" data-line-number="15"><span class="fu">secure:</span><span class="at"> Ew3edSrbYr/rofui49TpBTbmHivreifr0FLjqP+1CBPXERKEsCjs9thWBnjKIZYirfetMb5ShF9EZ1g8D459BS7Sn+ziXUP4X3I4jvdx1Yj55o2CuWOD6Gx6ShPkWEhZRZhFFIKpGfLO4XAKP3suSPJvB1Lp67GC0BFyPucSSU8=</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">branches:</span></a>
+<a class="sourceLine" id="cb2-2" title="2">  <span class="fu">only:</span><span class="at"> master</span></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="fu">language:</span><span class="at"> python</span></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="fu">python:</span><span class="at"> </span><span class="fl">3.6</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="fu">cache:</span><span class="at"> pip</span></a>
+<a class="sourceLine" id="cb2-6" title="6"><span class="fu">script:</span><span class="at"> make html</span></a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="fu">notifications:</span></a>
+<a class="sourceLine" id="cb2-8" title="8">  <span class="fu">email:</span></a>
+<a class="sourceLine" id="cb2-9" title="9">    <span class="fu">on_success:</span><span class="at"> always</span></a>
+<a class="sourceLine" id="cb2-10" title="10">    <span class="fu">on_failure:</span><span class="at"> always</span></a>
+<a class="sourceLine" id="cb2-11" title="11"><span class="fu">before_install:</span><span class="at"> git submodule update --init --recursive</span></a>
+<a class="sourceLine" id="cb2-12" title="12"><span class="fu">after_success:</span><span class="at"> bash deploy.sh</span></a>
+<a class="sourceLine" id="cb2-13" title="13"><span class="fu">env:</span></a>
+<a class="sourceLine" id="cb2-14" title="14">  <span class="fu">global:</span></a>
+<a class="sourceLine" id="cb2-15" title="15"><span class="fu">secure:</span><span class="at"> Ew3edSrbYr/rofui49TpBTbmHivreifr0FLjqP+1CBPXERKEsCjs9thWBnjKIZYirfetMb5ShF9EZ1g8D459BS7Sn+ziXUP4X3I4jvdx1Yj55o2CuWOD6Gx6ShPkWEhZRZhFFIKpGfLO4XAKP3suSPJvB1Lp67GC0BFyPucSSU8=</span></a></code></pre></div>
 <p>I installed the <code>travis</code> gem, got a GitHub token, and tried to set the token with</p>
 <pre><code>travis encrypt GH_TOKEN=LONGTOKENFROMGITHUB --add env.global</code></pre>
 <p>but it didn’t recognise my repository until I went to my <a href="https://travis-ci.org/profile/">Travis-CI profile</a>, enabled GitHub access, and enabled it to check my repository.</p>
 <p>The <code>deploy.sh</code> script was almost the same (change your username):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co">#!/usr/bin/env bash</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="va">BRANCH=</span>master</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="va">TARGET_REPO=</span>vaibhavsagar/vaibhavsagar.github.io.git</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="va">PELICAN_OUTPUT_FOLDER=</span>output</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS_PULL_REQUEST</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;false&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7">    <span class="bu">echo</span> -e <span class="st">&quot;Starting to deploy to Github Pages\n&quot;</span></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">    <span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;true&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">        <span class="fu">git</span> config --global user.email <span class="st">&quot;travis@travis-ci.org&quot;</span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">        <span class="fu">git</span> config --global user.name <span class="st">&quot;Travis&quot;</span></a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">    <span class="kw">fi</span></a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">    <span class="co"># using token, clone gh-pages branch</span></a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">    <span class="fu">git</span> clone --depth 1 --quiet --branch=<span class="va">$BRANCH</span> https://<span class="va">${GH_TOKEN}</span>@github.com/<span class="va">$TARGET_REPO</span> built_website <span class="op">&gt;</span> /dev/null</a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">    <span class="co"># go into directory and copy data we're interested in to that directory</span></a>
-<a class="sourceLine" id="cb4-15" data-line-number="15">    <span class="bu">cd</span> built_website</a>
-<a class="sourceLine" id="cb4-16" data-line-number="16">    <span class="fu">rsync</span> -av --delete --exclude=.git  ../<span class="va">$PELICAN_OUTPUT_FOLDER</span>/ ./</a>
-<a class="sourceLine" id="cb4-17" data-line-number="17">    <span class="co"># add, commit and push files</span></a>
-<a class="sourceLine" id="cb4-18" data-line-number="18">    <span class="fu">git</span> add -A</a>
-<a class="sourceLine" id="cb4-19" data-line-number="19">    <span class="fu">git</span> commit -m <span class="st">&quot;Travis build </span><span class="va">$TRAVIS_BUILD_NUMBER</span><span class="st"> pushed to Github Pages&quot;</span></a>
-<a class="sourceLine" id="cb4-20" data-line-number="20">    <span class="fu">git</span> push -fq origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null</a>
-<a class="sourceLine" id="cb4-21" data-line-number="21">    <span class="bu">echo</span> -e <span class="st">&quot;Deploy completed\n&quot;</span></a>
-<a class="sourceLine" id="cb4-22" data-line-number="22"><span class="kw">fi</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1"><span class="co">#!/usr/bin/env bash</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="va">BRANCH=</span>master</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="va">TARGET_REPO=</span>vaibhavsagar/vaibhavsagar.github.io.git</a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="va">PELICAN_OUTPUT_FOLDER=</span>output</a>
+<a class="sourceLine" id="cb4-5" title="5"></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS_PULL_REQUEST</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;false&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></a>
+<a class="sourceLine" id="cb4-7" title="7">    <span class="bu">echo</span> -e <span class="st">&quot;Starting to deploy to Github Pages\n&quot;</span></a>
+<a class="sourceLine" id="cb4-8" title="8">    <span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;true&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></a>
+<a class="sourceLine" id="cb4-9" title="9">        <span class="fu">git</span> config --global user.email <span class="st">&quot;travis@travis-ci.org&quot;</span></a>
+<a class="sourceLine" id="cb4-10" title="10">        <span class="fu">git</span> config --global user.name <span class="st">&quot;Travis&quot;</span></a>
+<a class="sourceLine" id="cb4-11" title="11">    <span class="kw">fi</span></a>
+<a class="sourceLine" id="cb4-12" title="12">    <span class="co"># using token, clone gh-pages branch</span></a>
+<a class="sourceLine" id="cb4-13" title="13">    <span class="fu">git</span> clone --depth 1 --quiet --branch=<span class="va">$BRANCH</span> https://<span class="va">${GH_TOKEN}</span>@github.com/<span class="va">$TARGET_REPO</span> built_website <span class="op">&gt;</span> /dev/null</a>
+<a class="sourceLine" id="cb4-14" title="14">    <span class="co"># go into directory and copy data we're interested in to that directory</span></a>
+<a class="sourceLine" id="cb4-15" title="15">    <span class="bu">cd</span> built_website</a>
+<a class="sourceLine" id="cb4-16" title="16">    <span class="fu">rsync</span> -av --delete --exclude=.git  ../<span class="va">$PELICAN_OUTPUT_FOLDER</span>/ ./</a>
+<a class="sourceLine" id="cb4-17" title="17">    <span class="co"># add, commit and push files</span></a>
+<a class="sourceLine" id="cb4-18" title="18">    <span class="fu">git</span> add -A</a>
+<a class="sourceLine" id="cb4-19" title="19">    <span class="fu">git</span> commit -m <span class="st">&quot;Travis build </span><span class="va">$TRAVIS_BUILD_NUMBER</span><span class="st"> pushed to Github Pages&quot;</span></a>
+<a class="sourceLine" id="cb4-20" title="20">    <span class="fu">git</span> push -fq origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null</a>
+<a class="sourceLine" id="cb4-21" title="21">    <span class="bu">echo</span> -e <span class="st">&quot;Deploy completed\n&quot;</span></a>
+<a class="sourceLine" id="cb4-22" title="22"><span class="kw">fi</span></a></code></pre></div>
 <p>and that was all the setup I had to do. I then pushed a commit and watched as Pelican and its dependencies were downloaded, my blog posts were regenerated, and my GitHub Pages repo was updated. Seems a bit wasteful, but it was surprisingly easy to get working and it performs admirably.</p>
 
         </div>

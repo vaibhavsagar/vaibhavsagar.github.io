@@ -43,7 +43,7 @@
     
 </div>
 
-<p><em>Most of the instructions in this blog post have been improved on in Niklas Hambüchen’s <a href="https://github.com/nh2/static-haskell-nix" class="uri">https://github.com/nh2/static-haskell-nix</a>, so if you’re primarily interesting in getting things working quickly I would recommend looking there first.</em></p>
+<p><em>Most of the instructions in this blog post have been improved on in Niklas Hambüchen’s <a href="https://github.com/nh2/static-haskell-nix">https://github.com/nh2/static-haskell-nix</a>, so if you’re primarily interesting in getting things working quickly I would recommend looking there first.</em></p>
 <p><em>Skip to the end for a faster and easier way of getting this working. All you have to do is clone the linked repo and run <code>nix-build default.nix</code>!</em></p>
 <p>The section of the Nixpkgs manual that talks about <a href="https://nixos.org/nixpkgs/manual/#creating-statically-linked-binaries">creating statically linked binaries</a> with Haskell ends with the caveat:</p>
 <blockquote>
@@ -51,75 +51,75 @@
 </blockquote>
 <p>That sounds like a challenge. Especially when doing it on other platforms is <a href="http://www.kuznero.com/posts/haskell/building-statically-linked-binaries.html">so easy</a>.</p>
 <p>On other platforms, building a static binary is meant to be as simple as</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" data-line-number="1">$ <span class="ex">cabal</span> update</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">$ <span class="ex">cabal</span> install --only-dependencies</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">$ <span class="ex">cabal</span> configure --disable-executable-dynamic --disable-shared --ghc-option=-optl=-static</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">$ <span class="ex">cabal</span> build</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1">$ <span class="ex">cabal</span> update</a>
+<a class="sourceLine" id="cb1-2" title="2">$ <span class="ex">cabal</span> install --only-dependencies</a>
+<a class="sourceLine" id="cb1-3" title="3">$ <span class="ex">cabal</span> configure --disable-executable-dynamic --disable-shared --ghc-option=-optl=-static</a>
+<a class="sourceLine" id="cb1-4" title="4">$ <span class="ex">cabal</span> build</a></code></pre></div>
 <p>with the magic happening in the second step. On Nix, we do in fact have the necessary static libraries and we can provide them as build inputs but keeping track of the library paths gets hairy quickly. Fortunately Nix has an escape hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environment that <code>cabal</code> is more familiar with.</p>
 <p>Let’s put it through its paces by building a simple Scotty web app:</p>
 <p><em>blank-me-up.cabal</em></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1">name<span class="fu">:</span>                blank<span class="fu">-</span>me<span class="fu">-</span>up</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">version<span class="fu">:</span>             <span class="fl">0.1</span><span class="fu">.</span><span class="fl">0.0</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">license<span class="fu">:</span>             <span class="dt">BSD3</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">build<span class="fu">-</span><span class="kw">type</span><span class="fu">:</span>          <span class="dt">Simple</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">cabal<span class="fu">-</span>version<span class="fu">:</span>       <span class="fu">&gt;=</span><span class="fl">1.10</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">executable blank<span class="fu">-</span>me<span class="fu">-</span>up</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">  main<span class="fu">-</span>is<span class="fu">:</span>             Main.hs</a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">  build<span class="fu">-</span>depends<span class="fu">:</span>       base <span class="fu">&gt;=</span><span class="fl">4.9</span> <span class="fu">&amp;&amp;</span> <span class="fu">&lt;</span><span class="dv">5</span></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">                     , scotty</a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">  default<span class="fu">-</span>language<span class="fu">:</span>    <span class="dt">Haskell2010</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1">name<span class="op">:</span>                blank<span class="op">-</span>me<span class="op">-</span>up</a>
+<a class="sourceLine" id="cb2-2" title="2">version<span class="op">:</span>             <span class="fl">0.1</span><span class="op">.</span><span class="fl">0.0</span></a>
+<a class="sourceLine" id="cb2-3" title="3">license<span class="op">:</span>             <span class="dt">BSD3</span></a>
+<a class="sourceLine" id="cb2-4" title="4">build<span class="op">-</span><span class="kw">type</span><span class="op">:</span>          <span class="dt">Simple</span></a>
+<a class="sourceLine" id="cb2-5" title="5">cabal<span class="op">-</span>version<span class="op">:</span>       <span class="op">&gt;=</span><span class="fl">1.10</span></a>
+<a class="sourceLine" id="cb2-6" title="6"></a>
+<a class="sourceLine" id="cb2-7" title="7">executable blank<span class="op">-</span>me<span class="op">-</span>up</a>
+<a class="sourceLine" id="cb2-8" title="8">  main<span class="op">-</span>is<span class="op">:</span>             Main.hs</a>
+<a class="sourceLine" id="cb2-9" title="9">  build<span class="op">-</span>depends<span class="op">:</span>       base <span class="op">&gt;=</span><span class="fl">4.9</span> <span class="op">&amp;&amp;</span> <span class="op">&lt;</span><span class="dv">5</span></a>
+<a class="sourceLine" id="cb2-10" title="10">                     , scotty</a>
+<a class="sourceLine" id="cb2-11" title="11">  default<span class="op">-</span>language<span class="op">:</span>    <span class="dt">Haskell2010</span></a></code></pre></div>
 <p><em>Main.hs</em></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Web.Scotty</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Monoid</span> (mconcat)</a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">main <span class="fu">=</span> scotty <span class="dv">3000</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">    get <span class="st">&quot;/:word&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9">        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10">        html <span class="fu">$</span> mconcat [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
+<a class="sourceLine" id="cb3-2" title="2"></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="kw">import</span> <span class="dt">Web.Scotty</span></a>
+<a class="sourceLine" id="cb3-4" title="4"></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="kw">import</span> <span class="dt">Data.Monoid</span> (mconcat)</a>
+<a class="sourceLine" id="cb3-6" title="6"></a>
+<a class="sourceLine" id="cb3-7" title="7">main <span class="ot">=</span> scotty <span class="dv">3000</span> <span class="op">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-8" title="8">    get <span class="st">&quot;/:word&quot;</span> <span class="op">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-9" title="9">        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span></a>
+<a class="sourceLine" id="cb3-10" title="10">        html <span class="op">$</span> <span class="fu">mconcat</span> [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</a></code></pre></div>
 <p>We create <code>static.nix</code>:</p>
 <p><em>static.nix</em></p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="bu">let</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> <span class="dt">{}</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">  <span class="ex">targetPkgs</span> = pkgs: [</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6">    <span class="kw">(</span><span class="ex">pkgs.haskellPackages.ghcWithPackages</span> (p: with p<span class="kw">;</span><span class="bu"> [</span> cabal-install ]))</a>
-<a class="sourceLine" id="cb4-7" data-line-number="7">    pkgs.gmp5.static</a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">    pkgs.glibc.static</a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">    pkgs.zlib.static</a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">    pkgs.zlib.dev</a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">  ];</a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">}</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1"><span class="bu">let</span></a>
+<a class="sourceLine" id="cb4-2" title="2">  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</a>
+<a class="sourceLine" id="cb4-4" title="4">  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb4-5" title="5">  <span class="ex">targetPkgs</span> = pkgs: [</a>
+<a class="sourceLine" id="cb4-6" title="6">    <span class="kw">(</span><span class="ex">pkgs.haskellPackages.ghcWithPackages</span> (p: with p<span class="kw">;</span><span class="bu"> [</span> cabal-install ]))</a>
+<a class="sourceLine" id="cb4-7" title="7">    pkgs.gmp5.static</a>
+<a class="sourceLine" id="cb4-8" title="8">    pkgs.glibc.static</a>
+<a class="sourceLine" id="cb4-9" title="9">    pkgs.zlib.static</a>
+<a class="sourceLine" id="cb4-10" title="10">    pkgs.zlib.dev</a>
+<a class="sourceLine" id="cb4-11" title="11">  ];</a>
+<a class="sourceLine" id="cb4-12" title="12">}</a></code></pre></div>
 <p>This defines a chroot where statically linked versions of <code>gmp</code>, <code>glibc</code>, and <code>zlib</code> are available, as well as <code>zlib.h</code>. We enter this environment by running</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" data-line-number="1">$ <span class="va">$(</span><span class="ex">nix-build</span> static.nix<span class="va">)</span><span class="ex">/bin/fhs</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1">$ <span class="va">$(</span><span class="ex">nix-build</span> static.nix<span class="va">)</span><span class="ex">/bin/fhs</span></a></code></pre></div>
 <p>and then we can run the commands above with only slight modifications:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" data-line-number="1">$ <span class="ex">cabal</span> update</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">$ <span class="ex">cabal</span> install --only-dependencies --extra-include-dirs=/usr/include --extra-lib-dirs=/usr/lib</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">$ <span class="ex">cabal</span> configure --disable-executable-dynamic --disable-shared --ghc-option=-optl=-pthread --ghc-option=-optl=-static --ghc-option=-optl=-L/usr/lib</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">$ <span class="ex">cabal</span> build</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1">$ <span class="ex">cabal</span> update</a>
+<a class="sourceLine" id="cb6-2" title="2">$ <span class="ex">cabal</span> install --only-dependencies --extra-include-dirs=/usr/include --extra-lib-dirs=/usr/lib</a>
+<a class="sourceLine" id="cb6-3" title="3">$ <span class="ex">cabal</span> configure --disable-executable-dynamic --disable-shared --ghc-option=-optl=-pthread --ghc-option=-optl=-static --ghc-option=-optl=-L/usr/lib</a>
+<a class="sourceLine" id="cb6-4" title="4">$ <span class="ex">cabal</span> build</a></code></pre></div>
 <p>The difference is the extra options passed to the linker. After the last command, I get a whole bunch of warnings about</p>
 <pre><code>&quot;Using '&lt;function&gt;' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking&quot;</code></pre>
-<p>which is definitely something to watch out for if you plan on deploying these executables to a machine that might be running a different version of <code>glibc</code>. A more robust solution is to link against e.g. <code>musl</code> instead of <code>glibc</code>, as Niklas Hambüchen has done <a href="https://github.com/nh2/static-haskell-nix">here</a>. You can confirm that the executable has been statically linked by running</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" data-line-number="1">$ <span class="fu">ldd</span> dist/build/blank-me-up/blank-me-up</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">        <span class="ex">not</span> a dynamic executable</a></code></pre></div>
+<p>which is definitely something to watch out for if you plan on deploying these executables to a machine that might be running a different version of <code>glibc</code>. A more robust solution is to link against e.g. <code>musl</code> instead of <code>glibc</code>, as Niklas Hambüchen has done <a href="https://github.com/nh2/static-haskell-nix">here</a>. You can confirm that the executable has been statically linked by running</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1">$ <span class="fu">ldd</span> dist/build/blank-me-up/blank-me-up</a>
+<a class="sourceLine" id="cb8-2" title="2">        <span class="ex">not</span> a dynamic executable</a></code></pre></div>
 <p>I’ve made this project available <a href="https://github.com/vaibhavsagar/experiments/tree/master/static-haskell-nix">here</a> if you’d like to tweak it. Since this was relatively straightforward, I think it might be possible to do this without <code>buildFHSUserEnv</code>. Maybe I will try that next.</p>
 <p>Happy static linking!</p>
 <p><strong>Edit 1:</strong> This turned out to be fairly easy. I took the output of</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" data-line-number="1">$ <span class="ex">cabal2nix</span> --shell . <span class="op">&gt;</span> default.nix</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" title="1">$ <span class="ex">cabal2nix</span> --shell . <span class="op">&gt;</span> default.nix</a></code></pre></div>
 <p>and changed <code>enableSharedExecutables</code>, <code>enableSharedLibraries</code>, and <code>configureFlags</code> as follows:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ex">enableSharedExecutables</span> = false<span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="ex">enableSharedLibraries</span> = false<span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="ex">configureFlags</span> = [</a>
-<a class="sourceLine" id="cb10-4" data-line-number="4">  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp6.override { withStatic </span><span class="va">=</span> true; <span class="va">}</span><span class="st">}/lib&quot;</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9">];</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" title="1"><span class="ex">enableSharedExecutables</span> = false<span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="ex">enableSharedLibraries</span> = false<span class="kw">;</span></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="ex">configureFlags</span> = [</a>
+<a class="sourceLine" id="cb10-4" title="4">  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></a>
+<a class="sourceLine" id="cb10-5" title="5">  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></a>
+<a class="sourceLine" id="cb10-6" title="6">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.gmp6.override { withStatic </span><span class="va">=</span> true; <span class="va">}</span><span class="st">}/lib&quot;</span></a>
+<a class="sourceLine" id="cb10-7" title="7">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.zlib.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
+<a class="sourceLine" id="cb10-8" title="8">  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="va">${pkgs</span><span class="er">.glibc.static</span><span class="va">}</span><span class="st">/lib&quot;</span></a>
+<a class="sourceLine" id="cb10-9" title="9">];</a></code></pre></div>
 <p>This is also available in the linked repository, and you can pin <code>nixpkgs</code> as follows to get my exact build:</p>
 <pre><code>$ nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/08d245eb31a3de0ad73719372190ce84c1bf3aee.tar.gz default.nix</code></pre>
 <p><strong>Edit 2</strong>: <a href="https://github.com/angerman">Moritz Angermann</a> and <a href="https://github.com/nh2">Niklas Hambüchen</a> improved these instructions to be more robust. Thanks Moritz and Niklas!</p>
