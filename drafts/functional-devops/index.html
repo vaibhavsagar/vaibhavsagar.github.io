@@ -43,7 +43,7 @@
     
 </div>
 
-<p>What is DevOps about? For me it’s about the phrase</p>
+<p>What is DevOps about? For me it’s about my relationship to the phrase</p>
 <blockquote>
 <p>It works on my machine.</p>
 </blockquote>
@@ -51,12 +51,13 @@
 <p>A few jobs ago I was at a small web development shop, and my deployment workflow was as follows:</p>
 <ol type="1">
 <li>Log on to the development server and take careful notes on how it had diverged from the production server.</li>
+<li>Carefully set aside some time to ‘do the deploy’.</li>
 <li>Log on to the production server and do a <code>git pull</code> to get the latest code changes.</li>
-<li>Perform database migrations.</li>
+<li>Perform database migrations according to the notes you made earlier.</li>
 <li>Manually make any other required changes.</li>
 </ol>
 <p>Despite my best efforts, I would inevitably run into issues whenever I did this, resulting in site outages and frustrated clients. This was far from ideal, but I wasn’t able to articulate why at the time.</p>
-<p>I think a better deployment process has the following properties:</p>
+<p>I posit that a better deployment process has the following properties:</p>
 <ul>
 <li><p><strong>Automatic</strong>: instead of a manual multi-step process, it has a single step, which can be performed automatically.</p></li>
 <li><p><strong>Repeatable</strong>: instead of only being able to deploy to one lovingly hand-maintained server, it can deploy reliably multiple times to multiple servers.</p></li>
@@ -241,9 +242,81 @@
 <div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb21-1" title="1">$ <span class="ex">nixops</span> ssh -d trivial webserver</a>
 <a class="sourceLine" id="cb21-2" title="2"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a>
 <a class="sourceLine" id="cb21-3" title="3">[<span class="ex">root@webserver</span>:~]# systemctl status blank-me-up</a></code></pre></div>
-<h2 id="responding-to-change">Responding to change</h2>
-<p>This is fantastic, but deployments are rarely fire-and-forget. What happens when our requirements change? There’s a serious issue with our application, which is that it hardcodes the port that it listens on. If we wanted it to listen on a different port, or to run more than one instance of it on the same machine, we’d need to do something differently.</p>
-<p>The easy solution would be to talk to the developers and have them implement support, but in the meantime, how should we proceed?</p>
+<h1 id="responding-to-change">Responding to change</h1>
+<p>This is fantastic, but deployments are rarely fire-and-forget. What happens when our requirements change? In fact, there’s a serious issue with our application, which is that it hardcodes the port that it listens on. If we wanted it to listen on a different port, or to run more than one instance of it on the same machine, we’d need to do something differently.</p>
+<p>The correct solution would be to talk to the developers and have them implement support, but in the meantime, how should we proceed?</p>
+<h2 id="patching">Patching</h2>
+<p>Nix gives us full control over each part of the build and deployment process, and we can patch the software as a stopgap measure. Although this scenario is somewhat contrived, I have in fact had to take matters into my own hands like this in the past when the development team hasn’t been able to prioritise fixing a production issue.</p>
+<p>Our new expression looks like this:</p>
+<p><em>nix/patched.nix</em></p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb22-1" title="1"><span class="ex">args@</span>{ nixpkgs ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}, <span class="ex">compiler</span> ? <span class="st">&quot;default&quot;</span> }:</a>
+<a class="sourceLine" id="cb22-2" title="2"></a>
+<a class="sourceLine" id="cb22-3" title="3"><span class="kw">(</span><span class="ex">import</span> ./default.nix args<span class="kw">)</span><span class="ex">.overrideAttrs</span> (old: {</a>
+<a class="sourceLine" id="cb22-4" title="4">  <span class="ex">postPatch</span> = let</a>
+<a class="sourceLine" id="cb22-5" title="5">    <span class="ex">oldImport</span> = <span class="st">''</span></a>
+<a class="sourceLine" id="cb22-6" title="6">      <span class="ex">import</span> Web.Scotty</a>
+<a class="sourceLine" id="cb22-7" title="7">    <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb22-8" title="8">    <span class="ex">newImport</span> = <span class="st">''</span></a>
+<a class="sourceLine" id="cb22-9" title="9">      <span class="ex">import</span> Web.Scotty</a>
+<a class="sourceLine" id="cb22-10" title="10">      <span class="ex">import</span> System.Environment (getArgs)</a>
+<a class="sourceLine" id="cb22-11" title="11">    <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb22-12" title="12">    <span class="ex">oldMain</span> = <span class="st">''</span></a>
+<a class="sourceLine" id="cb22-13" title="13">      <span class="ex">main</span> = scotty 3000 $ do</a>
+<a class="sourceLine" id="cb22-14" title="14">    <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb22-15" title="15">    <span class="ex">newMain</span> = <span class="st">''</span></a>
+<a class="sourceLine" id="cb22-16" title="16">      <span class="ex">main</span> = getArgs <span class="op">&gt;&gt;</span>= <span class="dt">\(</span>port:_) <span class="ex">-</span><span class="op">&gt;</span> scotty (read port) $ <span class="kw">do</span></a>
+<a class="sourceLine" id="cb22-17" title="17">    <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb22-18" title="18">  <span class="kw">in</span> <span class="st">''</span></a>
+<a class="sourceLine" id="cb22-19" title="19">    <span class="ex">substituteInPlace</span> Main.hs --replace <span class="st">'${oldImport}'</span> <span class="st">'${newImport}'</span></a>
+<a class="sourceLine" id="cb22-20" title="20">    <span class="ex">substituteInPlace</span> Main.hs --replace <span class="st">'${oldMain}'</span>   <span class="st">'${newMain}'</span></a>
+<a class="sourceLine" id="cb22-21" title="21">    <span class="fu">cat</span> Main.hs</a>
+<a class="sourceLine" id="cb22-22" title="22">  <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb22-23" title="23">})</a></code></pre></div>
+<p>I’ve added that <code>cat Main.hs</code> at the end to</p>
+<ul>
+<li>confirm that the file was correctly patched</li>
+<li>emphasise that arbitrary shell commands can be executed</li>
+</ul>
+<p>We can create a new service definition to use this expression:</p>
+<p><em>nix/service-patched.nix</em></p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb23-1" title="1"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:</a>
+<a class="sourceLine" id="cb23-2" title="2"></a>
+<a class="sourceLine" id="cb23-3" title="3"><span class="bu">let</span></a>
+<a class="sourceLine" id="cb23-4" title="4">  <span class="ex">blank-me-up</span> = pkgs.callPackage ./patched.nix { nixpkgs = pkgs<span class="kw">;</span> };</a>
+<a class="sourceLine" id="cb23-5" title="5">  <span class="ex">cfg</span> = config.services.blank-me-up<span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-6" title="6"><span class="kw">in</span> <span class="kw">{</span></a>
+<a class="sourceLine" id="cb23-7" title="7">  <span class="ex">options.services.blank-me-up.enable</span> = lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-8" title="8">  <span class="ex">options.services.blank-me-up.port</span> = lib.mkOption {</a>
+<a class="sourceLine" id="cb23-9" title="9">    <span class="ex">default</span> = 3000<span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-10" title="10">    <span class="bu">type</span> = lib.types.int<span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-11" title="11">  <span class="kw">}</span>;</a>
+<a class="sourceLine" id="cb23-12" title="12"></a>
+<a class="sourceLine" id="cb23-13" title="13">  <span class="ex">config</span> = lib.mkIf cfg.enable {</a>
+<a class="sourceLine" id="cb23-14" title="14">    <span class="ex">networking.firewall.allowedTCPPorts</span> = [ cfg.port ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-15" title="15"></a>
+<a class="sourceLine" id="cb23-16" title="16">    <span class="ex">systemd.services.blank-me-up</span> = {</a>
+<a class="sourceLine" id="cb23-17" title="17">      <span class="ex">description</span> = <span class="st">&quot;Blank Me Up&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-18" title="18">      <span class="ex">after</span> = [ <span class="st">&quot;network.target&quot;</span> ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-19" title="19">      <span class="ex">wantedBy</span> = [ <span class="st">&quot;multi-user.target&quot;</span> ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-20" title="20">      <span class="ex">serviceConfig</span> = {</a>
+<a class="sourceLine" id="cb23-21" title="21">        <span class="ex">ExecStart</span> = <span class="st">&quot;</span><span class="va">${blank-</span>me-up<span class="va">}</span><span class="st">/bin/blank-me-up </span><span class="va">${toString</span><span class="er"> cfg.port</span><span class="va">}</span><span class="st">&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-22" title="22">        <span class="ex">Restart</span> = <span class="st">&quot;always&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-23" title="23">        <span class="ex">KillMode</span> = <span class="st">&quot;process&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb23-24" title="24">      };</a>
+<a class="sourceLine" id="cb23-25" title="25">    };</a>
+<a class="sourceLine" id="cb23-26" title="26">  };</a>
+<a class="sourceLine" id="cb23-27" title="27">}</a></code></pre></div>
+<p>We make sure to pass the configured port in on startup and open the firewall appropriately.</p>
+<h2 id="deploying-again">Deploying (Again)</h2>
+<p>We update <code>webserver.nix</code> to use the patched service and specify a different port:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">{</span> <span class="ex">...</span> <span class="kw">}</span>: <span class="kw">{</span></a>
+<a class="sourceLine" id="cb24-2" title="2">  <span class="ex">imports</span> = [ ../nix/service-patched.nix ]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb24-3" title="3">  <span class="ex">services.blank-me-up.enable</span> = true<span class="kw">;</span></a>
+<a class="sourceLine" id="cb24-4" title="4">  <span class="ex">services.blank-me-up.port</span> = 3001<span class="kw">;</span></a>
+<a class="sourceLine" id="cb24-5" title="5"><span class="kw">}</span></a></code></pre></div>
+<p>And we can deploy again!</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb25-1" title="1">$ <span class="ex">nixops</span> deploy -d trivial</a></code></pre></div>
+<p>The service should now be running on <code>http://&lt;ip&gt;:3001</code> instead of <code>http://&lt;ip&gt;:3000</code>.</p>
 
         </div>
         <div id="footer">
