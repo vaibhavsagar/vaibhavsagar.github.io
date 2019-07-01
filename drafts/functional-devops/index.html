@@ -317,6 +317,10 @@
 <p>And we can deploy again!</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb25-1" title="1">$ <span class="ex">nixops</span> deploy -d trivial</a></code></pre></div>
 <p>The service should now be running on <code>http://&lt;ip&gt;:3001</code> instead of <code>http://&lt;ip&gt;:3000</code>.</p>
+<p>If we made a mistake, rolling back is easy:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb26-1" title="1">$ <span class="ex">nixops</span> rollback -d trivial 1</a>
+<a class="sourceLine" id="cb26-2" title="2"><span class="ex">switching</span> from generation 2 to 1</a>
+<a class="sourceLine" id="cb26-3" title="3"><span class="op">&lt;</span><span class="fu">more</span> output<span class="op">&gt;</span></a></code></pre></div>
 
         </div>
         <div id="footer">
