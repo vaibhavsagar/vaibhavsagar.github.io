@@ -67,8 +67,8 @@
 </ul>
 <p>I hope to demonstrate how the Nix suite of tools (Nix, NixOS, and NixOps) fulfill these properties and provide a better DevOps experience.</p>
 <p>To make things easier, I’m not assuming that you already run NixOS. Any Linux distro should do, as long as you’ve <a href="https://nixos.org/nix/download.html">installed Nix</a>. macOS users will be able to follow along until I get to the NixOps section.</p>
-<h1 id="shipping-it">Shipping it</h1>
-<h2 id="packaging">Packaging</h2>
+<h2 id="shipping-it">Shipping it</h2>
+<h3 id="packaging">Packaging</h3>
 <p>Suppose we have been given a small Haskell app to get up and running:</p>
 <p><em>Main.hs</em></p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
@@ -142,7 +142,7 @@
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" title="1">$ <span class="ex">nix-build</span></a>
 <a class="sourceLine" id="cb9-2" title="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
 <p>It should be nearly instantaneous and not require rebuilding anything. Nix tries to think of build outputs as a pure function of its inputs, and since our inputs are unchanged, it is able to give us back the same path that it did before. This is what we mean when we say Nix is declarative.</p>
-<h2 id="service-configuration">Service Configuration</h2>
+<h3 id="service-configuration">Service Configuration</h3>
 <p>Okay, now that we’re able to successfully build the app, let’s configure a service file so that <code>systemd</code> can manage our app. I don’t know of any tools that automatically generate this so I always find myself copying and pasting from an existing service file. Here’s one I prepared earlier.</p>
 <p><em>nix/service.nix</em></p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">{</span> <span class="ex">config</span>, lib, pkgs, ... <span class="kw">}</span>:                                               <span class="co">#1</span></a>
@@ -206,7 +206,7 @@
 <a class="sourceLine" id="cb14-14" title="14">Restart=always</a></code></pre></div>
 </details>
 <p>Hopefully at this point you’re convinced that Nix can take some quasi-JSON and turn it into a binary and a <code>systemd</code> service file. Let’s deploy this!</p>
-<h2 id="deploying">Deploying</h2>
+<h3 id="deploying">Deploying</h3>
 <p>First, we install NixOps:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb15-1" title="1">$ <span class="ex">nix-env</span> -i nixops</a></code></pre></div>
 <p>We also have to set up VirtualBox, which I’ll be using as my deploy target. If you’re using NixOS this is as simple as adding the following lines to <code>configuration.nix</code>:</p>
@@ -242,10 +242,10 @@
 <div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb21-1" title="1">$ <span class="ex">nixops</span> ssh -d trivial webserver</a>
 <a class="sourceLine" id="cb21-2" title="2"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a>
 <a class="sourceLine" id="cb21-3" title="3">[<span class="ex">root@webserver</span>:~]# systemctl status blank-me-up</a></code></pre></div>
-<h1 id="responding-to-change">Responding to change</h1>
+<h2 id="responding-to-change">Responding to change</h2>
 <p>This is fantastic, but deployments are rarely fire-and-forget. What happens when our requirements change? In fact, there’s a serious issue with our application, which is that it hardcodes the port that it listens on. If we wanted it to listen on a different port, or to run more than one instance of it on the same machine, we’d need to do something differently.</p>
 <p>The correct solution would be to talk to the developers and have them implement support, but in the meantime, how should we proceed?</p>
-<h2 id="patching">Patching</h2>
+<h3 id="patching">Patching</h3>
 <p>Nix gives us full control over each part of the build and deployment process, and we can patch the software as a stopgap measure. Although this scenario is somewhat contrived, I have in fact had to take matters into my own hands like this in the past when the development team hasn’t been able to prioritise fixing a production issue.</p>
 <p>Our new expression looks like this:</p>
 <p><em>nix/patched.nix</em></p>
@@ -307,7 +307,7 @@
 <a class="sourceLine" id="cb23-26" title="26">  };</a>
 <a class="sourceLine" id="cb23-27" title="27">}</a></code></pre></div>
 <p>We make sure to pass the configured port in on startup and open the firewall appropriately.</p>
-<h2 id="deploying-again">Deploying (Again)</h2>
+<h3 id="deploying-again">Deploying (Again)</h3>
 <p>We update <code>webserver.nix</code> to use the patched service and specify a different port:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">{</span> <span class="ex">...</span> <span class="kw">}</span>: <span class="kw">{</span></a>
 <a class="sourceLine" id="cb24-2" title="2">  <span class="ex">imports</span> = [ ../nix/service-patched.nix ]<span class="kw">;</span></a>
