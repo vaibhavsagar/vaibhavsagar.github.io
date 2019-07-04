@@ -105,7 +105,7 @@
 <p>Okay, assuming the app is in the <code>app</code> subdirectory, let’s create a directory called <code>nix</code> to store our <code>.nix</code> files and begin:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1">$ <span class="bu">cd</span> nix</a>
 <a class="sourceLine" id="cb5-2" title="2">$ <span class="ex">cabal2nix</span> ../app/ --shell <span class="op">&gt;</span> default.nix</a></code></pre></div>
-<p><code>default.nix</code> should look something like</p>
+<p><code>default.nix</code> might look something like</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">{</span> <span class="ex">nixpkgs</span> ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {<span class="kw">}</span>, <span class="ex">compiler</span> ? <span class="st">&quot;default&quot;</span> }:</a>
 <a class="sourceLine" id="cb6-2" title="2"></a>
 <a class="sourceLine" id="cb6-3" title="3"><span class="bu">let</span></a>
@@ -139,10 +139,11 @@
 <p>There should also be a new <code>result</code> symlink in the current directory, which points to the path above:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1">$ <span class="fu">readlink</span> result</a>
 <a class="sourceLine" id="cb8-2" title="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
+<p>Notice that we’ve built a Haskell executable without having to directly deal with any Haskell-specific tooling (unless you count <code>cabal2nix</code>). Nix works best if you allow it full control over builds, as we do here.</p>
 <p>What happens if we run <code>nix-build</code> again without changing anything?</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" title="1">$ <span class="ex">nix-build</span></a>
 <a class="sourceLine" id="cb9-2" title="2"><span class="ex">/nix/store</span>/<span class="op">&lt;</span><span class="bu">hash</span><span class="op">&gt;</span>-blank-me-up-0.1.0.0</a></code></pre></div>
-<p>It should be nearly instantaneous and not require rebuilding anything. Nix tries to think of build outputs as a pure function of its inputs, and since our inputs are unchanged, it is able to give us back the same path that it did before. This is what we mean when we say Nix is declarative.</p>
+<p>It should be nearly instantaneous and not require rebuilding anything. Nix tries to think of build outputs as a pure function of its inputs, and since our inputs are unchanged, it is able to give us back the same path that it did before. This is what I mean when I say Nix is declarative.</p>
 <p>What if we break our app:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode diff"><code class="sourceCode diff"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">--- a/functional-devops/app/Main.hs</span></a>
 <a class="sourceLine" id="cb10-2" title="2"><span class="dt">+++ b/functional-devops/app/Main.hs</span></a>
