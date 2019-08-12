@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Easy IHaskell Docker Images with Nix - Vaibhav Sagar</title>
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-79891461-1', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../talks/">Talks</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Easy IHaskell Docker Images with Nix</h1>
+
+            <div class="info">
+    Posted on 11 August 2019
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../../../../blog/tags/haskell/">haskell</a>, <a href="../../../../../blog/tags/nix/">nix</a>
+    
+</div>
+
+<p>Today I learned how to turn an IHaskell Nix expression into a Docker image. Here is an example:</p>
+<p><code>default.nix</code></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="bu">let</span></a>
+<a class="sourceLine" id="cb1-2" title="2">  <span class="ex">pkgs</span> = {</a>
+<a class="sourceLine" id="cb1-3" title="3">    <span class="ex">ihaskell</span> = builtins.fetchTarball {</a>
+<a class="sourceLine" id="cb1-4" title="4">      <span class="ex">url</span> = <span class="st">&quot;https://github.com/gibiansky/IHaskell/tarball/93bfa3a7a434c1dfe6873c2105c43856c282e183&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-5" title="5">      <span class="ex">sha256</span> = <span class="st">&quot;1cvqqmpvz7s3d7zclmkm5igx36clrbdiafs47i9rik3rdzw0gr3d&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-6" title="6">    };</a>
+<a class="sourceLine" id="cb1-7" title="7">    <span class="ex">nixpkgs</span> = builtins.fetchTarball {</a>
+<a class="sourceLine" id="cb1-8" title="8">      <span class="ex">url</span> = <span class="st">&quot;https://github.com/NixOS/nixpkgs-channels/tarball/9ca57dc9171ca4547abf076a8987ed73c46f2e15&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-9" title="9">      <span class="ex">sha256</span> = <span class="st">&quot;18d01cw6s6k9fnac3vq0k6inybqalkz4ak88pw67q4wqzq9rc07l&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-10" title="10">    };</a>
+<a class="sourceLine" id="cb1-11" title="11">  };</a>
+<a class="sourceLine" id="cb1-12" title="12">  <span class="ex">nixpkgs</span> = import pkgs.nixpkgs {};</a>
+<a class="sourceLine" id="cb1-13" title="13">  <span class="ex">NB_USER</span> = <span class="st">&quot;jovyan&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-14" title="14">  <span class="ex">NB_UID</span> = <span class="st">&quot;1000&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-15" title="15">  <span class="ex">ihaskell</span> = import <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.ihaskell</span><span class="va">}</span><span class="st">/release.nix&quot;</span> {</a>
+<a class="sourceLine" id="cb1-16" title="16">    <span class="ex">inherit</span> nixpkgs<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-17" title="17">    <span class="ex">compiler</span> = <span class="st">&quot;ghc864&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-18" title="18">    <span class="ex">packages</span> = self: with self<span class="kw">;</span> [];</a>
+<a class="sourceLine" id="cb1-19" title="19">  };</a>
+<a class="sourceLine" id="cb1-20" title="20"><span class="kw">in</span> <span class="ex">nixpkgs.dockerTools.buildImage</span> {</a>
+<a class="sourceLine" id="cb1-21" title="21">  <span class="ex">name</span> = <span class="st">&quot;ihaskell-nix&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-22" title="22">  <span class="ex">tag</span> = <span class="st">&quot;latest&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-23" title="23">  <span class="ex">contents</span> =  [</a>
+<a class="sourceLine" id="cb1-24" title="24">    <span class="ex">ihaskell</span></a>
+<a class="sourceLine" id="cb1-25" title="25">    <span class="ex">nixpkgs.bashInteractive</span></a>
+<a class="sourceLine" id="cb1-26" title="26">  ];</a>
+<a class="sourceLine" id="cb1-27" title="27">  <span class="ex">runAsRoot</span> = <span class="st">''</span></a>
+<a class="sourceLine" id="cb1-28" title="28">    <span class="co">#!${nixpkgs.runtimeShell}</span></a>
+<a class="sourceLine" id="cb1-29" title="29">    <span class="va">${nixpkgs</span><span class="er">.dockerTools.shadowSetup</span><span class="va">}</span></a>
+<a class="sourceLine" id="cb1-30" title="30">    <span class="fu">mkdir</span> -m 1777 /tmp</a>
+<a class="sourceLine" id="cb1-31" title="31">    <span class="fu">mkdir</span> -p /home/<span class="va">${NB_USER}</span></a>
+<a class="sourceLine" id="cb1-32" title="32">    <span class="va">${nixpkgs</span><span class="er">.busybox</span><span class="va">}</span><span class="ex">/bin/adduser</span> --disabled-password --gecos <span class="st">&quot;Default user&quot;</span> --uid <span class="va">${NB_UID}</span> <span class="va">${NB_USER}</span></a>
+<a class="sourceLine" id="cb1-33" title="33">    <span class="fu">chown</span> -R <span class="va">${NB_UID}</span> /home/<span class="va">${NB_USER}</span></a>
+<a class="sourceLine" id="cb1-34" title="34">  <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb1-35" title="35">  <span class="ex">config</span> = {</a>
+<a class="sourceLine" id="cb1-36" title="36">    <span class="ex">Cmd</span> = [<span class="st">&quot;ihaskell-notebook&quot;</span> <span class="st">&quot;--ip&quot;</span> <span class="st">&quot;0.0.0.0&quot;</span> <span class="st">&quot;--no-browser&quot;</span>]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-37" title="37">    <span class="ex">User</span> = NB_USER<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-38" title="38">    <span class="ex">WorkingDir</span> = <span class="st">&quot;/home/</span><span class="va">${NB_USER}</span><span class="st">&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-39" title="39">  };</a>
+<a class="sourceLine" id="cb1-40" title="40">}</a></code></pre></div>
+<p>This is how to use it:</p>
+<pre class="shell"><code>$ docker load &lt; $(nix-build default.nix)
+$ docker run -p8888:8888 -it ihaskell-nix:latest</code></pre>
+<p>This uses IHaskell’s <a href="https://github.com/gibiansky/IHaskell/blob/93bfa3a7a434c1dfe6873c2105c43856c282e183/release.nix">built-in <code>release.nix</code></a> to do most of the heavy lifting for IHaskell itself, and does a couple of other things:</p>
+<ol type="1">
+<li>Creates the <code>/tmp</code> directory</li>
+<li>Sets up a <code>jovyan</code> user, because Jupyter complains when run as <code>root</code></li>
+<li>Includes <code>bash</code>, which is not strictly necessary but is useful for poking around in the image and for using <code>:!</code> from within a notebook</li>
+</ol>
+<p>Building the image and loading it into Docker are both very slow compared to using Nix directly, so I wouldn’t recommend using this approach for local development. I’m primarily interested in doing this to:</p>
+<ol type="1">
+<li>Share IHaskell notebooks with people who are less comfortable with Nix</li>
+<li>Deploy to platforms such as Amazon’s Elastic Container Service and Google’s App Engine, which offer excellent support for Docker and no support for Nix</li>
+</ol>
+<p>Unfortunately this isn’t quite ready to deploy yet, especially because Jupyter uses token-based authentication by default and the console output will not necessarily be available after deployment. It’s possible to set a password instead, so I expect that copying the output of <code>jupyter notebook --generate-config</code> and changing the relevant settings will be enough. I hope to post instructions when I get around to trying this myself.</p>
+<p>In the meantime, I hope this is useful as a way of making IHaskell even more widely available, and as a demonstration of using <code>dockerTools</code> to bridge the gap between Nix and Docker!</p>
+
+        </div>
+        <div id="footer">
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+    </body>
+</html>
