@@ -112,6 +112,7 @@
 </ol>
 <p>Unfortunately this isn’t quite ready to deploy yet, especially because Jupyter uses token-based authentication by default and the console output will not necessarily be available after deployment. It’s possible to set a password instead, so I expect that copying the output of <code>jupyter notebook --generate-config</code> and changing the relevant settings will be enough. I hope to post instructions when I get around to trying this myself.</p>
 <p>In the meantime, I hope this is useful as a way of making IHaskell even more widely available, and as a demonstration of using <code>dockerTools</code> to bridge the gap between Nix and Docker!</p>
+<p><em>Thanks to <a href="https://grahamc.com">Graham Christensen</a> for improving the Nix expression to use <code>buildLayeredImage</code>.</em></p>
 
         </div>
         <div id="footer">
