@@ -59,32 +59,43 @@
 <a class="sourceLine" id="cb1-13" title="13">  <span class="ex">nixpkgs</span> = import pkgs.nixpkgs {};</a>
 <a class="sourceLine" id="cb1-14" title="14">  <span class="ex">NB_USER</span> = <span class="st">&quot;jovyan&quot;</span><span class="kw">;</span></a>
 <a class="sourceLine" id="cb1-15" title="15">  <span class="ex">NB_UID</span> = <span class="st">&quot;1000&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-16" title="16">  <span class="ex">ihaskell</span> = import <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.ihaskell</span><span class="va">}</span><span class="st">/release.nix&quot;</span> {</a>
-<a class="sourceLine" id="cb1-17" title="17">    <span class="ex">inherit</span> nixpkgs<span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-18" title="18">    <span class="ex">compiler</span> = <span class="st">&quot;ghc864&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-19" title="19">    <span class="ex">packages</span> = self: with self<span class="kw">;</span> [];</a>
-<a class="sourceLine" id="cb1-20" title="20">  };</a>
-<a class="sourceLine" id="cb1-21" title="21"><span class="kw">in</span> <span class="ex">nixpkgs.dockerTools.buildImage</span> {</a>
-<a class="sourceLine" id="cb1-22" title="22">  <span class="ex">name</span> = <span class="st">&quot;ihaskell-nix&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-23" title="23">  <span class="ex">tag</span> = <span class="st">&quot;latest&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-24" title="24">  <span class="ex">contents</span> =  [</a>
-<a class="sourceLine" id="cb1-25" title="25">    <span class="ex">ihaskell</span></a>
-<a class="sourceLine" id="cb1-26" title="26">    <span class="ex">nixpkgs.bashInteractive</span></a>
-<a class="sourceLine" id="cb1-27" title="27">  ];</a>
-<a class="sourceLine" id="cb1-28" title="28">  <span class="ex">runAsRoot</span> = <span class="st">''</span></a>
-<a class="sourceLine" id="cb1-29" title="29">    <span class="co">#!${nixpkgs.runtimeShell}</span></a>
-<a class="sourceLine" id="cb1-30" title="30">    <span class="va">${nixpkgs</span><span class="er">.dockerTools.shadowSetup</span><span class="va">}</span></a>
-<a class="sourceLine" id="cb1-31" title="31">    <span class="fu">mkdir</span> -m 1777 /tmp</a>
-<a class="sourceLine" id="cb1-32" title="32">    <span class="fu">mkdir</span> -p /home/<span class="va">${NB_USER}</span></a>
-<a class="sourceLine" id="cb1-33" title="33">    <span class="va">${nixpkgs</span><span class="er">.busybox</span><span class="va">}</span><span class="ex">/bin/adduser</span> --disabled-password --gecos <span class="st">&quot;Default user&quot;</span> --uid <span class="va">${NB_UID}</span> <span class="va">${NB_USER}</span></a>
-<a class="sourceLine" id="cb1-34" title="34">    <span class="fu">chown</span> -R <span class="va">${NB_UID}</span> /home/<span class="va">${NB_USER}</span></a>
-<a class="sourceLine" id="cb1-35" title="35">  <span class="st">''</span>;</a>
-<a class="sourceLine" id="cb1-36" title="36">  <span class="ex">config</span> = {</a>
-<a class="sourceLine" id="cb1-37" title="37">    <span class="ex">Cmd</span> = [<span class="st">&quot;ihaskell-notebook&quot;</span> <span class="st">&quot;--ip&quot;</span> <span class="st">&quot;0.0.0.0&quot;</span> <span class="st">&quot;--no-browser&quot;</span>]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-38" title="38">    <span class="ex">User</span> = NB_USER<span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-39" title="39">    <span class="ex">WorkingDir</span> = <span class="st">&quot;/home/</span><span class="va">${NB_USER}</span><span class="st">&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-40" title="40">  };</a>
-<a class="sourceLine" id="cb1-41" title="41">}</a></code></pre></div>
+<a class="sourceLine" id="cb1-16" title="16">  <span class="ex">dockerEtc</span> = nixpkgs.runCommand <span class="st">&quot;docker-etc&quot;</span> {} <span class="st">''</span></a>
+<a class="sourceLine" id="cb1-17" title="17">    <span class="fu">mkdir</span> -p <span class="va">$out</span>/etc/pam.d</a>
+<a class="sourceLine" id="cb1-18" title="18"></a>
+<a class="sourceLine" id="cb1-19" title="19">    <span class="bu">echo</span> <span class="st">&quot;root:x:0:0::/root:/bin/sh&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/passwd</a>
+<a class="sourceLine" id="cb1-20" title="20">    <span class="bu">echo</span> <span class="st">&quot;jovyan:x:1000:1000::/home/jovyan:&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/passwd</a>
+<a class="sourceLine" id="cb1-21" title="21">    <span class="bu">echo</span> <span class="st">&quot;root:!x:::::::&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/shadow</a>
+<a class="sourceLine" id="cb1-22" title="22">    <span class="bu">echo</span> <span class="st">&quot;jovyan:!:::::::&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/shadow</a>
+<a class="sourceLine" id="cb1-23" title="23"></a>
+<a class="sourceLine" id="cb1-24" title="24">    <span class="bu">echo</span> <span class="st">&quot;root:x:0:&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/group</a>
+<a class="sourceLine" id="cb1-25" title="25">    <span class="bu">echo</span> <span class="st">&quot;jovyan:x:1000:&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/group</a>
+<a class="sourceLine" id="cb1-26" title="26">    <span class="bu">echo</span> <span class="st">&quot;root:x::&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/gshadow</a>
+<a class="sourceLine" id="cb1-27" title="27">    <span class="bu">echo</span> <span class="st">&quot;jovyan:!::&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/gshadow</a>
+<a class="sourceLine" id="cb1-28" title="28">  <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb1-29" title="29">  <span class="ex">ihaskell</span> = import <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.ihaskell</span><span class="va">}</span><span class="st">/release.nix&quot;</span> {</a>
+<a class="sourceLine" id="cb1-30" title="30">    <span class="ex">inherit</span> nixpkgs<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-31" title="31">    <span class="ex">compiler</span> = <span class="st">&quot;ghc864&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-32" title="32">    <span class="ex">packages</span> = self: with self<span class="kw">;</span> [];</a>
+<a class="sourceLine" id="cb1-33" title="33">  };</a>
+<a class="sourceLine" id="cb1-34" title="34"><span class="kw">in</span> <span class="ex">nixpkgs.dockerTools.buildLayeredImage</span> {</a>
+<a class="sourceLine" id="cb1-35" title="35">    <span class="ex">name</span> = <span class="st">&quot;ihaskell-nix&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-36" title="36">    <span class="ex">tag</span> = <span class="st">&quot;latest&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-37" title="37">    <span class="ex">contents</span> =  [</a>
+<a class="sourceLine" id="cb1-38" title="38">      <span class="ex">dockerEtc</span></a>
+<a class="sourceLine" id="cb1-39" title="39">      <span class="ex">ihaskell</span></a>
+<a class="sourceLine" id="cb1-40" title="40">      <span class="ex">nixpkgs.bashInteractive</span></a>
+<a class="sourceLine" id="cb1-41" title="41">    ];</a>
+<a class="sourceLine" id="cb1-42" title="42">    <span class="ex">config</span> = {</a>
+<a class="sourceLine" id="cb1-43" title="43">      <span class="ex">Cmd</span> = [<span class="st">&quot;ihaskell-notebook&quot;</span> <span class="st">&quot;--ip&quot;</span> <span class="st">&quot;0.0.0.0&quot;</span>]<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-44" title="44">      <span class="ex">User</span> = NB_USER<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-45" title="45">      <span class="ex">WorkingDir</span> = <span class="st">&quot;/home/</span><span class="va">${NB_USER}</span><span class="st">&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-46" title="46">    };</a>
+<a class="sourceLine" id="cb1-47" title="47">    <span class="ex">extraCommands</span> = <span class="st">''</span></a>
+<a class="sourceLine" id="cb1-48" title="48">      <span class="fu">mkdir</span> -m 1777 ./tmp</a>
+<a class="sourceLine" id="cb1-49" title="49">      <span class="fu">mkdir</span> -m 777 -p ./home/<span class="va">${NB_USER}</span></a>
+<a class="sourceLine" id="cb1-50" title="50">    <span class="st">''</span>;</a>
+<a class="sourceLine" id="cb1-51" title="51">    <span class="ex">maxLayers</span> = 100<span class="kw">;</span></a>
+<a class="sourceLine" id="cb1-52" title="52">};</a></code></pre></div>
 <p>This is how to use it:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" title="1">$ <span class="ex">docker</span> load <span class="op">&lt;</span> <span class="va">$(</span><span class="ex">nix-build</span> default.nix<span class="va">)</span></a>
 <a class="sourceLine" id="cb2-2" title="2">$ <span class="ex">docker</span> run -p8888:8888 -it ihaskell-nix:latest</a></code></pre></div>
@@ -94,7 +105,7 @@
 <li>Sets up a <code>jovyan</code> user, because Jupyter complains when run as <code>root</code></li>
 <li>Includes <code>bash</code>, which is not strictly necessary but is useful for poking around in the image and for using <code>:!</code> from within a notebook</li>
 </ol>
-<p>Building the image and loading it into Docker are both very slow compared to using Nix directly, so I wouldn’t recommend using this approach for local development. I’m primarily interested in doing this to:</p>
+<p>Building the image and loading it into Docker are both very slow compared to using Nix directly (even though I’m using the Nix support for layered images), so I wouldn’t recommend using this approach for local development. I’m primarily interested in doing this to:</p>
 <ol type="1">
 <li>Share IHaskell notebooks with people who are less comfortable with Nix</li>
 <li>Deploy to platforms such as Amazon’s Elastic Container Service and Google’s App Engine, which offer excellent support for Docker and no support for Nix</li>
