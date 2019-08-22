@@ -34,7 +34,7 @@
             <h1>Industrial-strength Deployments in Three Commands</h1>
 
             <div class="info">
-    Posted on 19 August 2019
+    Posted on 21 August 2019
     
 </div>
 <div class="info">
@@ -136,10 +136,10 @@
 <a class="sourceLine" id="cb8-7" title="7"><span class="va">PROFILE_PATH=</span><span class="st">&quot;</span><span class="va">$(</span><span class="ex">nix-build</span> --no-out-link default.nix<span class="va">)</span><span class="st">&quot;</span></a>
 <a class="sourceLine" id="cb8-8" title="8"><span class="ex">nix-copy-closure</span> --to --use-substitutes <span class="va">$TARGET</span> <span class="va">$PROFILE_PATH</span></a>
 <a class="sourceLine" id="cb8-9" title="9"><span class="fu">ssh</span> <span class="va">$TARGET</span> -- <span class="st">&quot;nix-env --profile /nix/var/nix/profiles/system --set </span><span class="va">$PROFILE_PATH</span><span class="st"> &amp;&amp; /nix/var/nix/profiles/system/bin/switch-to-configuration switch&quot;</span></a></code></pre></div>
-<p>This takes care of both building and deploying.</p>
+<p>This takes care of both building the new system closure and deploying it.</p>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/be6aaa026c8ebf1efd7c44743a8770b921111a2e">Here’s the commit that adds <code>deploy.sh</code></a>.</p>
 <h4 id="adding-a-service">Adding a service</h4>
-<p>Let’s deploy the final version of the small Haskell web service from my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> blog post. The application consists of two files:</p>
+<p>Let’s deploy the final version of the small Haskell web service from my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> post. The application consists of two files:</p>
 <p><em>Main.hs</em></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
 <a class="sourceLine" id="cb9-2" title="2"></a>
@@ -193,7 +193,7 @@
 <a class="sourceLine" id="cb11-25" title="25">    };</a>
 <a class="sourceLine" id="cb11-26" title="26">  };</a>
 <a class="sourceLine" id="cb11-27" title="27">}</a></code></pre></div>
-<p>For more information about what’s happening in <code>service.nix</code>, see the relevant section of my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/#service-configuration">Functional DevOps</a> post.</p>
+<p>For more information about what’s happening in <code>service.nix</code>, see <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/#service-configuration">the relevant section of my Functional DevOps post</a>.</p>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/466e0e1867e47346ed8cc706b812a8cb21c76c19">Here’s the commit that adds these files</a>.</p>
 <p>Enabling the service is as easy as adding two lines to <code>configuration.nix</code>:</p>
 <p><em>configuration.nix</em></p>
@@ -203,13 +203,13 @@
 <a class="sourceLine" id="cb12-4" title="4">  <span class="ex">imports</span> =</a>
 <a class="sourceLine" id="cb12-5" title="5">    [</a>
 <a class="sourceLine" id="cb12-6" title="6">      <span class="ex">./packet.nix</span></a>
-<a class="sourceLine" id="cb12-7" title="7">      <span class="ex">./deploy/nix/service.nix</span></a>
+<a class="sourceLine" id="cb12-7" title="7">      <span class="ex">./deploy/nix/service.nix</span>        <span class="co">#1</span></a>
 <a class="sourceLine" id="cb12-8" title="8">    ];</a>
 <a class="sourceLine" id="cb12-9" title="9"></a>
 <a class="sourceLine" id="cb12-10" title="10">  <span class="ex">boot.loader.grub.enable</span> = true<span class="kw">;</span></a>
 <a class="sourceLine" id="cb12-11" title="11">  <span class="ex">boot.loader.grub.version</span> = 2<span class="kw">;</span></a>
 <a class="sourceLine" id="cb12-12" title="12"></a>
-<a class="sourceLine" id="cb12-13" title="13">  <span class="ex">services.blank-me-up.enable</span> = true<span class="kw">;</span></a>
+<a class="sourceLine" id="cb12-13" title="13">  <span class="ex">services.blank-me-up.enable</span> = true<span class="kw">;</span> <span class="co">#2</span></a>
 <a class="sourceLine" id="cb12-14" title="14"></a>
 <a class="sourceLine" id="cb12-15" title="15">  <span class="ex">system.stateVersion</span> = <span class="st">&quot;19.03&quot;</span><span class="kw">;</span></a>
 <a class="sourceLine" id="cb12-16" title="16"></a>
@@ -232,20 +232,21 @@
 <a class="sourceLine" id="cb13-14" title="14">$ <span class="ex">curl</span> http://147.75.38.113:3000/beam</a>
 <a class="sourceLine" id="cb13-15" title="15"><span class="op">&lt;</span><span class="ex">h1</span><span class="op">&gt;</span>Scotty, beam me up!<span class="op">&lt;</span>/h1<span class="op">&gt;</span></a></code></pre></div>
 <h4 id="but-this-is-just-a-janky-bash-script">But this is just a janky bash script!!???</h4>
-<p>It’s definitely the case that <code>deploy.sh</code> is short and unsophisticated, but the three commands it invokes are what’s really important here. Once you begin looking for them, you will find them everywhere, since they’re the best way of deploying NixOS! They’re used in <a href="https://github.com/NixOS/nixops/blob/c8d3a3ff5fb20e8e4d494de972ebb2a1a1ec1e08/nixops/backends/__init__.py#L339-L367">NixOps</a>, <a href="https://github.com/awakesecurity/nix-deploy/blob/68217cea7ba6746c9a262ddccb11178909841988/src/Main.hs#L159-L229">nix-deploy</a>, and <a href="https://github.com/obsidiansystems/obelisk/blob/1f9f466fc38a37a72afb316cee4f3317af204220/lib/command/src/Obelisk/Command/Deploy.hs#L136-L158">obelisk</a>, and a quick GitHub search for <a href="https://github.com/search?q=switch-to-configuration&amp;type=Code">“switch-to-configuration”</a> turns up many more examples. At a previous job, our deployment platform used these three commands as well, and we routinely deployed to hundreds of servers without any deployment-related issues, so I’m comfortable saying that this is an industrial-grade deployment solution.</p>
+<p>It’s definitely the case that <code>deploy.sh</code> is short and unsophisticated, but the three commands it invokes are what’s really important here. Once you begin looking for them, you will find them everywhere, since they’re the best way of deploying to NixOS! They’re used in <a href="https://github.com/NixOS/nixops/blob/c8d3a3ff5fb20e8e4d494de972ebb2a1a1ec1e08/nixops/backends/__init__.py#L339-L367">NixOps</a>, <a href="https://github.com/awakesecurity/nix-deploy/blob/68217cea7ba6746c9a262ddccb11178909841988/src/Main.hs#L159-L229">nix-deploy</a>, and <a href="https://github.com/obsidiansystems/obelisk/blob/1f9f466fc38a37a72afb316cee4f3317af204220/lib/command/src/Obelisk/Command/Deploy.hs#L136-L158">obelisk</a>, and a quick GitHub search for <a href="https://github.com/search?q=switch-to-configuration&amp;type=Code">“switch-to-configuration”</a> turns up many more examples. At a previous job, our deployment platform used these three commands as well, and we routinely deployed to hundreds of servers without any deployment-related issues, so I’m comfortable saying that this is an industrial-grade deployment solution.</p>
 <h4 id="what-about-provisioning">What about provisioning?</h4>
-<p>These tools don’t care how you provision your servers, as long as the end state is NixOS targets with SSH access. For quick demonstrations and small deployments, manual provisioning is fine, but for anything beyond that, I’d recommend using a tool like <a href="https://www.terraform.io/">Terraform</a>. You can even specify your Terraform configuration with Nix using something like <a href="https://github.com/mrVanDalo/terranix">terranix</a>.</p>
+<p>These tools don’t care how you provision your servers, as long as you end up with NixOS targets you can SSH into. For quick demonstrations and small deployments, manual provisioning is fine, but for anything beyond that, I’d recommend using a tool like <a href="https://www.terraform.io/">Terraform</a>. You can even specify your Terraform configuration with Nix using something like <a href="https://github.com/mrVanDalo/terranix">terranix</a>, and this is in fact what we did at the previous job I mentioned earlier, since Nix makes a great templating language and comes with excellent support for producing JSON which can then be fed into Terraform. It’s also possible to output YAML from Nix, which means it’s easy to interoperate with most infrastructure tooling.</p>
 <h4 id="should-i-use-this-instead-of-my-current-deployment-solution">Should I use this instead of my current deployment solution?</h4>
 <p>My aim with this post is not to convince you to drop whatever you’re currently using in favour of a hand-rolled bash script and NixOS, especially if your current solution works well for you. I do, however, want to encourage you to think about how the process I’ve outlined here compares. In which ways is it better or worse?</p>
+<p>Since this is the workflow I’ve had the most experience with, it was a rude shock to start working with container-based deployments where even tiny changes require a full (slow) rebuild, and the actual deployment lifecycle is more complex and error-prone. I think it’s important to point out that things don’t have to be this way.</p>
 <p>In my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> post, I outlined some characteristics of an ideal DevOps workflow, and I think the process I’ve outlined here meets them all:</p>
 <ul>
 <li><strong>Automatic</strong>: The process is completely scriptable.</li>
 <li><strong>Repeatable</strong>: I can leverage NixOS to get the same results every time.</li>
-<li><strong>Idempotent</strong>: Deploying the same thing twice is a no-op.</li>
+<li><strong>Idempotent</strong>: Deploying the same thing a second time is a no-op.</li>
 <li><strong>Reversible</strong>: Rolling back is very easy.</li>
 <li><strong>Atomic</strong>: A deploy either fails or succeeds, there’s no weird in-between.</li>
 </ul>
-<p>I think this is pretty great for three commands, and this is my baseline for what a deployment pipeline can be, which means I’m frequently frustrated by many of the systems that I have to work on. I hope this blog post can help move us towards less frustrating systems by making this corner of NixOS more approachable!</p>
+<p>I think this is pretty great for three commands. I hope this blog post can help move us towards better systems by making this corner of NixOS more approachable!</p>
 
         </div>
         <div id="footer">
