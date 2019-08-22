@@ -244,9 +244,15 @@
 <li><strong>Repeatable</strong>: I can leverage NixOS to get the same results every time.</li>
 <li><strong>Idempotent</strong>: Deploying the same thing a second time is a no-op.</li>
 <li><strong>Reversible</strong>: Rolling back is very easy.</li>
-<li><strong>Atomic</strong>: A deploy either fails or succeeds, there’s no weird in-between.</li>
+<li><strong>Atomic</strong>: A deploy either fails or succeeds, there’s no weird in-between<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</li>
 </ul>
 <p>I think this is pretty great for three commands. I hope this blog post can help move us towards better systems by making this corner of NixOS more approachable!</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>As <a href="https://www.reddit.com/r/NixOS/comments/ctx8ii/industrialstrength_deployments_in_three_commands/expfqpv">ElvishJerricco points out on Reddit</a>, this isn’t quite true in the case of broken services.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩</a></p></li>
+</ol>
+</section>
 
         </div>
         <div id="footer">
