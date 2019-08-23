@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Vaibhav Sagar's blog</title>
     <link href="https://vaibhavsagar.com/atom.xml" rel="self" />
@@ -11,11 +11,11 @@
     <updated>2019-08-22T00:00:00Z</updated>
     <entry>
     <title>Industrial-strength Deployments in Three Commands</title>
-    <link href="https://vaibhavsagar.com/blog/2019/08/22/industrial-strength-deployments/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2019/08/22/industrial-strength-deployments/" />
     <id>https://vaibhavsagar.com/blog/2019/08/22/industrial-strength-deployments/index.html</id>
     <published>2019-08-22T00:00:00Z</published>
     <updated>2019-08-22T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 22 August 2019
     
 </div>
@@ -235,15 +235,15 @@
 <li id="fn1" role="doc-endnote"><p>As <a href="https://www.reddit.com/r/NixOS/comments/ctx8ii/industrialstrength_deployments_in_three_commands/expfqpv">ElvishJerricco points out on Reddit</a>, this isn’t quite true in the case of broken services.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩</a></p></li>
 </ol>
 </section>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Easy IHaskell Docker Images with Nix</title>
-    <link href="https://vaibhavsagar.com/blog/2019/08/11/ihaskell-nix-docker/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2019/08/11/ihaskell-nix-docker/" />
     <id>https://vaibhavsagar.com/blog/2019/08/11/ihaskell-nix-docker/index.html</id>
     <published>2019-08-11T00:00:00Z</published>
     <updated>2019-08-11T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 11 August 2019
     
 </div>
@@ -323,15 +323,15 @@
 <p>Unfortunately this isn’t quite ready to deploy yet, especially because Jupyter uses token-based authentication by default and the console output will not necessarily be available after deployment. It’s possible to set a password instead, so I expect that copying the output of <code>jupyter notebook --generate-config</code> and changing the relevant settings will be enough. I hope to post instructions when I get around to trying this myself.</p>
 <p>In the meantime, I hope this is useful as a way of making IHaskell even more widely available, and as a demonstration of using <code>dockerTools</code> to bridge the gap between Nix and Docker!</p>
 <p><em>Thanks to <a href="https://grahamc.com">Graham Christensen</a> for improving the Nix expression to use <code>buildLayeredImage</code>.</em></p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Functional DevOps in a Dysfunctional World</title>
-    <link href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/" />
     <id>https://vaibhavsagar.com/blog/2019/07/04/functional-devops/index.html</id>
     <published>2019-07-04T00:00:00Z</published>
     <updated>2019-07-04T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on  4 July 2019
     
 </div>
@@ -661,15 +661,15 @@
 <p>and in fact nothing needs to be copied to the target, because the previous deployment is still there.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>As demonstrated, the Nix ecosystem allows us to impose order on the usually messy and ad-hoc practice of packaging and deploying software at scale. I’m satisfied that this is the way forward and hope that you will consider using these tools to tackle problems of your own!</p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Hacking on GHC Has Never Been Easier!</title>
-    <link href="https://vaibhavsagar.com/blog/2019/06/22/easy-ghc-hacking/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2019/06/22/easy-ghc-hacking/" />
     <id>https://vaibhavsagar.com/blog/2019/06/22/easy-ghc-hacking/index.html</id>
     <published>2019-06-22T00:00:00Z</published>
     <updated>2019-06-22T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 22 June 2019
     
 </div>
@@ -689,15 +689,15 @@
 <a class="sourceLine" id="cb1-5" title="5">$ <span class="ex">nix-shell</span> ghc.nix/ --run <span class="st">&#39;./boot &amp;&amp; ./configure &amp;&amp; ghcid&#39;</span></a></code></pre></div>
 <p>This will take a while the first time, but <code>ghcid</code> will cache generated artifacts under <code>./hadrian_ghci</code> so even quitting and reloading will be significantly faster.</p>
 <p>Congratulations, you are now a GHC developer!</p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Refactoring Haskell: A Case Study</title>
-    <link href="https://vaibhavsagar.com/blog/2019/02/12/refactoring-haskell/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2019/02/12/refactoring-haskell/" />
     <id>https://vaibhavsagar.com/blog/2019/02/12/refactoring-haskell/index.html</id>
     <published>2019-02-12T00:00:00Z</published>
     <updated>2019-02-12T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 12 February 2019
     
 </div>
@@ -1419,15 +1419,15 @@
 <p>This change does seem to make a significant difference, and it’s good to know we’re not doing useless work.</p>
 <p>I think this is a good place to stop, and I hope I’ve been able to demonstrate some of Haskell’s strengths when it comes to refactoring. In my experience, it’s not usually necessary to deeply understand Haskell code in order to attempt a refactoring, especially if it’s backed by well-chosen types and a good test suite. I also find that I’m able to be more daring when writing new code, because bad up-front design is less costly and even the jankiest working code can be gently massaged into something presentable.</p>
 <p><em>Thanks to <a href="https://joelburget.com/">Joel Burget</a>, <a href="http://www.matfournier.com/">Mat Fournier</a>, <a href="https://eskimor.gonimo.com/">Robert Klotzner</a>, <a href="https://github.com/L8D">Tenor</a>, <a href="http://www.tomharding.me/">Tom Harding</a>, and <a href="http://www.tylerweir.com/">Tyler Weir</a> for suggestions and feedback.</em></p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Moving Towards Dialogue</title>
-    <link href="https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/" />
     <id>https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/index.html</id>
     <published>2018-11-03T00:00:00Z</published>
     <updated>2018-11-03T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on  3 November 2018
     
 </div>
@@ -1810,15 +1810,15 @@
 <p>This sounds great in theory, so why aren’t we doing this yet? There is (predictably) a catch, which is that this is still a research topic for now. You can read <a href="https://people.csail.mit.edu/asolar/papers/thesis.pdf">Armando Solar-Lezama’s PhD thesis on this</a>, and systems like <a href="http://comcom.csail.mit.edu/comcom/#Synquid">Synquid</a> and <a href="https://github.com/webyrd/Barliman">Barliman</a> demonstrate the current state of the art. I think it’s especially interesting that Synquid has both typed and untyped holes, which suggests to me that it is the most promising approach.</p>
 <p>I’ll leave you with some resources about typed holes, particularly Conor McBride’s presentations at <a href="https://www.youtube.com/watch?v=3U3lV5VPmOU">YOW! Lambda Jam</a> and <a href="https://skillsmatter.com/skillscasts/8893-is-a-type-a-lifebuoy-or-a-lamp">Haskell eXchange</a> that are rich with insight. There’s also <a href="https://www.shimweasel.com/2015/02/17/typed-holes-for-beginners">a tutorial by Mark Wotton</a>, and finally <a href="http://hazel.org/">Hazel</a>, which is a live functional programming environment with typed holes!</p>
 <p>I hope I’ve encouraged you to try this style of programming for yourself. There’s never been a better time to do it.</p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>HAMTs from Scratch</title>
-    <link href="https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/" />
     <id>https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/index.html</id>
     <published>2018-07-29T00:00:00Z</published>
     <updated>2018-07-29T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 29 July 2018
     
 </div>
@@ -2188,15 +2188,15 @@ CPU time:   0.00s</code></pre>
 <p>And we’re done! I hope you understand HAMTs better than when you started reading this.</p>
 <p>If you want to use this for something other than educational purposes, I would recommend adding logic to deal with hash collisions, which I intentionally omitted. There’s also some low-hanging fruit in terms of performance optimisations. The first thing that comes to mind is an additional <code>Full</code> constructor for the case where all bits in the bitmap are set, and the next thing is the use of unsafe vector functions that omit bounds checking.</p>
 <p>Thanks to <a href="https://twitter.com/evanborden">Evan Borden</a>, <a href="https://twitter.com/candeira">Javier Candeira</a>, <a href="https://hypirion.com/">Jean Niklas L’orange</a>, <a href="http://mjhopkins.github.io/">Mark Hopkins</a>, and <a href="https://teh.id.au/">Tim Humphries</a> for comments and feedback.</p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Trees That Shrink</title>
-    <link href="https://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/" />
     <id>https://vaibhavsagar.com/blog/2018/06/19/trees-that-shrink/index.html</id>
     <published>2018-06-19T00:00:00Z</published>
     <updated>2018-06-19T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 19 June 2018
     
 </div>
@@ -2445,15 +2445,15 @@ CPU time:   0.00s</code></pre>
 <a class="sourceLine" id="cb16-64" title="64"><span class="kw">pattern</span> <span class="dt">LetLet</span> n v e <span class="ot">&lt;-</span> <span class="dt">ExpX</span> (n,v,e)</a></code></pre></div>
 <p>The definitions of <code>desugar</code>, <code>anonymise</code>, and <code>eval</code> are unchanged.</p>
 <p>Thanks to <a href="http://andychu.net/">Andy Chu</a> and <a href="https://push.cx/">Peter Bhat Harkins</a> for comments and feedback.</p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>Quick and Easy Nixpkgs Pinning</title>
-    <link href="https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/" />
     <id>https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/index.html</id>
     <published>2018-05-27T00:00:00Z</published>
     <updated>2018-05-27T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on 27 May 2018
     
 </div>
@@ -2579,15 +2579,15 @@ CPU time:   0.00s</code></pre>
 <a class="sourceLine" id="cb12-3" title="3">  <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/archive/</span><span class="va">${rev}</span><span class="st">.tar.gz&quot;</span><span class="kw">;</span></a>
 <a class="sourceLine" id="cb12-4" title="4">};</a></code></pre></div>
 <p>Thanks to <a href="https://jarmac.org/">Ahmad Jarara</a>, <a href="https://twitter.com/@chrisczynski">Chris Stryczynski</a>, <a href="https://github.com/garry-cairns">Garry Cairns</a>, <a href="https://haroldtreen.com/">Harold Treen</a>, <a href="https://ren.zone/">Renzo Carbonara</a>, <a href="http://susanpotter.net/">Susan Potter</a>, and <a href="https://twitter.com/tpflug">Tobias Pflug</a> for comments and feedback!</p>
-]]></summary>
+</summary>
 </entry>
 <entry>
     <title>IHaskell on CoCalc!</title>
-    <link href="https://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/index.html" />
+    <link href="https://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/" />
     <id>https://vaibhavsagar.com/blog/2018/04/08/ihaskell-cocalc/index.html</id>
     <published>2018-04-08T00:00:00Z</published>
     <updated>2018-04-08T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
+    <summary type="html"><div class="info">
     Posted on  8 April 2018
     
 </div>
@@ -2608,7 +2608,7 @@ CPU time:   0.00s</code></pre>
 <p>Despite my best efforts, I was still getting lots of questions about installing IHaskell and I got fed up and <a href="https://twitter.com/vbhvsgr/status/975388161898561536">whinged about it on Twitter</a>. In response, Gershom DMed me to ask how the CoCalc stuff was progressing, after which I got back in touch and asked for a newer version of GHC. They obliged with GHC 8.4.</p>
 <p>By this time we had realised that Stack wasn’t going to work, so we tried old-style Cabal and new-style Cabal, which both have similar issues with dependencies in <code>~/.cabal</code>. Finally Harald suggested using <code>cabal sandbox</code> and we were able to come up with a working, self-contained IHaskell install.</p>
 <p>This would have been impossible without the patience and generosity of everyone involved. All told, it took almost a year and a half to get this working, which doesn’t come across in the <a href="https://twitter.com/cocalc_com/status/982650432928583680">announcement</a>.</p>
-]]></summary>
+</summary>
 </entry>
 
 </feed>
