@@ -63,6 +63,26 @@
 <p>It was almost a tradition that one of the first of any new faster CDC machine was delivered to a “good customer” - picked up at the factory by an anonymous truck, and never heard from again.</p>
 </blockquote>
 <p>This makes for a great story, but what were they using it for?</p>
+<p>One measure of information content is the <a href="https://en.wikipedia.org/wiki/Hamming_weight">Hamming weight</a>, which is the number of symbols in a string that are different from the zero-symbol of the alphabet. For a binary string, this is exactly <code>popcount</code>!</p>
+<p><a href="http://www.talkchess.com/forum3/viewtopic.php?t=38521">As explained here</a>, the NSA wanted to do cryptanalysis on intercepted messages, and since the CDC 6000 had 60-bit words, one word was enough to store most alphabets they were interested in. They were able to:</p>
+<ol type="1">
+<li>Split a message into lines</li>
+<li>Set a bit for each unique character they encountered per line</li>
+<li>Use <code>popcount</code> to count the distinct characters</li>
+<li>Use the count as a hash for further cryptanalysis</li>
+</ol>
+<p>Curiously, <code>popcount</code> seems to have disappeared from instruction sets between the mid-1970s and the mid-2000s, so there has to be more to it than cryptographic applications to explain its return. What else can it be used for?</p>
+<h4 id="error-correction">Error Correction</h4>
+<p>Related to the concept of Hamming weight is <a href="https://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</a>, which is the number of differing positions between two strings of identical length. For two binary strings <code>x</code> and <code>y</code>, this is just the <code>popcount</code> of them XORed together. For example:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb1-1" title="1">00100110</a>
+<a class="sourceLine" id="cb1-2" title="2">01100000 ^</a>
+<a class="sourceLine" id="cb1-3" title="3">--------</a>
+<a class="sourceLine" id="cb1-4" title="4">01000110</a>
+<a class="sourceLine" id="cb1-5" title="5"></a>
+<a class="sourceLine" id="cb1-6" title="6">popcount(01000110) = 3</a></code></pre></div>
+<p>For telecommunications applications, this helps us calculate the signal distance, where a known word is sent over the wire and the number of flipped bits are counted to provide an estimate of the error introduced by transmission.</p>
+<p>We can then design an <a href="https://en.wikipedia.org/wiki/Hamming_distance#Error_detection_and_error_correction">error-correcting code</a> accordingly, e.g. if we want to be robust against up to 2 flipped bits, our code words need to differ in Hamming distance by at least 5.</p>
+<h4 id="binary-convolutional-neural-networks">Binary Convolutional Neural Networks</h4>
 
         </div>
         <div id="footer">
