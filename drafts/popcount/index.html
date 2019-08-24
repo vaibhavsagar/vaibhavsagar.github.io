@@ -44,6 +44,25 @@
 </div>
 
 <p><em>This is a pseudo-transcript of <a href="https://www.youtube.com/watch?v=bLFqLfz2Fmc">a presentation I did at !!Con 2019</a>.</em></p>
+<p>Most CPU architectures in use today have an instruction called <code>popcount</code>, short for “population count”. Here’s what it does: it counts the number of set bits in a machine word. For example (assuming 8-bit words for simplicity), <code>popcount(00100110)</code> is <code>3</code> and <code>popcount(01100000)</code> is <code>2</code>.</p>
+<p>You might be wondering, like I was, if there’s more to this instruction, but that’s all it does! This doesn’t seem very useful, right?</p>
+<p>I thought this might be a recent addition for some hyperspecialised use case, but it has in fact been present in CPU architectures since at least 1961:</p>
+<ul>
+<li>1961: <a href="https://en.wikipedia.org/wiki/IBM_7030_Stretch">IBM Stretch</a></li>
+<li>1964: <a href="https://en.wikipedia.org/wiki/CDC_6000_series">CDC 6000</a></li>
+<li>1975: <a href="https://en.wikipedia.org/wiki/Cray-1">Cray-1</a></li>
+<li>2005: <a href="https://en.wikipedia.org/wiki/SPARC">SPARC</a></li>
+<li>2005: <a href="https://en.wikipedia.org/wiki/ARM_architecture#Advanced_SIMD_(NEON)">ARM NEON</a></li>
+<li>2007: <a href="https://en.wikipedia.org/wiki/AMD_10h">AMD K10</a></li>
+<li>2008: <a href="https://en.wikipedia.org/wiki/Nehalem_(microarchitecture)">Intel Nehalem</a></li>
+</ul>
+<p>So what’s going on?</p>
+<h4 id="the-nsa-instruction">The NSA Instruction</h4>
+<p><code>popcount</code> is also known as “The NSA Instruction”, and a <a href="https://groups.google.com/forum/#!msg/comp.arch/UXEi7G6WHuU/Z2z7fC7Xhr8J">very entertaining thread on <code>comp.arch</code></a> discusses its uses inside and outside cryptography. It is rumoured that it was originally added to CPU instructions at the behest of the NSA. As <a href="http://cryptome.org/jya/sadd.htm">this archived email thread</a> puts it:</p>
+<blockquote>
+<p>It was almost a tradition that one of the first of any new faster CDC machine was delivered to a “good customer” - picked up at the factory by an anonymous truck, and never heard from again.</p>
+</blockquote>
+<p>This makes for a great story, but what were they using it for?</p>
 
         </div>
         <div id="footer">
