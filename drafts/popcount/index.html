@@ -83,6 +83,19 @@
 <p>For telecommunications applications, this helps us calculate the signal distance, where a known word is sent over the wire and the number of flipped bits are counted to provide an estimate of the error introduced by transmission.</p>
 <p>We can then design an <a href="https://en.wikipedia.org/wiki/Hamming_distance#Error_detection_and_error_correction">error-correcting code</a> accordingly, e.g. if we want to be robust against up to 2 flipped bits, our code words need to differ in Hamming distance by at least 5.</p>
 <h4 id="binary-convolutional-neural-networks">Binary Convolutional Neural Networks</h4>
+<p>And now for something completely different: binary convolutional neural networks! But first, what are they?</p>
+<p>Binary means that we’re using matrices consisting of only the values +1 (coded as <code>1</code>) and -1 (coded as <code>0</code>), as opposed to 32-bit floating-point values.</p>
+<p>Convolutional means matrix multiplication is involved?</p>
+<p>Neural networks are systems inspired by animal brains (I’m a bit hazy on this part).</p>
+<p>In summary, we have to do binary matrix multiplication. But why?</p>
+<p>Ordinary matrix multiplication on 32-bit values is a good fit on desktop computers with powerful CPUs and GPUs, but increasingly we also want to do useful work on smaller and simpler devices, such as smartphones, routers, smartwatches, etc. We can decompose these more complex matrices into layers of binary matrices, and these resulting matrices are so much easier to store and operate on that we are better off even though there are more layers.</p>
+<p>Where does <code>popcount</code> come into play? It’s used to calculate the dot product of two binary matrices:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb2-1" title="1">a = xnor(x, y)</a>
+<a class="sourceLine" id="cb2-2" title="2">b = popcount(a)</a>
+<a class="sourceLine" id="cb2-3" title="3">c = len(a)</a>
+<a class="sourceLine" id="cb2-4" title="4">dot(x, y) = 2 × b − c</a></code></pre></div>
+<p>More details are available <a href="https://sushscience.wordpress.com/2017/10/01/understanding-binary-neural-networks/">here</a> and <a href="https://developer.apple.com/documentation/metalperformanceshaders/mpscnnbinaryconvolution">here</a>.</p>
+<h4 id="chess-programming">Chess Programming</h4>
 
         </div>
         <div id="footer">
