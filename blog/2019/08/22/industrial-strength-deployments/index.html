@@ -100,7 +100,7 @@
 <a class="sourceLine" id="cb5-14" title="14"></a>
 <a class="sourceLine" id="cb5-15" title="15">    <span class="ex">system</span> = <span class="st">&quot;x86_64-linux&quot;</span><span class="kw">;</span></a>
 <a class="sourceLine" id="cb5-16" title="16">  }</a></code></pre></div>
-<p>but the downside there is that there’s no automated way to update the revision of <code>nixpkgs</code>. I have <a href="https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/">my own approach to pinning <code>nixpkgs</code></a>, where I have a <code>versions.json</code> that stores version information:</p>
+<p>but the downside there is that there’s no automated way to update the revision of <code>nixpkgs</code>. I have <a href="../../../../../blog/2018/05/27/quick-easy-nixpkgs-pinning/">my own approach to pinning <code>nixpkgs</code></a>, where I have a <code>versions.json</code> that stores version information:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb6-1" title="1"><span class="fu">{</span></a>
 <a class="sourceLine" id="cb6-2" title="2">  <span class="dt">&quot;nixpkgs&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb6-3" title="3">    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;NixOS&quot;</span><span class="fu">,</span></a>
@@ -139,7 +139,7 @@
 <p>This takes care of both building the new system closure and deploying it.</p>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/be6aaa026c8ebf1efd7c44743a8770b921111a2e">Here’s the commit that adds <code>deploy.sh</code></a>.</p>
 <h4 id="adding-a-service">Adding a service</h4>
-<p>Let’s deploy the final version of the small Haskell web service from my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> post. The application consists of two files:</p>
+<p>Let’s deploy the final version of the small Haskell web service from my <a href="../../../../../blog/2019/07/04/functional-devops/">Functional DevOps</a> post. The application consists of two files:</p>
 <p><em>Main.hs</em></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
 <a class="sourceLine" id="cb9-2" title="2"></a>
@@ -193,7 +193,7 @@
 <a class="sourceLine" id="cb11-25" title="25">    };</a>
 <a class="sourceLine" id="cb11-26" title="26">  };</a>
 <a class="sourceLine" id="cb11-27" title="27">}</a></code></pre></div>
-<p>For more information about what’s happening in <code>service.nix</code>, see <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/#service-configuration">the relevant section of my Functional DevOps post</a>.</p>
+<p>For more information about what’s happening in <code>service.nix</code>, see <a href="../../../../../blog/2019/07/04/functional-devops/#service-configuration">the relevant section of my Functional DevOps post</a>.</p>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/466e0e1867e47346ed8cc706b812a8cb21c76c19">Here’s the commit that adds these files</a>.</p>
 <p>Enabling the service is as easy as adding two lines to <code>configuration.nix</code>:</p>
 <p><em>configuration.nix</em></p>
@@ -238,7 +238,7 @@
 <h4 id="should-i-use-this-instead-of-my-current-deployment-solution">Should I use this instead of my current deployment solution?</h4>
 <p>My aim with this post is not to convince you to drop whatever you’re currently using in favour of a hand-rolled bash script and NixOS, especially if your current solution works well for you. I do, however, want to encourage you to think about how the process I’ve outlined here compares. In which ways is it better or worse?</p>
 <p>Since this is the workflow I’ve had the most experience with, it was a rude shock to start working with container-based deployments where even tiny changes require a full (slow) rebuild, and the actual deployment lifecycle is more complex and error-prone. I think it’s important to point out that things don’t have to be this way.</p>
-<p>In my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> post, I outlined some characteristics of an ideal DevOps workflow, and I think the process I’ve outlined here meets them all:</p>
+<p>In my <a href="../../../../../blog/2019/07/04/functional-devops/">Functional DevOps</a> post, I outlined some characteristics of an ideal DevOps workflow, and I think the process I’ve outlined here meets them all:</p>
 <ul>
 <li><strong>Automatic</strong>: The process is completely scriptable.</li>
 <li><strong>Repeatable</strong>: I can leverage NixOS to get the same results every time.</li>

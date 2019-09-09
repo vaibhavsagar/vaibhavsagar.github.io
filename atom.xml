@@ -84,7 +84,7 @@
 <h4 id="molecular-fingerprinting">Molecular Fingerprinting</h4>
 <p>This is related to the notion of Hamming distance above: molecules are hashed in some way and compared (with <code>popcount</code>) to determine how similar they are. More details on that <a href="http://www.dalkescientific.com/writings/diary/archive/2008/06/26/fingerprint_background.html">here</a>.</p>
 <h4 id="hash-array-mapped-tries">Hash Array Mapped Tries</h4>
-<p>This is where I first learned about <code>popcount</code>! The HAMT is a data structure (<a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf">pioneered by Phil Bagwell</a>) that can store a very large number of values (usually 32 or 64) in an array at each level of the trie. However, allocating memory for a 32 or 64-element array can be incredibly wasteful, especially if it only actually contains a handful of elements. The solution is to add a bitmask in which the number of bits that are set corresponds to the number of elements in the array, which allows the array to grow and shrink as required. Calculating the index for a given element efficiently can then be done using <code>popcount</code>. You can learn more about how they work from <a href="https://vaibhavsagar.com/blog/2018/07/29/hamts-from-scratch/">this blog post</a>, where I implement this myself.</p>
+<p>This is where I first learned about <code>popcount</code>! The HAMT is a data structure (<a href="https://lampwww.epfl.ch/papers/idealhashtrees.pdf">pioneered by Phil Bagwell</a>) that can store a very large number of values (usually 32 or 64) in an array at each level of the trie. However, allocating memory for a 32 or 64-element array can be incredibly wasteful, especially if it only actually contains a handful of elements. The solution is to add a bitmask in which the number of bits that are set corresponds to the number of elements in the array, which allows the array to grow and shrink as required. Calculating the index for a given element efficiently can then be done using <code>popcount</code>. You can learn more about how they work from <a href="/blog/2018/07/29/hamts-from-scratch/">this blog post</a>, where I implement them myself.</p>
 <h4 id="succinct-data-structures">Succinct Data Structures</h4>
 <p>This is an exciting new area of research that focuses on how to store data in as little space as possible, without having to decompress it in order to do useful work. One technique is to think in terms of arrays of bits (bitvectors), which can be queried using two operations:</p>
 <ul>
@@ -171,7 +171,7 @@
 <a class="sourceLine" id="cb5-14" title="14"></a>
 <a class="sourceLine" id="cb5-15" title="15">    <span class="ex">system</span> = <span class="st">&quot;x86_64-linux&quot;</span><span class="kw">;</span></a>
 <a class="sourceLine" id="cb5-16" title="16">  }</a></code></pre></div>
-<p>but the downside there is that there’s no automated way to update the revision of <code>nixpkgs</code>. I have <a href="https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/">my own approach to pinning <code>nixpkgs</code></a>, where I have a <code>versions.json</code> that stores version information:</p>
+<p>but the downside there is that there’s no automated way to update the revision of <code>nixpkgs</code>. I have <a href="/blog/2018/05/27/quick-easy-nixpkgs-pinning/">my own approach to pinning <code>nixpkgs</code></a>, where I have a <code>versions.json</code> that stores version information:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb6-1" title="1"><span class="fu">{</span></a>
 <a class="sourceLine" id="cb6-2" title="2">  <span class="dt">&quot;nixpkgs&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
 <a class="sourceLine" id="cb6-3" title="3">    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;NixOS&quot;</span><span class="fu">,</span></a>
@@ -210,7 +210,7 @@
 <p>This takes care of both building the new system closure and deploying it.</p>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/be6aaa026c8ebf1efd7c44743a8770b921111a2e">Here’s the commit that adds <code>deploy.sh</code></a>.</p>
 <h4 id="adding-a-service">Adding a service</h4>
-<p>Let’s deploy the final version of the small Haskell web service from my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> post. The application consists of two files:</p>
+<p>Let’s deploy the final version of the small Haskell web service from my <a href="/blog/2019/07/04/functional-devops/">Functional DevOps</a> post. The application consists of two files:</p>
 <p><em>Main.hs</em></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
 <a class="sourceLine" id="cb9-2" title="2"></a>
@@ -264,7 +264,7 @@
 <a class="sourceLine" id="cb11-25" title="25">    };</a>
 <a class="sourceLine" id="cb11-26" title="26">  };</a>
 <a class="sourceLine" id="cb11-27" title="27">}</a></code></pre></div>
-<p>For more information about what’s happening in <code>service.nix</code>, see <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/#service-configuration">the relevant section of my Functional DevOps post</a>.</p>
+<p>For more information about what’s happening in <code>service.nix</code>, see <a href="/blog/2019/07/04/functional-devops/#service-configuration">the relevant section of my Functional DevOps post</a>.</p>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/466e0e1867e47346ed8cc706b812a8cb21c76c19">Here’s the commit that adds these files</a>.</p>
 <p>Enabling the service is as easy as adding two lines to <code>configuration.nix</code>:</p>
 <p><em>configuration.nix</em></p>
@@ -309,7 +309,7 @@
 <h4 id="should-i-use-this-instead-of-my-current-deployment-solution">Should I use this instead of my current deployment solution?</h4>
 <p>My aim with this post is not to convince you to drop whatever you’re currently using in favour of a hand-rolled bash script and NixOS, especially if your current solution works well for you. I do, however, want to encourage you to think about how the process I’ve outlined here compares. In which ways is it better or worse?</p>
 <p>Since this is the workflow I’ve had the most experience with, it was a rude shock to start working with container-based deployments where even tiny changes require a full (slow) rebuild, and the actual deployment lifecycle is more complex and error-prone. I think it’s important to point out that things don’t have to be this way.</p>
-<p>In my <a href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/">Functional DevOps</a> post, I outlined some characteristics of an ideal DevOps workflow, and I think the process I’ve outlined here meets them all:</p>
+<p>In my <a href="/blog/2019/07/04/functional-devops/">Functional DevOps</a> post, I outlined some characteristics of an ideal DevOps workflow, and I think the process I’ve outlined here meets them all:</p>
 <ul>
 <li><strong>Automatic</strong>: The process is completely scriptable.</li>
 <li><strong>Repeatable</strong>: I can leverage NixOS to get the same results every time.</li>
@@ -797,7 +797,7 @@
 </div>
 
 <p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a joy</a>. I’ve certainly found this to be the case, but what does that mean in practice? I thought it might be useful to demonstrate by refactoring some of my own code.</p>
-<p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given <a href="https://en.wikipedia.org/wiki/2-satisfiability">2-SAT problem</a> is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="http://vaibhavsagar.com/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2-SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
+<p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given <a href="https://en.wikipedia.org/wiki/2-satisfiability">2-SAT problem</a> is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="/blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2-SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
 <p>This code isn’t particularly elegant or easy to follow, and it’s lousy with mutable state. Despite these drawbacks, it is still relatively straightforward to refactor.</p>
 <p>If you’d like to follow along, I have the code (and some test data) available <a href="https://gist.github.com/vaibhavsagar/2418c9dd79da431065ad0d80e690b12f">at this gist</a> with each revision representing a refactoring step.</p>
 <p>The initial version of the code is as follows:</p>
@@ -1526,7 +1526,7 @@
     
 </div>
 
-<p><em>This blog post is essentially a transcript of <a href="https://www.youtube.com/watch?v=0oo8wIi2qBE">a 10-minute talk I gave at !!Con</a>, the slides for which are available <a href="https://vaibhavsagar.com/presentations/typed-holes/">here</a>.</em></p>
+<p><em>This blog post is essentially a transcript of <a href="https://www.youtube.com/watch?v=0oo8wIi2qBE">a 10-minute talk I gave at !!Con</a>, the slides for which are available <a href="/presentations/typed-holes/">here</a>.</em></p>
 <p>Let’s talk about typed holes. What’s a typed hole? A definition I like is <em>“a placeholder for an expression with a known type and an unknown value”</em>.</p>
 <p>Why are typed holes useful? Because they allow the language to help us write programs! To demonstrate, let’s look at some code in Python, a language that lacks this feature.</p>
 <p>Suppose I want to write a function that takes another function and a list and applies the function to each element of that list. A first stab might look like this:</p>
