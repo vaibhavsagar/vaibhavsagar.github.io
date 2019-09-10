@@ -156,8 +156,20 @@
 <p>If you use Nix 2.0 or newer, the <code>builtins.fetchTarball</code> command takes a <code>sha256</code> which means you can replace <code>fetchFromGitHub</code> and bootstrap without an existing <code>&lt;nixpkgs&gt;</code>! The following code snippet is identical to <code>fetchFromGitHub</code>:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="ex">fetcher</span> = { owner, repo, rev, sha256 }: <span class="ex">builtins.fetchTarball</span> {</a>
 <a class="sourceLine" id="cb12-2" title="2">  <span class="ex">inherit</span> sha256<span class="kw">;</span></a>
-<a class="sourceLine" id="cb12-3" title="3">  <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/archive/</span><span class="va">${rev}</span><span class="st">.tar.gz&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb12-3" title="3">  <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></a>
 <a class="sourceLine" id="cb12-4" title="4">};</a></code></pre></div>
+<p>and an updated expression can look something like:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" title="1"><span class="bu">let</span></a>
+<a class="sourceLine" id="cb13-2" title="2">  <span class="ex">fetcher</span> = { owner, repo, rev, sha256, ... }: <span class="ex">builtins.fetchTarball</span> {</a>
+<a class="sourceLine" id="cb13-3" title="3">    <span class="ex">inherit</span> sha256<span class="kw">;</span></a>
+<a class="sourceLine" id="cb13-4" title="4">    <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></a>
+<a class="sourceLine" id="cb13-5" title="5">  };</a>
+<a class="sourceLine" id="cb13-6" title="6">  <span class="ex">nixpkgs</span> = import (fetcher (builtins.fromJSON (builtins.readFile ./versions.json))<span class="ex">.nixpkgs</span>) {};</a>
+<a class="sourceLine" id="cb13-7" title="7">  <span class="ex">lib</span> = nixpkgs.lib<span class="kw">;</span></a>
+<a class="sourceLine" id="cb13-8" title="8">  <span class="ex">versions</span> = lib.mapAttrs</a>
+<a class="sourceLine" id="cb13-9" title="9">    <span class="kw">(</span><span class="ex">_</span>: fetcher<span class="kw">)</span></a>
+<a class="sourceLine" id="cb13-10" title="10">    <span class="kw">(</span><span class="ex">builtins.fromJSON</span> (builtins.readFile ./versions.json<span class="kw">)</span>);</a>
+<a class="sourceLine" id="cb13-11" title="11"><span class="kw">in</span> <span class="ex">versions</span></a></code></pre></div>
 <p>Thanks to <a href="https://jarmac.org/">Ahmad Jarara</a>, <a href="https://twitter.com/@chrisczynski">Chris Stryczynski</a>, <a href="https://github.com/garry-cairns">Garry Cairns</a>, <a href="https://haroldtreen.com/">Harold Treen</a>, <a href="https://ren.zone/">Renzo Carbonara</a>, <a href="http://susanpotter.net/">Susan Potter</a>, and <a href="https://twitter.com/tpflug">Tobias Pflug</a> for comments and feedback!</p>
 
         </div>
