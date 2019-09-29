@@ -362,14 +362,14 @@
 <a class="sourceLine" id="cb1-17" title="17">    <span class="fu">mkdir</span> -p <span class="va">$out</span>/etc/pam.d</a>
 <a class="sourceLine" id="cb1-18" title="18"></a>
 <a class="sourceLine" id="cb1-19" title="19">    <span class="bu">echo</span> <span class="st">&quot;root:x:0:0::/root:/bin/sh&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/passwd</a>
-<a class="sourceLine" id="cb1-20" title="20">    <span class="bu">echo</span> <span class="st">&quot;jovyan:x:1000:1000::/home/jovyan:&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/passwd</a>
+<a class="sourceLine" id="cb1-20" title="20">    <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${NB_USER}</span><span class="st">:x:1000:1000::/home/</span><span class="va">${NB_USER}</span><span class="st">:&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/passwd</a>
 <a class="sourceLine" id="cb1-21" title="21">    <span class="bu">echo</span> <span class="st">&quot;root:!x:::::::&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/shadow</a>
-<a class="sourceLine" id="cb1-22" title="22">    <span class="bu">echo</span> <span class="st">&quot;jovyan:!:::::::&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/shadow</a>
+<a class="sourceLine" id="cb1-22" title="22">    <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${NB_USER}</span><span class="st">:!:::::::&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/shadow</a>
 <a class="sourceLine" id="cb1-23" title="23"></a>
 <a class="sourceLine" id="cb1-24" title="24">    <span class="bu">echo</span> <span class="st">&quot;root:x:0:&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/group</a>
-<a class="sourceLine" id="cb1-25" title="25">    <span class="bu">echo</span> <span class="st">&quot;jovyan:x:1000:&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/group</a>
+<a class="sourceLine" id="cb1-25" title="25">    <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${NB_USER}</span><span class="st">:x:1000:&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/group</a>
 <a class="sourceLine" id="cb1-26" title="26">    <span class="bu">echo</span> <span class="st">&quot;root:x::&quot;</span> <span class="op">&gt;</span> <span class="va">$out</span>/etc/gshadow</a>
-<a class="sourceLine" id="cb1-27" title="27">    <span class="bu">echo</span> <span class="st">&quot;jovyan:!::&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/gshadow</a>
+<a class="sourceLine" id="cb1-27" title="27">    <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${NB_USER}</span><span class="st">:!::&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$out</span>/etc/gshadow</a>
 <a class="sourceLine" id="cb1-28" title="28">  <span class="st">&#39;&#39;</span>;</a>
 <a class="sourceLine" id="cb1-29" title="29">  <span class="ex">ihaskell</span> = import <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.ihaskell</span><span class="va">}</span><span class="st">/release.nix&quot;</span> {</a>
 <a class="sourceLine" id="cb1-30" title="30">    <span class="ex">inherit</span> nixpkgs<span class="kw">;</span></a>
