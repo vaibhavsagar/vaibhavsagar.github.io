@@ -44,132 +44,132 @@
 </div>
 
 <p>I love Nix because it makes packaging and using software so easy. For example, here’s a first stab at an expression that makes a recent version of Pandoc available in a <code>nix-shell</code> (be warned, this will take a while the first time!):</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="bu">let</span></a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</a>
-<a class="sourceLine" id="cb1-3" title="3">  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</a>
-<a class="sourceLine" id="cb1-4" title="4">    <span class="ex">overrides</span> = self: super: {</a>
-<a class="sourceLine" id="cb1-5" title="5">      <span class="ex">pandoc</span> = self.callHackage <span class="st">&quot;pandoc&quot;</span> <span class="st">&quot;2.2&quot;</span> {};</a>
-<a class="sourceLine" id="cb1-6" title="6">      <span class="ex">pandoc-types</span> = self.callHackage <span class="st">&quot;pandoc-types&quot;</span> <span class="st">&quot;1.17.4.2&quot;</span> {};</a>
-<a class="sourceLine" id="cb1-7" title="7">    };</a>
-<a class="sourceLine" id="cb1-8" title="8">  };</a>
-<a class="sourceLine" id="cb1-9" title="9"><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</a>
-<a class="sourceLine" id="cb1-10" title="10">  <span class="ex">buildInputs</span> = [ haskellPackages.pandoc ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb1-11" title="11">} <span class="st">&quot;&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="bu">let</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
+<span id="cb1-3"><a href="#cb1-3"></a>  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</span>
+<span id="cb1-4"><a href="#cb1-4"></a>    <span class="ex">overrides</span> = self: super: {</span>
+<span id="cb1-5"><a href="#cb1-5"></a>      <span class="ex">pandoc</span> = self.callHackage <span class="st">&quot;pandoc&quot;</span> <span class="st">&quot;2.2&quot;</span> {};</span>
+<span id="cb1-6"><a href="#cb1-6"></a>      <span class="ex">pandoc-types</span> = self.callHackage <span class="st">&quot;pandoc-types&quot;</span> <span class="st">&quot;1.17.4.2&quot;</span> {};</span>
+<span id="cb1-7"><a href="#cb1-7"></a>    };</span>
+<span id="cb1-8"><a href="#cb1-8"></a>  };</span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</span>
+<span id="cb1-10"><a href="#cb1-10"></a>  <span class="ex">buildInputs</span> = [ haskellPackages.pandoc ]<span class="kw">;</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a>} <span class="st">&quot;&quot;</span></span></code></pre></div>
 <p>If we save this to <code>default.nix</code> we can use it as follows (unless you’re reading this after the release of NixOS 18.09, more on that below):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" title="1">$ <span class="ex">nix-shell</span> default.nix</a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a>
-<a class="sourceLine" id="cb2-3" title="3">[<span class="ex">nix-shell</span>]$ pandoc --version</a>
-<a class="sourceLine" id="cb2-4" title="4"><span class="ex">pandoc</span> 2.2</a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a>$ <span class="ex">nix-shell</span> default.nix</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a>[<span class="ex">nix-shell</span>]$ pandoc --version</span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="ex">pandoc</span> 2.2</span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="op">&lt;</span><span class="ex">...</span><span class="op">&gt;</span></span></code></pre></div>
 <p>Pandoc is infamously large, so this will probably take a while the first time. Fortunately, Nix caches build artifacts and knows to provide the same output if the inputs are unchanged, so if we immediately try this again a second time it should be nearly instantaneous.</p>
 <p>Barring an event like the garbage collection of the Nix store or a change in the expression above, we would like to never rebuild this package again.</p>
 <p>Unfortunately, there is a serious flaw with this expression that prevents us from guaranteeing this.</p>
 <p>The problem is not immediately obvious, and might only manifest days or weeks later, or when you upgrade NixOS to the next version. The issue is with the second line,</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1"><span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span><span class="kw">;</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span><span class="kw">;</span></span></code></pre></div>
 <p>where we import the system-wide <code>nixpkgs</code>. If we later update this by running</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1">$ <span class="ex">nix-channel</span> --update</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a>$ <span class="ex">nix-channel</span> --update</span></code></pre></div>
 <p>and any of the transitive dependencies of our expression are updated, this will cause a rebuild because Nix will rightly detect that the inputs have changed.</p>
 <p>This might be desirable in many cases, but for us it means a lot of waiting for no benefit. We can avoid this by pinning <code>nixpkgs</code> to a known-good commit. One way to do this is by setting the <code>NIX_PATH</code> environment variable, which is where Nix looks for the location of <code>nixpkgs</code>. We could do this as follows:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1">$ <span class="va">NIX_PATH=</span>nixpkgs=<span class="ex">https</span>://github.com/NixOS/nixpkgs-channels/archive/2f6440eb09b7e6e3322720ac91ce7e2cdeb413f9.tar.gz nix-shell default.nix</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a>$ <span class="va">NIX_PATH=</span>nixpkgs=<span class="ex">https</span>://github.com/NixOS/nixpkgs-channels/archive/2f6440eb09b7e6e3322720ac91ce7e2cdeb413f9.tar.gz nix-shell default.nix</span></code></pre></div>
 <p>which takes advantage of the fact that Nix will transparently download a URL for <code>nixpkgs</code> instead of a filepath. This can quickly get tedious and is easy to forget though. Let’s pin <code>nixpkgs</code> directly in the expression:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1"><span class="bu">let</span></a>
-<a class="sourceLine" id="cb6-2" title="2">  <span class="ex">inherit</span> (import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}) <span class="ex">fetchFromGitHub</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-3" title="3">  <span class="ex">nixpkgs</span> = fetchFromGitHub {</a>
-<a class="sourceLine" id="cb6-4" title="4">    <span class="ex">owner</span>  = <span class="st">&quot;NixOS&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-5" title="5">    <span class="ex">repo</span>   = <span class="st">&quot;nixpkgs-channels&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-6" title="6">    <span class="fu">rev</span>    = <span class="st">&quot;2f6440eb09b7e6e3322720ac91ce7e2cdeb413f9&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-7" title="7">    <span class="ex">sha256</span> = <span class="st">&quot;0vb7ikjscrp2rw0dfw6pilxqpjm50l5qg2x2mn1vfh93dkl2aan7&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-8" title="8">  };</a>
-<a class="sourceLine" id="cb6-9" title="9">  <span class="ex">pkgs</span> = import nixpkgs {};</a>
-<a class="sourceLine" id="cb6-10" title="10">  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</a>
-<a class="sourceLine" id="cb6-11" title="11">    <span class="ex">overrides</span> = self: super: {</a>
-<a class="sourceLine" id="cb6-12" title="12">      <span class="ex">pandoc</span> = self.callHackage <span class="st">&quot;pandoc&quot;</span> <span class="st">&quot;2.2&quot;</span> {};</a>
-<a class="sourceLine" id="cb6-13" title="13">      <span class="ex">pandoc-types</span> = self.callHackage <span class="st">&quot;pandoc-types&quot;</span> <span class="st">&quot;1.17.4.2&quot;</span> {};</a>
-<a class="sourceLine" id="cb6-14" title="14">    };</a>
-<a class="sourceLine" id="cb6-15" title="15">  };</a>
-<a class="sourceLine" id="cb6-16" title="16"><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</a>
-<a class="sourceLine" id="cb6-17" title="17">  <span class="ex">buildInputs</span> = [ haskellPackages.pandoc ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb6-18" title="18">} <span class="st">&quot;&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1"></a><span class="bu">let</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a>  <span class="ex">inherit</span> (import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}) <span class="ex">fetchFromGitHub</span><span class="kw">;</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a>  <span class="ex">nixpkgs</span> = fetchFromGitHub {</span>
+<span id="cb6-4"><a href="#cb6-4"></a>    <span class="ex">owner</span>  = <span class="st">&quot;NixOS&quot;</span><span class="kw">;</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>    <span class="ex">repo</span>   = <span class="st">&quot;nixpkgs-channels&quot;</span><span class="kw">;</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a>    <span class="fu">rev</span>    = <span class="st">&quot;2f6440eb09b7e6e3322720ac91ce7e2cdeb413f9&quot;</span><span class="kw">;</span></span>
+<span id="cb6-7"><a href="#cb6-7"></a>    <span class="ex">sha256</span> = <span class="st">&quot;0vb7ikjscrp2rw0dfw6pilxqpjm50l5qg2x2mn1vfh93dkl2aan7&quot;</span><span class="kw">;</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a>  };</span>
+<span id="cb6-9"><a href="#cb6-9"></a>  <span class="ex">pkgs</span> = import nixpkgs {};</span>
+<span id="cb6-10"><a href="#cb6-10"></a>  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</span>
+<span id="cb6-11"><a href="#cb6-11"></a>    <span class="ex">overrides</span> = self: super: {</span>
+<span id="cb6-12"><a href="#cb6-12"></a>      <span class="ex">pandoc</span> = self.callHackage <span class="st">&quot;pandoc&quot;</span> <span class="st">&quot;2.2&quot;</span> {};</span>
+<span id="cb6-13"><a href="#cb6-13"></a>      <span class="ex">pandoc-types</span> = self.callHackage <span class="st">&quot;pandoc-types&quot;</span> <span class="st">&quot;1.17.4.2&quot;</span> {};</span>
+<span id="cb6-14"><a href="#cb6-14"></a>    };</span>
+<span id="cb6-15"><a href="#cb6-15"></a>  };</span>
+<span id="cb6-16"><a href="#cb6-16"></a><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</span>
+<span id="cb6-17"><a href="#cb6-17"></a>  <span class="ex">buildInputs</span> = [ haskellPackages.pandoc ]<span class="kw">;</span></span>
+<span id="cb6-18"><a href="#cb6-18"></a>} <span class="st">&quot;&quot;</span></span></code></pre></div>
 <p>Now we use the system-wide <code>nixpkgs</code> only to provide one function, <code>fetchFromGitHub</code>, which we then use to download a specific version of <code>nixpkgs</code> that we import instead. This is easier to use but computing the <code>sha256</code> is frustrating. One trick to keep in mind is that <code>fetchFromGitHub</code> is equivalent to</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" title="1">$ <span class="ex">nix-prefetch-url</span> --unpack https://github.com/<span class="op">&lt;</span>owner<span class="op">&gt;</span>/<span class="op">&lt;</span>repo<span class="op">&gt;</span>/archive/<span class="op">&lt;</span>rev<span class="op">&gt;</span>.tar.gz</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1"></a>$ <span class="ex">nix-prefetch-url</span> --unpack https://github.com/<span class="op">&lt;</span>owner<span class="op">&gt;</span>/<span class="op">&lt;</span>repo<span class="op">&gt;</span>/archive/<span class="op">&lt;</span>rev<span class="op">&gt;</span>.tar.gz</span></code></pre></div>
 <p>which outputs the correct hash at the end.</p>
 <p>What happens if we want to update the pinned version? One workflow I’ve seen suggested is to update the <code>rev</code>, change one character in the <code>sha256</code>, and let the Nix error message tell you the correct hash to use. I think we can do better than this.</p>
 <p><a href="https://github.com/expipiplus1">Joe Hermaszewski</a> has a handy tool called <a href="https://github.com/expipiplus1/update-nix-fetchgit">update-nix-fetchgit</a> that parses Nix files and automatically updates any <code>fetchFromGitHub</code> calls to the latest <code>master</code> revision and SHA256 of the repository. This is certainly a lot more convenient, but it doesn’t seem to work for repositories that don’t have a <code>master</code> branch or that we want to update to the <code>HEAD</code> of a different branch. This seems like an unimportant omission except that <code>nixpkgs-channels</code> is one such repository, and we want to update it to the <code>HEAD</code> of e.g. <code>nixos-18.03</code>.</p>
 <p>So, we have a tedious manual process on one hand and a quick, efficient, and wrong process on the other. There has to be a better way!</p>
 <p>I’ve settled on a solution that uses two extra files: an <code>updater</code> script and a <code>versions.json</code> that stores the arguments to <code>fetchFromGitHub</code> as JSON.</p>
 <p>My <code>updater</code> script looks like</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1"><span class="co">#! /usr/bin/env nix-shell</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="co">#! nix-shell -i bash</span></a>
-<a class="sourceLine" id="cb8-3" title="3"><span class="co">#! nix-shell -p curl jq nix</span></a>
-<a class="sourceLine" id="cb8-4" title="4"></a>
-<a class="sourceLine" id="cb8-5" title="5"><span class="kw">set</span> <span class="ex">-eufo</span> pipefail</a>
-<a class="sourceLine" id="cb8-6" title="6"></a>
-<a class="sourceLine" id="cb8-7" title="7"><span class="va">FILE=$1</span></a>
-<a class="sourceLine" id="cb8-8" title="8"><span class="va">PROJECT=$2</span></a>
-<a class="sourceLine" id="cb8-9" title="9"><span class="va">BRANCH=${3:-</span>master<span class="va">}</span></a>
-<a class="sourceLine" id="cb8-10" title="10"></a>
-<a class="sourceLine" id="cb8-11" title="11"><span class="va">OWNER=$(</span><span class="ex">jq</span> -r <span class="st">'.[$project].owner'</span> --arg project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></a>
-<a class="sourceLine" id="cb8-12" title="12"><span class="va">REPO=$(</span><span class="ex">jq</span> -r <span class="st">'.[$project].repo'</span> --arg project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></a>
-<a class="sourceLine" id="cb8-13" title="13"></a>
-<a class="sourceLine" id="cb8-14" title="14"><span class="va">REV=$(</span><span class="ex">curl</span> <span class="st">&quot;https://api.github.com/repos/</span><span class="va">$OWNER</span><span class="st">/</span><span class="va">$REPO</span><span class="st">/branches/</span><span class="va">$BRANCH</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">jq</span> -r <span class="st">'.commit.sha'</span><span class="va">)</span></a>
-<a class="sourceLine" id="cb8-15" title="15"><span class="va">SHA256=$(</span><span class="ex">nix-prefetch-url</span> --unpack <span class="st">&quot;https://github.com/</span><span class="va">$OWNER</span><span class="st">/</span><span class="va">$REPO</span><span class="st">/archive/</span><span class="va">$REV</span><span class="st">.tar.gz&quot;</span><span class="va">)</span></a>
-<a class="sourceLine" id="cb8-16" title="16"><span class="va">TJQ=$(</span><span class="ex">jq</span> <span class="st">'.[$project] = {owner: $owner, repo: $repo, rev: $rev, sha256: $sha256}'</span> \</a>
-<a class="sourceLine" id="cb8-17" title="17">  --arg project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> \</a>
-<a class="sourceLine" id="cb8-18" title="18">  --arg owner <span class="st">&quot;</span><span class="va">$OWNER</span><span class="st">&quot;</span> \</a>
-<a class="sourceLine" id="cb8-19" title="19">  --arg repo <span class="st">&quot;</span><span class="va">$REPO</span><span class="st">&quot;</span> \</a>
-<a class="sourceLine" id="cb8-20" title="20">  --arg rev <span class="st">&quot;</span><span class="va">$REV</span><span class="st">&quot;</span> \</a>
-<a class="sourceLine" id="cb8-21" title="21">  --arg sha256 <span class="st">&quot;</span><span class="va">$SHA256</span><span class="st">&quot;</span> \</a>
-<a class="sourceLine" id="cb8-22" title="22">  <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></a>
-<a class="sourceLine" id="cb8-23" title="23"><span class="kw">[[</span> <span class="va">$?</span> <span class="ot">==</span> 0<span class="kw"> ]]</span> <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${TJQ}</span><span class="st">&quot;</span> <span class="op">&gt;</span><span class="kw">|</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">#! /usr/bin/env nix-shell</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="co">#! nix-shell -i bash</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="co">#! nix-shell -p curl jq nix</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="kw">set</span> <span class="ex">-eufo</span> pipefail</span>
+<span id="cb8-6"><a href="#cb8-6"></a></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="va">FILE=$1</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="va">PROJECT=$2</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="va">BRANCH=${3:-</span>master<span class="va">}</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a></span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="va">OWNER=$(</span><span class="ex">jq</span> -r <span class="st">'.[$project].owner'</span> --arg project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a><span class="va">REPO=$(</span><span class="ex">jq</span> -r <span class="st">'.[$project].repo'</span> --arg project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a></span>
+<span id="cb8-14"><a href="#cb8-14"></a><span class="va">REV=$(</span><span class="ex">curl</span> <span class="st">&quot;https://api.github.com/repos/</span><span class="va">$OWNER</span><span class="st">/</span><span class="va">$REPO</span><span class="st">/branches/</span><span class="va">$BRANCH</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">jq</span> -r <span class="st">'.commit.sha'</span><span class="va">)</span></span>
+<span id="cb8-15"><a href="#cb8-15"></a><span class="va">SHA256=$(</span><span class="ex">nix-prefetch-url</span> --unpack <span class="st">&quot;https://github.com/</span><span class="va">$OWNER</span><span class="st">/</span><span class="va">$REPO</span><span class="st">/archive/</span><span class="va">$REV</span><span class="st">.tar.gz&quot;</span><span class="va">)</span></span>
+<span id="cb8-16"><a href="#cb8-16"></a><span class="va">TJQ=$(</span><span class="ex">jq</span> <span class="st">'.[$project] = {owner: $owner, repo: $repo, rev: $rev, sha256: $sha256}'</span> \</span>
+<span id="cb8-17"><a href="#cb8-17"></a>  --arg project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> \</span>
+<span id="cb8-18"><a href="#cb8-18"></a>  --arg owner <span class="st">&quot;</span><span class="va">$OWNER</span><span class="st">&quot;</span> \</span>
+<span id="cb8-19"><a href="#cb8-19"></a>  --arg repo <span class="st">&quot;</span><span class="va">$REPO</span><span class="st">&quot;</span> \</span>
+<span id="cb8-20"><a href="#cb8-20"></a>  --arg rev <span class="st">&quot;</span><span class="va">$REV</span><span class="st">&quot;</span> \</span>
+<span id="cb8-21"><a href="#cb8-21"></a>  --arg sha256 <span class="st">&quot;</span><span class="va">$SHA256</span><span class="st">&quot;</span> \</span>
+<span id="cb8-22"><a href="#cb8-22"></a>  <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb8-23"><a href="#cb8-23"></a><span class="kw">[[</span> <span class="va">$?</span> <span class="ot">==</span> 0<span class="kw"> ]]</span> <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${TJQ}</span><span class="st">&quot;</span> <span class="op">&gt;</span><span class="kw">|</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span></span></code></pre></div>
 <p>It uses <code>curl</code> and <code>jq</code> to interact with the GitHub API and <code>nix</code> to calculate the appropriate hashes.</p>
 <p>A simple <code>versions.json</code> looks like</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb9-1" title="1"><span class="fu">{</span></a>
-<a class="sourceLine" id="cb9-2" title="2">  <span class="dt">&quot;nixpkgs&quot;</span><span class="fu">:</span> <span class="fu">{</span></a>
-<a class="sourceLine" id="cb9-3" title="3">    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;NixOS&quot;</span><span class="fu">,</span></a>
-<a class="sourceLine" id="cb9-4" title="4">    <span class="dt">&quot;repo&quot;</span><span class="fu">:</span> <span class="st">&quot;nixpkgs-channels&quot;</span><span class="fu">,</span></a>
-<a class="sourceLine" id="cb9-5" title="5">    <span class="dt">&quot;rev&quot;</span><span class="fu">:</span> <span class="st">&quot;2f6440eb09b7e6e3322720ac91ce7e2cdeb413f9&quot;</span><span class="fu">,</span></a>
-<a class="sourceLine" id="cb9-6" title="6">    <span class="dt">&quot;sha256&quot;</span><span class="fu">:</span> <span class="st">&quot;0vb7ikjscrp2rw0dfw6pilxqpjm50l5qg2x2mn1vfh93dkl2aan7&quot;</span></a>
-<a class="sourceLine" id="cb9-7" title="7">  <span class="fu">}</span></a>
-<a class="sourceLine" id="cb9-8" title="8"><span class="fu">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">{</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a>  <span class="dt">&quot;nixpkgs&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a>    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;NixOS&quot;</span><span class="fu">,</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a>    <span class="dt">&quot;repo&quot;</span><span class="fu">:</span> <span class="st">&quot;nixpkgs-channels&quot;</span><span class="fu">,</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a>    <span class="dt">&quot;rev&quot;</span><span class="fu">:</span> <span class="st">&quot;2f6440eb09b7e6e3322720ac91ce7e2cdeb413f9&quot;</span><span class="fu">,</span></span>
+<span id="cb9-6"><a href="#cb9-6"></a>    <span class="dt">&quot;sha256&quot;</span><span class="fu">:</span> <span class="st">&quot;0vb7ikjscrp2rw0dfw6pilxqpjm50l5qg2x2mn1vfh93dkl2aan7&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a>  <span class="fu">}</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="fu">}</span></span></code></pre></div>
 <p>And a Nix expression using these files looks like</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" title="1"><span class="bu">let</span></a>
-<a class="sourceLine" id="cb10-2" title="2">  <span class="ex">inherit</span> (import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}) <span class="ex">fetchFromGitHub</span> lib<span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-3" title="3">  <span class="ex">versions</span> = lib.mapAttrs</a>
-<a class="sourceLine" id="cb10-4" title="4">    <span class="kw">(</span><span class="ex">_</span>: fetchFromGitHub<span class="kw">)</span></a>
-<a class="sourceLine" id="cb10-5" title="5">    <span class="kw">(</span><span class="ex">builtins.fromJSON</span> (builtins.readFile ./versions.json<span class="kw">)</span>);</a>
-<a class="sourceLine" id="cb10-6" title="6">  <span class="co"># ./updater versions.json nixpkgs nixos-18.03</span></a>
-<a class="sourceLine" id="cb10-7" title="7">  <span class="ex">pkgs</span> = import versions.nixpkgs {};</a>
-<a class="sourceLine" id="cb10-8" title="8">  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</a>
-<a class="sourceLine" id="cb10-9" title="9">    <span class="ex">overrides</span> = self: super: {</a>
-<a class="sourceLine" id="cb10-10" title="10">      <span class="ex">pandoc</span> = self.callHackage <span class="st">&quot;pandoc&quot;</span> <span class="st">&quot;2.2&quot;</span> {};</a>
-<a class="sourceLine" id="cb10-11" title="11">      <span class="ex">pandoc-types</span> = self.callHackage <span class="st">&quot;pandoc-types&quot;</span> <span class="st">&quot;1.17.4.2&quot;</span> {};</a>
-<a class="sourceLine" id="cb10-12" title="12">    };</a>
-<a class="sourceLine" id="cb10-13" title="13">  };</a>
-<a class="sourceLine" id="cb10-14" title="14"><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</a>
-<a class="sourceLine" id="cb10-15" title="15">  <span class="ex">buildInputs</span> = [ haskellPackages.pandoc ]<span class="kw">;</span></a>
-<a class="sourceLine" id="cb10-16" title="16">} <span class="st">&quot;&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1"></a><span class="bu">let</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a>  <span class="ex">inherit</span> (import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}) <span class="ex">fetchFromGitHub</span> lib<span class="kw">;</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a>  <span class="ex">versions</span> = lib.mapAttrs</span>
+<span id="cb10-4"><a href="#cb10-4"></a>    <span class="kw">(</span><span class="ex">_</span>: fetchFromGitHub<span class="kw">)</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a>    <span class="kw">(</span><span class="ex">builtins.fromJSON</span> (builtins.readFile ./versions.json<span class="kw">)</span>);</span>
+<span id="cb10-6"><a href="#cb10-6"></a>  <span class="co"># ./updater versions.json nixpkgs nixos-18.03</span></span>
+<span id="cb10-7"><a href="#cb10-7"></a>  <span class="ex">pkgs</span> = import versions.nixpkgs {};</span>
+<span id="cb10-8"><a href="#cb10-8"></a>  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</span>
+<span id="cb10-9"><a href="#cb10-9"></a>    <span class="ex">overrides</span> = self: super: {</span>
+<span id="cb10-10"><a href="#cb10-10"></a>      <span class="ex">pandoc</span> = self.callHackage <span class="st">&quot;pandoc&quot;</span> <span class="st">&quot;2.2&quot;</span> {};</span>
+<span id="cb10-11"><a href="#cb10-11"></a>      <span class="ex">pandoc-types</span> = self.callHackage <span class="st">&quot;pandoc-types&quot;</span> <span class="st">&quot;1.17.4.2&quot;</span> {};</span>
+<span id="cb10-12"><a href="#cb10-12"></a>    };</span>
+<span id="cb10-13"><a href="#cb10-13"></a>  };</span>
+<span id="cb10-14"><a href="#cb10-14"></a><span class="kw">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;dummy&quot;</span> {</span>
+<span id="cb10-15"><a href="#cb10-15"></a>  <span class="ex">buildInputs</span> = [ haskellPackages.pandoc ]<span class="kw">;</span></span>
+<span id="cb10-16"><a href="#cb10-16"></a>} <span class="st">&quot;&quot;</span></span></code></pre></div>
 <p>And the command to update <code>nixpkgs</code> is</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" title="1">$ <span class="ex">./updater</span> versions.json nixpkgs nixos-18.03</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1"></a>$ <span class="ex">./updater</span> versions.json nixpkgs nixos-18.03</span></code></pre></div>
 <p>The reason I went with this approach is that <code>jq</code> is easier and friendlier to use than most of the Nix tooling available, and Nix fortunately has good JSON interoperability. I’ve toyed with the idea of rewriting my updater script in a language that is more robust (possibly Haskell with <a href="https://github.com/haskell-nix/hnix">hnix</a>) but I feel like it’s at a local maximum and I’m happy with the way it works for now.</p>
 <p>I hope you find some of the ideas and/or code here useful the next time you’re wondering if you should pin <code>nixpkgs</code> and how to do so!</p>
 <p><strong>Appendix 1</strong></p>
 <p>If you use Nix 2.0 or newer, the <code>builtins.fetchTarball</code> command takes a <code>sha256</code> which means you can replace <code>fetchFromGitHub</code> and bootstrap without an existing <code>&lt;nixpkgs&gt;</code>! The following code snippet is identical to <code>fetchFromGitHub</code>:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="ex">fetcher</span> = { owner, repo, rev, sha256 }: <span class="ex">builtins.fetchTarball</span> {</a>
-<a class="sourceLine" id="cb12-2" title="2">  <span class="ex">inherit</span> sha256<span class="kw">;</span></a>
-<a class="sourceLine" id="cb12-3" title="3">  <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb12-4" title="4">};</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1"></a><span class="ex">fetcher</span> = { owner, repo, rev, sha256 }: <span class="ex">builtins.fetchTarball</span> {</span>
+<span id="cb12-2"><a href="#cb12-2"></a>  <span class="ex">inherit</span> sha256<span class="kw">;</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a>  <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>};</span></code></pre></div>
 <p>and an updated expression can look something like:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" title="1"><span class="bu">let</span></a>
-<a class="sourceLine" id="cb13-2" title="2">  <span class="ex">fetcher</span> = { owner, repo, rev, sha256, ... }: <span class="ex">builtins.fetchTarball</span> {</a>
-<a class="sourceLine" id="cb13-3" title="3">    <span class="ex">inherit</span> sha256<span class="kw">;</span></a>
-<a class="sourceLine" id="cb13-4" title="4">    <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></a>
-<a class="sourceLine" id="cb13-5" title="5">  };</a>
-<a class="sourceLine" id="cb13-6" title="6">  <span class="ex">nixpkgs</span> = import (fetcher (builtins.fromJSON (builtins.readFile ./versions.json))<span class="ex">.nixpkgs</span>) {};</a>
-<a class="sourceLine" id="cb13-7" title="7">  <span class="ex">lib</span> = nixpkgs.lib<span class="kw">;</span></a>
-<a class="sourceLine" id="cb13-8" title="8">  <span class="ex">versions</span> = lib.mapAttrs</a>
-<a class="sourceLine" id="cb13-9" title="9">    <span class="kw">(</span><span class="ex">_</span>: fetcher<span class="kw">)</span></a>
-<a class="sourceLine" id="cb13-10" title="10">    <span class="kw">(</span><span class="ex">builtins.fromJSON</span> (builtins.readFile ./versions.json<span class="kw">)</span>);</a>
-<a class="sourceLine" id="cb13-11" title="11"><span class="kw">in</span> <span class="ex">versions</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1"></a><span class="bu">let</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a>  <span class="ex">fetcher</span> = { owner, repo, rev, sha256, ... }: <span class="ex">builtins.fetchTarball</span> {</span>
+<span id="cb13-3"><a href="#cb13-3"></a>    <span class="ex">inherit</span> sha256<span class="kw">;</span></span>
+<span id="cb13-4"><a href="#cb13-4"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></span>
+<span id="cb13-5"><a href="#cb13-5"></a>  };</span>
+<span id="cb13-6"><a href="#cb13-6"></a>  <span class="ex">nixpkgs</span> = import (fetcher (builtins.fromJSON (builtins.readFile ./versions.json))<span class="ex">.nixpkgs</span>) {};</span>
+<span id="cb13-7"><a href="#cb13-7"></a>  <span class="ex">lib</span> = nixpkgs.lib<span class="kw">;</span></span>
+<span id="cb13-8"><a href="#cb13-8"></a>  <span class="ex">versions</span> = lib.mapAttrs</span>
+<span id="cb13-9"><a href="#cb13-9"></a>    <span class="kw">(</span><span class="ex">_</span>: fetcher<span class="kw">)</span></span>
+<span id="cb13-10"><a href="#cb13-10"></a>    <span class="kw">(</span><span class="ex">builtins.fromJSON</span> (builtins.readFile ./versions.json<span class="kw">)</span>);</span>
+<span id="cb13-11"><a href="#cb13-11"></a><span class="kw">in</span> <span class="ex">versions</span></span></code></pre></div>
 <p>Thanks to <a href="https://jarmac.org/">Ahmad Jarara</a>, <a href="https://twitter.com/@chrisczynski">Chris Stryczynski</a>, <a href="https://github.com/garry-cairns">Garry Cairns</a>, <a href="https://haroldtreen.com/">Harold Treen</a>, <a href="https://ren.zone/">Renzo Carbonara</a>, <a href="http://susanpotter.net/">Susan Potter</a>, and <a href="https://twitter.com/tpflug">Tobias Pflug</a> for comments and feedback!</p>
 
         </div>

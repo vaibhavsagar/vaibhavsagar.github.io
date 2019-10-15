@@ -74,12 +74,12 @@
 <p>Curiously, <code>popcount</code> seems to have disappeared from instruction sets between the mid-1970s and the mid-2000s, so there has to be more to it than cryptographic applications to explain its return. What else can it be used for?</p>
 <h4 id="error-correction">Error Correction</h4>
 <p>Related to the concept of Hamming weight is <a href="https://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</a>, which is the number of differing positions between two strings of identical length. For two binary strings <code>x</code> and <code>y</code>, this is just the <code>popcount</code> of them XORed together. For example:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb1-1" title="1">00100110</a>
-<a class="sourceLine" id="cb1-2" title="2">01100000 ^</a>
-<a class="sourceLine" id="cb1-3" title="3">--------</a>
-<a class="sourceLine" id="cb1-4" title="4">01000110</a>
-<a class="sourceLine" id="cb1-5" title="5"></a>
-<a class="sourceLine" id="cb1-6" title="6">popcount(01000110) = 3</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1"></a>00100110</span>
+<span id="cb1-2"><a href="#cb1-2"></a>01100000 ^</span>
+<span id="cb1-3"><a href="#cb1-3"></a>--------</span>
+<span id="cb1-4"><a href="#cb1-4"></a>01000110</span>
+<span id="cb1-5"><a href="#cb1-5"></a></span>
+<span id="cb1-6"><a href="#cb1-6"></a>popcount(01000110) = 3</span></code></pre></div>
 <p>For telecommunications applications, this helps us calculate the signal distance, where a known word is sent over the wire and the number of flipped bits are counted to provide an estimate of the error introduced by transmission.</p>
 <p>We can then design an <a href="https://en.wikipedia.org/wiki/Hamming_distance#Error_detection_and_error_correction">error-correcting code</a> accordingly, e.g. if we want to be robust against up to 2 flipped bits, our code words need to differ in Hamming distance by at least 5.</p>
 <h4 id="binary-convolutional-neural-networks">Binary Convolutional Neural Networks</h4>
@@ -92,10 +92,10 @@
 <p>In summary, we have to do binary matrix multiplication. But what’s special about binary matrices?</p>
 <p>Ordinary matrix multiplication on 32-bit values is a good fit on desktop computers with powerful CPUs and GPUs, but increasingly we also want to do useful work on smaller and simpler devices, such as smartphones, routers, smartwatches, etc. We can decompose these more complex matrices into layers of binary matrices, and these resulting matrices are so much easier to store and operate on that we are better off even though there are more layers.</p>
 <p>Where does <code>popcount</code> come into play? It’s used to calculate the dot product of two binary matrices:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode default"><code class="sourceCode default"><a class="sourceLine" id="cb2-1" title="1">a = xnor(x, y)</a>
-<a class="sourceLine" id="cb2-2" title="2">b = popcount(a)</a>
-<a class="sourceLine" id="cb2-3" title="3">c = len(a)</a>
-<a class="sourceLine" id="cb2-4" title="4">dot(x, y) = 2 × b − c</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1"></a>a = xnor(x, y)</span>
+<span id="cb2-2"><a href="#cb2-2"></a>b = popcount(a)</span>
+<span id="cb2-3"><a href="#cb2-3"></a>c = len(a)</span>
+<span id="cb2-4"><a href="#cb2-4"></a>dot(x, y) = 2 × b − c</span></code></pre></div>
 <p>More details are available <a href="https://sushscience.wordpress.com/2017/10/01/understanding-binary-neural-networks/">here</a> and <a href="https://developer.apple.com/documentation/metalperformanceshaders/mpscnnbinaryconvolution">here</a>.</p>
 <h4 id="chess-programming">Chess Programming</h4>
 <p>Many chess programs store data using a <a href="https://www.chessprogramming.org/Bitboards">bitboard</a> representation, which conveniently fits into a 64-bit word. <a href="https://www.chessprogramming.org/Population_Count">Population Count</a> has been used to perform meaningful operations with this representation, such as calculating the <a href="https://www.chessprogramming.org/Mobility#Mobility_with_Bitboards">mobility</a> of a piece.</p>
