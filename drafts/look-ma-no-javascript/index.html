@@ -43,9 +43,28 @@
     
 </div>
 
-<p>For the last couple of weeks, I’ve been obsessed with the idea of running Haskell in the browser. I know this is possible, because this is what I’ve been doing at work for the last year and a bit, but the applications I work on professionally are complex beasts with Haskell backends and dedicated servers making them available to users. I’m looking for something lighter that I can serve statically using GitHub Pages or <a href="https://glitch.com">Glitch</a>, essentially plopping some code on a webpage and never worrying about hosting ever again.</p>
-<p>My first instinct was to reach for a tool like <a href="https://github.com/obsidiansystems/obelisk">Obelisk</a>, which bills itself as “an easy way to develop and deploy your Reflex project”. Although it does work as advertised(!), it is geared towards the needs of the large apps I mentioned above. It prerenders webpages where possible to make projects as snappy as possible, works best within the confines of the Obelisk libraries, assumes at least one NixOS target that will host your website, all of which means it doesn’t seem to scale down to my comparatively modest needs. It is possible to use Obelisk anyway, but I found myself using too few of its features to justify the effort, and I decided to move down a level and use <a href="https://github.com/reflex-frp/reflex-platform">Reflex Platform</a> directly.</p>
+<p>For the last couple of weeks, I’ve been obsessed with the idea of running Haskell in the browser. I know this is possible, because this is what I’ve been doing at work for the last year and a bit, but the applications I work on professionally are complex beasts with Haskell backends and dedicated servers making them available to users. I’m looking for something lighter that I can serve statically using GitHub Pages or <a href="https://glitch.com">Glitch</a>, so I can plop some code on a webpage and never worry about hosting ever again.</p>
+<p>My first instinct was to reach for a tool like <a href="https://github.com/obsidiansystems/obelisk">Obelisk</a>, which bills itself as “an easy way to develop and deploy your Reflex project”. Although it does work as advertised(!), it is geared towards the needs of the large apps I mentioned above. It prerenders webpages where possible to make projects as snappy as possible, works best within the confines of the Obelisk libraries, and assumes at least one NixOS target that will host your website, all of which mean it doesn’t yet scale down to my comparatively modest needs. It is possible to use Obelisk anyway, but I found myself using too few of its features to justify the effort, and I decided to move down a level and use <a href="https://github.com/reflex-frp/reflex-platform">Reflex Platform</a> directly.</p>
 <p>The Reflex Platform is a set of changes and overrides to a revision of <a href="https://github.com/NixOS/nixpkgs">Nixpkgs</a> to best support building full-stack and mobile Haskell applications.</p>
+<p>I like to use the <code>updater</code> script described in <a href="../../blog/quick-easy-nixpkgs-pinning">a previous blog post</a>, so I’ll start by copying that over and creating a <code>versions.json</code> with the following contents:</p>
+<details>
+<p><summary style="cursor: pointer">versions.json</summary></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a>  <span class="dt">&quot;reflex-platform&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;reflex-frp&quot;</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a>    <span class="dt">&quot;repo&quot;</span><span class="fu">:</span> <span class="st">&quot;reflex-platform&quot;</span><span class="fu">,</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a>    <span class="dt">&quot;branch&quot;</span><span class="fu">:</span> <span class="st">&quot;develop&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>    <span class="dt">&quot;rev&quot;</span><span class="fu">:</span> <span class="st">&quot;&quot;</span><span class="fu">,</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>    <span class="dt">&quot;sha256&quot;</span><span class="fu">:</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>  <span class="fu">}</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="fu">}</span></span></code></pre></div>
+</details>
+<p>I can then update this by running:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a>$ <span class="ex">./updater</span> versions.json reflex-platform</span></code></pre></div>
+<p>to get the latest <code>reflex-platform</code>.</p>
+<p>The next step is to get a Haskell project skeleton in place. I used <code>cabal init</code> for this as follows:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a>$ <span class="ex">nix-shell</span> -p ghc cabal-install --run <span class="st">'cabal init -lBSD3'</span></span></code></pre></div>
+<p>which generated an executable-only project, just like I wanted.</p>
 
         </div>
         <div id="footer">
