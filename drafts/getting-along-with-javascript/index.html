@@ -118,9 +118,102 @@
 <span id="cb7-6"><a href="#cb7-6"></a>  dynText <span class="op">$</span> _inputElement_value t</span></code></pre></div>
 </details>
 <p>We also have to add <code>reflex-dom</code> and <code>reflex</code> to our dependencies in our <code>.cabal</code> file, and then we can get a automatically-reloading development build with one command:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1"></a>$ <span class="ex">nix-shell</span> -A shells.ghc --run <span class="st">'ghcid -T &quot;:main&quot; --command &quot;cabal new-repl&quot;'</span></span></code></pre></div>
-<p>This allows a native Haskell process to control a web page, so we can navigate to it using our browser at <code>http://localhost:3003</code> and have a fast feedback loop. In practice there is a lot of brower refreshing involved, but this is still much nicer than having to do a GHCJS build each time we want to look at our changes. Now we have an input box that repeats what we type into it, which is a good start.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1"></a>$ <span class="ex">nix-shell</span> -A shells.ghc --run <span class="st">'ghcid -T &quot;Main.main&quot; --command &quot;cabal new-repl&quot;'</span></span></code></pre></div>
+<p>This allows a native Haskell process to control a web page, so we can navigate to it using our browser at <code>http://localhost:3003</code> and have a fast feedback loop. In practice there is a lot of brower refreshing involved, but this is still much nicer than having to do a GHCJS build each time we want to look at our changes. Now we have an input box that repeats what we type into it, which is a good start. I should point out that this works a lot better on Google Chrome (or Chromium) than it does on Firefox, and that’s what I’ll be using for development.</p>
 <p>So where are we going with this? My plan is to build a crude version of the <a href="http://viz-js.com">Viz.js</a> homepage, where you can write <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> and see it rendered instantly. Viz.js is the result of compiling the venerable <a href="http://graphviz.org/">Graphviz</a> to JavaScript using <a href="https://emscripten.org">Emscripten</a>. It’s no longer maintained but still works fine as far as I can tell. In order to do this I want to use some kind of JavaScript FFI to call out to <code>viz.js</code>, but first I want to swap out our text input for a text area, and move the repeated output to just below the text area instead of beside it.</p>
+<details>
+<p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="kw">import</span> <span class="dt">Reflex.Dom</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a></span>
+<span id="cb9-4"><a href="#cb9-4"></a>main <span class="ot">=</span> mainWidget <span class="op">$</span> el <span class="st">&quot;div&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a>  t <span class="ot">&lt;-</span> textArea def</span>
+<span id="cb9-6"><a href="#cb9-6"></a>  el <span class="st">&quot;div&quot;</span> <span class="op">$</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a>    dynText <span class="op">$</span> _textArea_value t</span></code></pre></div>
+</details>
+<p>The latest version of Viz.js is available <a href="https://www.jsdelivr.com/package/npm/viz.js">here</a>, and we can include it using <code>mainWidgetWithHead</code>:</p>
+<details>
+<p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">import</span> <span class="dt">Reflex.Dom</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a></span>
+<span id="cb10-4"><a href="#cb10-4"></a>main <span class="ot">=</span> mainWidgetWithHead widgetHead <span class="op">$</span> el <span class="st">&quot;div&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a>  t <span class="ot">&lt;-</span> textArea def</span>
+<span id="cb10-6"><a href="#cb10-6"></a>  el <span class="st">&quot;div&quot;</span> <span class="op">$</span></span>
+<span id="cb10-7"><a href="#cb10-7"></a>    dynText <span class="op">$</span> _textArea_value t</span>
+<span id="cb10-8"><a href="#cb10-8"></a>  <span class="kw">where</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="ot">    widgetHead ::</span> <span class="dt">DomBuilder</span> t m <span class="ot">=&gt;</span> m ()</span>
+<span id="cb10-10"><a href="#cb10-10"></a>    widgetHead <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a>      script <span class="st">&quot;https://cdn.jsdelivr.net/npm/viz.js@2.1.2/viz.min.js&quot;</span></span>
+<span id="cb10-12"><a href="#cb10-12"></a>      script <span class="st">&quot;https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.min.js&quot;</span></span>
+<span id="cb10-13"><a href="#cb10-13"></a>    script src <span class="ot">=</span> elAttr <span class="st">&quot;script&quot;</span> (<span class="st">&quot;type&quot;</span> <span class="op">=:</span> <span class="st">&quot;text/javascript&quot;</span> <span class="op">&lt;&gt;</span> <span class="st">&quot;src&quot;</span> <span class="op">=:</span> src) blank</span></code></pre></div>
+</details>
+<p>Now we can poke around with our browser developer tools until we have a useful function. Here’s what I came up with, based on the examples in the <a href="https://github.com/mdaines/viz.js/wiki/Usage#using-a-script-tag">wiki</a>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">function</span>(e<span class="op">,</span> string) <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a>  <span class="kw">var</span> viz <span class="op">=</span> <span class="kw">new</span> <span class="at">Viz</span>()<span class="op">;</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a>  <span class="va">viz</span>.<span class="at">renderSVGElement</span>(string)</span>
+<span id="cb11-4"><a href="#cb11-4"></a>  .<span class="at">then</span>(<span class="kw">function</span>(element) <span class="op">{</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a>    <span class="va">e</span>.<span class="at">innerHTML</span> <span class="op">=</span> <span class="va">element</span>.<span class="at">outerHTML</span><span class="op">;</span></span>
+<span id="cb11-6"><a href="#cb11-6"></a>  <span class="op">}</span>)</span>
+<span id="cb11-7"><a href="#cb11-7"></a>  .<span class="at">catch</span>(<span class="kw">function</span>(error) <span class="op">{</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a>    viz <span class="op">=</span> <span class="kw">new</span> <span class="at">Viz</span>()<span class="op">;</span></span>
+<span id="cb11-9"><a href="#cb11-9"></a>    <span class="va">e</span>.<span class="at">innerHTML</span> <span class="op">=</span> error<span class="op">;</span></span>
+<span id="cb11-10"><a href="#cb11-10"></a>  <span class="op">}</span>)</span>
+<span id="cb11-11"><a href="#cb11-11"></a><span class="op">}</span></span></code></pre></div>
+<p>Now we can start thinking about how we want to do JavaScript interop! Although there is a GHCJS FFI as described <a href="https://github.com/ghcjs/ghcjs/wiki/A-few-examples-of-Foreign-Function-Interface">in the wiki</a>, this doesn’t seem to work at all with GHC, and that means we can’t use it during development. I don’t think that’s good enough, and fortunately we don’t have to settle for this and instead can use <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0"><code>jsaddle</code></a>, which bills itself as “an EDSL for calling JavaScript that can be used both from GHCJS and GHC”. We can add <code>jsaddle</code> to our dependencies, add <code>Viz</code> to the <code>exposed-modules</code> stanza in our <code>.cabal</code> file, and create a new module <code>Viz</code>, and then we can use the <code>eval</code> and <code>call</code> functions to call our JavaScript directly:</p>
+<details>
+<p><summary style="cursor: pointer"><code>Viz.hs</code></summary></p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">module</span> <span class="dt">Viz</span> <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a></span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="kw">import</span> <span class="dt">Language.Javascript.JSaddle</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a></span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="ot">viz ::</span> <span class="dt">JSVal</span> <span class="ot">-&gt;</span> <span class="dt">JSVal</span> <span class="ot">-&gt;</span> <span class="dt">JSM</span> ()</span>
+<span id="cb12-6"><a href="#cb12-6"></a>viz element string <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a>  call vizJs vizJs [element, string]</span>
+<span id="cb12-8"><a href="#cb12-8"></a>  <span class="fu">pure</span> ()</span>
+<span id="cb12-9"><a href="#cb12-9"></a></span>
+<span id="cb12-10"><a href="#cb12-10"></a><span class="ot">vizJs ::</span> <span class="dt">JSM</span> <span class="dt">JSVal</span></span>
+<span id="cb12-11"><a href="#cb12-11"></a>vizJs <span class="ot">=</span> eval</span>
+<span id="cb12-12"><a href="#cb12-12"></a>  <span class="st">&quot;(function(e, string) { \</span></span>
+<span id="cb12-13"><a href="#cb12-13"></a><span class="st">  \  var viz = new Viz(); \</span></span>
+<span id="cb12-14"><a href="#cb12-14"></a><span class="st">  \  viz.renderSVGElement(string) \</span></span>
+<span id="cb12-15"><a href="#cb12-15"></a><span class="st">  \  .then(function(element) { \</span></span>
+<span id="cb12-16"><a href="#cb12-16"></a><span class="st">  \    e.innerHTML = element.outerHTML; \</span></span>
+<span id="cb12-17"><a href="#cb12-17"></a><span class="st">  \  }) \</span></span>
+<span id="cb12-18"><a href="#cb12-18"></a><span class="st">  \  .catch(function(error) { \</span></span>
+<span id="cb12-19"><a href="#cb12-19"></a><span class="st">  \    viz = new Viz(); \</span></span>
+<span id="cb12-20"><a href="#cb12-20"></a><span class="st">  \    e.innerHTML = error; \</span></span>
+<span id="cb12-21"><a href="#cb12-21"></a><span class="st">  \  }) \</span></span>
+<span id="cb12-22"><a href="#cb12-22"></a><span class="st">  \})&quot;</span></span></code></pre></div>
+</details>
+<p>JSaddle runs operations in <code>JSM</code>, which is similar to <code>IO</code>, and all functions take values of type <code>JSVal</code> to ensure they can be represented as JavaScript values. We pass <code>vizJs</code> to <code>call</code> twice because the second parameter represents the <code>this</code> keyword.</p>
+<p>Wiring everything up together is just a few more lines of code:</p>
+<details>
+<p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="kw">import</span> <span class="dt">Reflex.Dom</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="kw">import</span> <span class="dt">Language.Javascript.JSaddle</span> (liftJSM, toJSVal)</span>
+<span id="cb13-4"><a href="#cb13-4"></a><span class="kw">import</span> <span class="dt">Viz</span> (viz)</span>
+<span id="cb13-5"><a href="#cb13-5"></a></span>
+<span id="cb13-6"><a href="#cb13-6"></a>main <span class="ot">=</span> mainWidgetWithHead widgetHead <span class="op">$</span> el <span class="st">&quot;div&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb13-7"><a href="#cb13-7"></a>  t <span class="ot">&lt;-</span> textArea def</span>
+<span id="cb13-8"><a href="#cb13-8"></a>  e <span class="ot">&lt;-</span> _element_raw <span class="op">.</span> <span class="fu">fst</span> <span class="op">&lt;$&gt;</span> el' <span class="st">&quot;div&quot;</span> blank</span>
+<span id="cb13-9"><a href="#cb13-9"></a>  performEvent_ <span class="op">$</span> ffor (updated (_textArea_value t)) <span class="op">$</span> \text <span class="ot">-&gt;</span> liftJSM <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb13-10"><a href="#cb13-10"></a>    jsE <span class="ot">&lt;-</span> toJSVal e</span>
+<span id="cb13-11"><a href="#cb13-11"></a>    jsT <span class="ot">&lt;-</span> toJSVal text</span>
+<span id="cb13-12"><a href="#cb13-12"></a>    viz jsE jsT</span>
+<span id="cb13-13"><a href="#cb13-13"></a>  <span class="kw">where</span></span>
+<span id="cb13-14"><a href="#cb13-14"></a><span class="ot">    widgetHead ::</span> <span class="dt">DomBuilder</span> t m <span class="ot">=&gt;</span> m ()</span>
+<span id="cb13-15"><a href="#cb13-15"></a>    widgetHead <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb13-16"><a href="#cb13-16"></a>      script <span class="st">&quot;https://cdn.jsdelivr.net/npm/viz.js@2.1.2/viz.min.js&quot;</span></span>
+<span id="cb13-17"><a href="#cb13-17"></a>      script <span class="st">&quot;https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.min.js&quot;</span></span>
+<span id="cb13-18"><a href="#cb13-18"></a>    script src <span class="ot">=</span> elAttr <span class="st">&quot;script&quot;</span> (<span class="st">&quot;type&quot;</span> <span class="op">=:</span> <span class="st">&quot;text/javascript&quot;</span> <span class="op">&lt;&gt;</span> <span class="st">&quot;src&quot;</span> <span class="op">=:</span> src) blank</span></code></pre></div>
+</details>
+<p>There’s a lot going on here, so I’ll explain in a little more detail.</p>
+<p>Instead of an element which displays the textarea contents as they are updated, we just want a reference to a blank <code>&lt;div&gt;</code>, so we use the <a href="https://hackage.haskell.org/package/reflex-dom-core-0.5/docs/Reflex-Dom-Widget-Basic.html#v:el-39-"><code>el'</code></a> function and pull out the raw element. <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-PerformEvent-Class.html#v:performEvent_"><code>performEvent_</code></a> mediates the interaction between Reflex and side-effecting actions, like our function that updates the DOM with a rendered graph, so we want to use it to render a new graph every time the textarea is updated.</p>
+<p>An introduction to Reflex is out of scope for this blog post, but it’s worth mentioning that the textarea value is represented as a <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Dynamic"><code>Dynamic</code></a>, which can change over time and notify consumers when it has changed. This can be thought of as the combination of a related <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Behavior"><code>Behavior</code></a> and <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Event"><code>Event</code></a>. <code>performEvent_</code> only takes an <code>Event</code>, and we can get the underlying <code>Event</code> out of a <code>Dynamic</code> with <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#v:updated"><code>updated</code></a>.</p>
+<p><code>ffor</code> is just <code>flip fmap</code>, and we use it to operate on the underlying <code>Text</code> value, convert both it and the reference to the element we want to update to <code>JSVal</code>s, and then pass them as arguments to the <code>viz</code> function we defined earlier. Now we should have a working GraphViz renderer in our browser!</p>
+<p>We could stop here, but I think we can do better than evaluating JavaScript strings. JSaddle is an EDSL, so we can rewrite our JavaScript in Haskell.</p>
 
         </div>
         <div id="footer">
