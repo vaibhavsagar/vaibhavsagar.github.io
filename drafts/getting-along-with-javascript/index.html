@@ -74,8 +74,10 @@
 <span id="cb3-8"><a href="#cb3-8"></a>  <span class="fu">}</span></span>
 <span id="cb3-9"><a href="#cb3-9"></a><span class="fu">}</span></span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/c21e62ecdcc053273ee5e4815ef538e1e8a29e55#file-versions-json">revision</a>)</em></p>
 <p>The next step is to get a Haskell project skeleton in place. I used <code>cabal init</code> for this as follows:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a>$ <span class="ex">nix-shell</span> -p ghc cabal-install --run <span class="st">'cabal init -lBSD3'</span></span></code></pre></div>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/d4c4f9ff39b595f5c8858892328adfa6ab4a4cc8#file-small-viz-cabal">revision</a>)</em></p>
 <p>which generated an executable-only project, just like I wanted. I named this project <code>small-viz</code>, because it’s a small project using the <a href="http://viz-js.com/">Viz.js</a> library, but more on that later.</p>
 <p>The next step is to actually use <code>reflex-platform</code> to develop this project, for which we need to write a little Nix. Here’s the <code>default.nix</code> I used:</p>
 <details>
@@ -99,6 +101,7 @@
 <span id="cb5-17"><a href="#cb5-17"></a>  };</span>
 <span id="cb5-18"><a href="#cb5-18"></a>})</span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/348b759019bc19aec9833a6b5f042c1d2f5e9b13#file-default-nix">revision</a>)</em></p>
 <p>This sets up our project to build with both GHC and GHCJS, because we want to develop with GHC but eventually use GHCJS to create our final artifact. I also set a few more options:</p>
 <ol type="1">
 <li><p><code>useWarp = true</code> changes the JSaddle backend to <code>jsaddle-warp</code> so we can develop using the browser, as described <a href="https://github.com/reflex-frp/reflex-platform/blob/8f4b8973a06f78c7aaf1a222f8f8443cd934569f/docs/project-development.md#building-frontends-with-ghc">here</a>.</p></li>
@@ -117,6 +120,7 @@
 <span id="cb7-5"><a href="#cb7-5"></a>  t <span class="ot">&lt;-</span> inputElement def</span>
 <span id="cb7-6"><a href="#cb7-6"></a>  dynText <span class="op">$</span> _inputElement_value t</span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/93c510d77f7a8d6b1d8d63bb1cb0be37c6d575b5#file-main-hs">revision</a>)</em></p>
 <p>We also have to add <code>reflex-dom</code> and <code>reflex</code> to our dependencies in our <code>.cabal</code> file, and then we can get a automatically-reloading development build with one command:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1"></a>$ <span class="ex">nix-shell</span> -A shells.ghc --run <span class="st">'ghcid -T &quot;Main.main&quot; --command &quot;cabal new-repl&quot;'</span></span></code></pre></div>
 <p>This allows a native Haskell process to control a web page, so we can navigate to it using our browser at <code>http://localhost:3003</code> and have a fast feedback loop. In practice there is a lot of brower refreshing involved, but this is still much nicer than having to do a GHCJS build each time we want to look at our changes. Now we have an input box that repeats what we type into it, which is a good start. I should point out that this works a lot better on Google Chrome (or Chromium) than it does on Firefox, and that’s what I’ll be using for development.</p>
@@ -131,6 +135,7 @@
 <span id="cb9-6"><a href="#cb9-6"></a>  el <span class="st">&quot;div&quot;</span> <span class="op">$</span></span>
 <span id="cb9-7"><a href="#cb9-7"></a>    dynText <span class="op">$</span> _textArea_value t</span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/d5ff4725b26db3dd596abb2e751711f5c568b6bc#file-main-hs">revision</a>)</em></p>
 <p>The latest version of Viz.js is available <a href="https://www.jsdelivr.com/package/npm/viz.js">here</a>, and we can include it using <code>mainWidgetWithHead</code>:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
@@ -148,7 +153,8 @@
 <span id="cb10-12"><a href="#cb10-12"></a>      script <span class="st">&quot;https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.min.js&quot;</span></span>
 <span id="cb10-13"><a href="#cb10-13"></a>    script src <span class="ot">=</span> elAttr <span class="st">&quot;script&quot;</span> (<span class="st">&quot;type&quot;</span> <span class="op">=:</span> <span class="st">&quot;text/javascript&quot;</span> <span class="op">&lt;&gt;</span> <span class="st">&quot;src&quot;</span> <span class="op">=:</span> src) blank</span></code></pre></div>
 </details>
-<p>Now we can poke around with our browser developer tools until we have a useful function. Here’s what I came up with, based on the examples in the <a href="https://github.com/mdaines/viz.js/wiki/Usage#using-a-script-tag">wiki</a>:</p>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/6a856c34755f730793f3b588a82f0fc9f836bf9c#file-main-hs">revision</a>)</em></p>
+<p>Now we can poke around with our browser developer tools until we have a useful JavaScript function. Here’s what I came up with, based on the examples in the <a href="https://github.com/mdaines/viz.js/wiki/Usage#using-a-script-tag">wiki</a>:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">function</span>(e<span class="op">,</span> string) <span class="op">{</span></span>
 <span id="cb11-2"><a href="#cb11-2"></a>  <span class="kw">var</span> viz <span class="op">=</span> <span class="kw">new</span> <span class="at">Viz</span>()<span class="op">;</span></span>
 <span id="cb11-3"><a href="#cb11-3"></a>  <span class="va">viz</span>.<span class="at">renderSVGElement</span>(string)</span>
@@ -159,7 +165,7 @@
 <span id="cb11-8"><a href="#cb11-8"></a>    <span class="va">e</span>.<span class="at">innerHTML</span> <span class="op">=</span> error<span class="op">;</span></span>
 <span id="cb11-9"><a href="#cb11-9"></a>  <span class="op">}</span>)</span>
 <span id="cb11-10"><a href="#cb11-10"></a><span class="op">}</span></span></code></pre></div>
-<p>Now we can start thinking about how we want to do JavaScript interop! Although there is a GHCJS FFI as described <a href="https://github.com/ghcjs/ghcjs/wiki/A-few-examples-of-Foreign-Function-Interface">in the wiki</a>, this doesn’t seem to work at all with GHC, and that means we can’t use it during development. I don’t think that’s good enough, and fortunately we don’t have to settle for this and instead can use <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0"><code>jsaddle</code></a>, which bills itself as “an EDSL for calling JavaScript that can be used both from GHCJS and GHC”. We can add <code>jsaddle</code> to our dependencies, add <code>Viz</code> to the <code>exposed-modules</code> stanza in our <code>.cabal</code> file, and create a new module <code>Viz</code>, and then we can use the <code>eval</code> and <code>call</code> functions to call our JavaScript directly:</p>
+<p>Then we can start thinking about how we want to do JavaScript interop! Although there is a GHCJS FFI as described <a href="https://github.com/ghcjs/ghcjs/wiki/A-few-examples-of-Foreign-Function-Interface">in the wiki</a>, this doesn’t seem to work at all with GHC, and that means we can’t use it during development. I don’t think that’s good enough, and fortunately we don’t have to settle for this and instead can use <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0"><code>jsaddle</code></a>, which describes itself as “an EDSL for calling JavaScript that can be used both from GHCJS and GHC”. We can add <code>jsaddle</code> to our dependencies, add <code>Viz</code> to the <code>exposed-modules</code> stanza in our <code>.cabal</code> file, and create a new module <code>Viz</code>, and then we can use the <code>eval</code> and <code>call</code> functions to call our JavaScript directly:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Viz.hs</code></summary></p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">module</span> <span class="dt">Viz</span> <span class="kw">where</span></span>
@@ -184,7 +190,8 @@
 <span id="cb12-20"><a href="#cb12-20"></a><span class="st">  \  }) \</span></span>
 <span id="cb12-21"><a href="#cb12-21"></a><span class="st">  \})&quot;</span></span></code></pre></div>
 </details>
-<p>JSaddle runs operations in <code>JSM</code>, which is similar to <code>IO</code>, and all functions take values of type <code>JSVal</code> to ensure they can be represented as JavaScript values. We pass <code>vizJs</code> to <code>call</code> twice because the second parameter represents the <code>this</code> keyword.</p>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/b234b2649022b1b560df1281f053bac30289ce12#file-viz-hs">revision</a>)</em></p>
+<p>JSaddle runs operations in <code>JSM</code>, which is similar to <code>IO</code>, and all functions take values of type <code>JSVal</code> that can be represented as JavaScript values. We pass <code>vizJs</code> to <code>call</code> twice because the second parameter represents the <code>this</code> keyword.</p>
 <p>Wiring everything up together is just a few more lines of code:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
@@ -207,6 +214,7 @@
 <span id="cb13-17"><a href="#cb13-17"></a>      script <span class="st">&quot;https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.min.js&quot;</span></span>
 <span id="cb13-18"><a href="#cb13-18"></a>    script src <span class="ot">=</span> elAttr <span class="st">&quot;script&quot;</span> (<span class="st">&quot;type&quot;</span> <span class="op">=:</span> <span class="st">&quot;text/javascript&quot;</span> <span class="op">&lt;&gt;</span> <span class="st">&quot;src&quot;</span> <span class="op">=:</span> src) blank</span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/e0e886959e338803f9c4a1a3596f8eb88474424d#file-main-hs">revision</a>)</em></p>
 <p>There’s a lot going on here, so I’ll explain in a little more detail.</p>
 <p>Instead of an element which displays the textarea contents as they are updated, we just want a reference to a blank <code>&lt;div&gt;</code>, so we use the <a href="https://hackage.haskell.org/package/reflex-dom-core-0.5/docs/Reflex-Dom-Widget-Basic.html#v:el-39-"><code>el'</code></a> function and pull out the raw element. <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-PerformEvent-Class.html#v:performEvent_"><code>performEvent_</code></a> mediates the interaction between Reflex and side-effecting actions, like our function that updates the DOM with a rendered graph, so we want to use it to render a new graph every time the textarea is updated.</p>
 <p>An introduction to Reflex is out of scope for this blog post, but it’s worth mentioning that the textarea value is represented as a <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Dynamic"><code>Dynamic</code></a>, which can change over time and notify consumers when it has changed. This can be thought of as the combination of a related <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Behavior"><code>Behavior</code></a> and <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Event"><code>Event</code></a>. <code>performEvent_</code> only takes an <code>Event</code>, and we can get the underlying <code>Event</code> out of a <code>Dynamic</code> with <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#v:updated"><code>updated</code></a>.</p>
@@ -231,12 +239,14 @@
 <span id="cb14-15"><a href="#cb14-15"></a>  )]</span>
 <span id="cb14-16"><a href="#cb14-16"></a>  <span class="fu">pure</span> ()</span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/96e0dbda1ba9dc5712342bf1b123fe5d463201d0#file-viz-hs">revision</a>)</em></p>
 <p>This is recognisably the same logic as before, but using some new JSaddle operators:</p>
 <ul>
 <li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-35-"><code>#</code></a> is for calling a JavaScript function</li>
 <li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-33-"><code>!</code></a> is for property access</li>
 <li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-60--35-"><code>&lt;#</code></a> is a setter</li>
 </ul>
+<p>Note also that all callables take a list of <code>JSVal</code>s as arguments, since JSaddle doesn’t know how many arguments we intend to pass in advance.</p>
 <p>This is an improvement, but we can do even better using the lensy API (after adding <code>lens</code> to our dependencies):</p>
 <details>
 <p><summary style="cursor: pointer"><code>Viz.hs</code></summary></p>
@@ -256,8 +266,9 @@
 <span id="cb15-14"><a href="#cb15-14"></a>    element <span class="op">^.</span> jss <span class="st">&quot;innerHTML&quot;</span> err)</span>
 <span id="cb15-15"><a href="#cb15-15"></a>  <span class="fu">pure</span> ()</span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/2ede687d9969666897fb1ca944ed83d239b4386b#file-viz-hs">revision</a>)</em></p>
 <p>Not much has changed except that we can use convenience functions like <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:js1"><code>js1</code></a> and <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:jss"><code>jss</code></a>.</p>
-<p>I’m told it’s possible to get rid of the JSaddle overhead entirely by using a library like <a href="https://hackage.haskell.org/package/ghcjs-dom"><code>ghcjs-dom</code></a>, but I haven’t explored this approach, and I will leave this as an exercise for the reader. If you figure out how to do this, please let me know!</p>
+<p>I’m told that there is some overhead to using JSaddle which it’s possible to get rid of by using a library like <a href="https://hackage.haskell.org/package/ghcjs-dom"><code>ghcjs-dom</code></a>, but I haven’t explored this approach and I will leave this as an exercise for the reader. If you learn how to do this, please teach me!</p>
 <p>Now we are able to run Haskell on the frontend without having to write any JavaScript ourselves. The final step is to put this on the internet somewhere!</p>
 <p>Building with GHCJS is straightforward:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1"></a>$ <span class="ex">nix-build</span> -A ghcjs.small-viz</span></code></pre></div>
@@ -304,9 +315,10 @@
 <span id="cb18-26"><a href="#cb18-26"></a>  <span class="fu">cp</span> <span class="va">${project</span><span class="er">.ghcjs.small</span><span class="va">-</span>viz<span class="va">}</span>/bin/small-viz.jsexe/all.js <span class="va">$out</span>/all.js</span>
 <span id="cb18-27"><a href="#cb18-27"></a><span class="st">''</span></span></code></pre></div>
 </details>
+<p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/1e90440e2d9bd4f3bf39f6ad5d3e75610f3d9ee5#file-glitch-nix">revision</a>)</em></p>
 <p>And then produce the files we need to copy over with:</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1"></a>$ <span class="ex">nix-build</span> glitch.nix</span></code></pre></div>
-<p>I’ve gone ahead and done this, and it’s up on <a href="http://small-viz.glitch.me/">http://small-viz.glitch.me/</a>.</p>
+<p>I’ve gone ahead and done this, and it’s up on <a href="https://small-viz.glitch.me/">small-viz.glitch.me/</a>.</p>
 
         </div>
         <div id="footer">
