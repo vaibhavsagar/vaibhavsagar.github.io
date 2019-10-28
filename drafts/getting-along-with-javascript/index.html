@@ -46,6 +46,7 @@
 <p>For the last couple of weeks, I’ve been obsessed with the idea of running Haskell in the browser. I know this is possible, because this is what I do at work every day, but the applications I work on professionally are complex beasts with Haskell backends and dedicated servers making them available to users. I’m looking for something lighter that I can serve statically using GitHub Pages or <a href="https://glitch.com">Glitch</a>, so I can plop some code on a webpage and never worry about hosting ever again.</p>
 <p>If you’d like to follow along, I have the code available <a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8">at this gist</a> with each revision representing a step in the progression.</p>
 <p>My first instinct was to reach for a tool like <a href="https://github.com/obsidiansystems/obelisk">Obelisk</a>, which bills itself as “an easy way to develop and deploy your Reflex project”. Although it does work as advertised(!), it is geared towards the needs of the large apps I mentioned above. It prerenders webpages where possible to make projects as snappy as possible, works best within the confines of the Obelisk libraries, and assumes at least one NixOS target that will host your website, all of which mean it doesn’t yet scale down to my comparatively modest needs. It is possible to use Obelisk anyway, but I found myself using too few of its features to justify the effort, and I decided to move down a level and use <a href="https://github.com/reflex-frp/reflex-platform">Reflex Platform</a> directly, which is a set of changes and overrides to a revision of <a href="https://github.com/NixOS/nixpkgs">Nixpkgs</a> to best support building full-stack and mobile Haskell applications.</p>
+<h3 id="setting-up-reflex-platform">Setting up reflex-platform</h3>
 <p>I like to use the <code>updater</code> script described in <a href="../../blog/quick-easy-nixpkgs-pinning">a previous blog post</a>, so I’ll start by copying that over and creating a <code>versions.json</code> with the following contents:</p>
 <details>
 <p><summary style="cursor: pointer"><code>versions.json</code></summary></p>
@@ -75,6 +76,7 @@
 <span id="cb3-9"><a href="#cb3-9"></a><span class="fu">}</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/c21e62ecdcc053273ee5e4815ef538e1e8a29e55#file-versions-json">revision</a>)</em></p>
+<h3 id="creating-a-project-skeleton">Creating a project skeleton</h3>
 <p>The next step is to get a Haskell project skeleton in place. I used <code>cabal init</code> for this as follows:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a>$ <span class="ex">nix-shell</span> -p ghc cabal-install --run <span class="st">'cabal init -lBSD3'</span></span></code></pre></div>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/d4c4f9ff39b595f5c8858892328adfa6ab4a4cc8#file-small-viz-cabal">revision</a>)</em></p>
@@ -110,6 +112,7 @@
 <p>For the next step I’ll assume binary cache substitution has been set up as described <a href="https://github.com/reflex-frp/reflex-platform/blob/develop/notes/NixOS.md#enabling-the-binary-cache-on-nixos">here</a>:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1"></a>$ <span class="ex">nix-shell</span> -A shells.ghc</span></code></pre></div>
 <p>This should download a lot (and build almost nothing from source since we are pulling from the cache), and then enter a shell environment with our dependencies in scope.</p>
+<h3 id="starting-our-reflex-app">Starting our Reflex app</h3>
 <p>Now we can start developing our Reflex app! We can start from the small example described <a href="https://github.com/reflex-frp/reflex-platform/tree/8f4b8973a06f78c7aaf1a222f8f8443cd934569f#dynamics-and-events">here</a>:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
@@ -136,6 +139,7 @@
 <span id="cb9-7"><a href="#cb9-7"></a>    dynText <span class="op">$</span> _textArea_value t</span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/d5ff4725b26db3dd596abb2e751711f5c568b6bc#file-main-hs">revision</a>)</em></p>
+<h3 id="integrating-with-viz.js">Integrating with Viz.js</h3>
 <p>The latest version of Viz.js is available <a href="https://www.jsdelivr.com/package/npm/viz.js">here</a>, and we can include it using <code>mainWidgetWithHead</code>:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Main.hs</code></summary></p>
@@ -219,6 +223,7 @@
 <p>Instead of an element which displays the textarea contents as they are updated, we just want a reference to a blank <code>&lt;div&gt;</code>, so we use the <a href="https://hackage.haskell.org/package/reflex-dom-core-0.5/docs/Reflex-Dom-Widget-Basic.html#v:el-39-"><code>el'</code></a> function and pull out the raw element. <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-PerformEvent-Class.html#v:performEvent_"><code>performEvent_</code></a> mediates the interaction between Reflex and side-effecting actions, like our function that updates the DOM with a rendered graph, so we want to use it to render a new graph every time the textarea is updated.</p>
 <p>An introduction to Reflex is out of scope for this blog post, but it’s worth mentioning that the textarea value is represented as a <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Dynamic"><code>Dynamic</code></a>, which can change over time and notify consumers when it has changed. This can be thought of as the combination of a related <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Behavior"><code>Behavior</code></a> and <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Event"><code>Event</code></a>. <code>performEvent_</code> only takes an <code>Event</code>, and we can get the underlying <code>Event</code> out of a <code>Dynamic</code> with <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#v:updated"><code>updated</code></a>.</p>
 <p><code>ffor</code> is just <code>flip fmap</code>, and we use it to operate on the underlying <code>Text</code> value, convert both it and the reference to the element we want to update to <code>JSVal</code>s, and then pass them as arguments to the <code>viz</code> function we defined earlier. Now we should have a working GraphViz renderer in our browser!</p>
+<h3 id="using-the-ffi-better">Using the FFI better</h3>
 <p>We could stop here, but I think we can do better than evaluating JavaScript strings. JSaddle is an EDSL, so we can rewrite our JavaScript in Haskell:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Viz.hs</code></summary></p>
@@ -270,6 +275,7 @@
 <p>Not much has changed except that we can use convenience functions like <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:js1"><code>js1</code></a> and <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:jss"><code>jss</code></a>.</p>
 <p>I’m told that there is some overhead to using JSaddle which it’s possible to get rid of by using a library like <a href="https://hackage.haskell.org/package/ghcjs-dom"><code>ghcjs-dom</code></a>, but I haven’t explored this approach and I will leave this as an exercise for the reader. If you learn how to do this, please teach me!</p>
 <p>Now we are able to run Haskell on the frontend without having to write any JavaScript ourselves. The final step is to put this on the internet somewhere!</p>
+<h3 id="deploying-our-app">Deploying our app</h3>
 <p>Building with GHCJS is straightforward:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1"></a>$ <span class="ex">nix-build</span> -A ghcjs.small-viz</span></code></pre></div>
 <p>I’m enamoured of the idea of deploying this to <a href="https://glitch.com/">Glitch</a>, so let’s look into doing that. The <code>index.html</code> created by the default GHCJS build is unnecessary, and we can simplify it:</p>
@@ -352,6 +358,15 @@
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/aac5fe1258ccfc8c9b8ca685b9db1a4f538ae183#file-glitch-nix">revision</a>)</em></p>
 <p>And this brings the size down to under 2MB.</p>
+<p>I think this is a good stopping point. We’ve:</p>
+<ul>
+<li>built a frontend-only Reflex app</li>
+<li>which integrates with a JavaScript library</li>
+<li>using the JSaddle FFI idiomatically</li>
+<li>deployed to Glitch</li>
+</ul>
+<p>and I hope I’ve convinced you to take a closer look at Haskell in the browser.</p>
+<p><em>Thanks to <a href="https://github.com/ali-abrar">Ali Abrar</a> and <a href="https://twitter.com/itsfarseen">Farseen Abdul Salam</a></em></p>
 
         </div>
         <div id="footer">
