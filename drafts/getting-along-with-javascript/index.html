@@ -224,7 +224,7 @@
 <p>An introduction to Reflex is out of scope for this blog post, but it’s worth mentioning that the textarea value is represented as a <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Dynamic"><code>Dynamic</code></a>, which can change over time and notify consumers when it has changed. This can be thought of as the combination of a related <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Behavior"><code>Behavior</code></a> and <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Event"><code>Event</code></a>. <code>performEvent_</code> only takes an <code>Event</code>, and we can get the underlying <code>Event</code> out of a <code>Dynamic</code> with <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#v:updated"><code>updated</code></a>.</p>
 <p><code>ffor</code> is just <code>flip fmap</code>, and we use it to operate on the underlying <code>Text</code> value, convert both it and the reference to the element we want to update to <code>JSVal</code>s, and then pass them as arguments to the <code>viz</code> function we defined earlier. Now we should have a working GraphViz renderer in our browser!</p>
 <h3 id="using-the-ffi-better">Using the FFI better</h3>
-<p>We could stop here, but I think we can do better than evaluating JavaScript strings. JSaddle is an EDSL, so we can rewrite our JavaScript in Haskell:</p>
+<p>We could stop here, but I think we can do better than evaluating JavaScript strings directly. JSaddle is an EDSL, which means we can rewrite our JavaScript in Haskell:</p>
 <details>
 <p><summary style="cursor: pointer"><code>Viz.hs</code></summary></p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">module</span> <span class="dt">Viz</span> <span class="kw">where</span></span>
@@ -245,7 +245,7 @@
 <span id="cb14-16"><a href="#cb14-16"></a>  <span class="fu">pure</span> ()</span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/96e0dbda1ba9dc5712342bf1b123fe5d463201d0#file-viz-hs">revision</a>)</em></p>
-<p>This is recognisably the same logic as before, but using some new JSaddle operators:</p>
+<p>This is recognisably the same logic as before, using some new JSaddle operators:</p>
 <ul>
 <li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-35-"><code>#</code></a> is for calling a JavaScript function</li>
 <li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-33-"><code>!</code></a> is for property access</li>
@@ -272,7 +272,7 @@
 <span id="cb15-15"><a href="#cb15-15"></a>  <span class="fu">pure</span> ()</span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/2ede687d9969666897fb1ca944ed83d239b4386b#file-viz-hs">revision</a>)</em></p>
-<p>Not much has changed except that we can use convenience functions like <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:js1"><code>js1</code></a> and <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:jss"><code>jss</code></a>.</p>
+<p>Again, not much has changed except that we can use convenience functions like <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:js1"><code>js1</code></a> and <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:jss"><code>jss</code></a>.</p>
 <p>I’m told that there is some overhead to using JSaddle which it’s possible to get rid of by using a library like <a href="https://hackage.haskell.org/package/ghcjs-dom"><code>ghcjs-dom</code></a>, but I haven’t explored this approach and I will leave this as an exercise for the reader. If you learn how to do this, please teach me!</p>
 <p>Now we are able to run Haskell on the frontend without having to write any JavaScript ourselves. The final step is to put this on the internet somewhere!</p>
 <h3 id="deploying-our-app">Deploying our app</h3>
