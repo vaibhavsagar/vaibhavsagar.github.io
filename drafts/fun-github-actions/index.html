@@ -45,62 +45,73 @@
 </div>
 
 <p>GitHub Actions has been generally available for a while now, but if you already have painstakingly crafted CI infrastructure using another provider such as Travis, it’s not clear if it’s worth switching over and potentially having to do a lot of work all over again. After experimenting with some of my own repositories, I’m going to talk about how I’ve successfully used it and when I think it makes (or doesn’t make) sense to use it.</p>
-<h2 id="ghc-dev-ci">GHC Dev CI</h2>
+<h2 id="ghc-in-ghci-ci">GHC-in-GHCi CI</h2>
 <p>When I learned about <a href="https://gitlab.haskell.org/ghc/ghc/wikis/building/in-ghci">GHC-in-GHCi</a>, I was thrilled and quickly wrote <a href="https://vaibhavsagar.com/blog/2019/06/22/easy-ghc-hacking/">a short blog post</a> about how great it is. Immediately afterwards, though, I began to worry: the instructions worked at the time of writing, but how could I ensure that they would remain correct in the future? It would be a very bad experience for someone to come across the blog post a few months later, follow the steps, and yet end up with things not working. I decided it would be a good idea to continuously test these instructions, and I tried to set this up with Travis. I immediately ran into disk space and build time limits. I’d heard CircleCI was better, so I tried that instead, and I ran into similar issues.</p>
-<p>Finally I decided it would be a good time to try GitHub Actions. The CI runs on Microsoft Azure, and their free tier is very generous: I haven’t been able to find a build time limit for public repositories, and the machines appear to be significantly faster than the ones Travis CI uses. Setting up a workflow is also easier than Travis, because there are predefined actions that can be easily included. Since my instructions required Nix, I needed to have it installed, and the fine people behind <a href="https://cachix.org/">Cachix</a> had gone ahead and <a href="https://github.com/cachix/install-nix-action/">done the work for me</a>. Another significant improvement over Travis is the granularity of the <code>cron</code> support: GitHub actions can run every hour at most, while Travis builds cannot be configured to run more frequently than once a day. I was happy to test my instructions daily, but it’s good to know that I can do something more often if I feel like it. In the end I was able to repurpose my testing script from my earlier attempts:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="co">#!/usr/bin/env nix-shell</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="co">#! nix-shell -i bash</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="co">#! nix-shell -p cabal-install haskellPackages.ghcid nix</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">set</span> <span class="ex">-euxo</span> pipefail</span>
-<span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">git</span> clone --recursive https://gitlab.haskell.org/ghc/ghc/</span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="bu">cd</span> ghc</span>
-<span id="cb1-9"><a href="#cb1-9"></a><span class="fu">git</span> clone https://github.com/alpmestan/ghc.nix</span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="ex">cabal</span> update</span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="ex">nix-shell</span> ghc.nix --run <span class="st">'./boot &amp;&amp; ./configure &amp;&amp; ghcid --run=&quot;:q&quot; -o output.txt'</span> <span class="kw">||</span> <span class="fu">true</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a><span class="fu">tail</span> -n2 output.txt <span class="kw">|</span> <span class="fu">head</span> -n1 <span class="kw">|</span> <span class="fu">grep</span> <span class="st">'All good'</span></span></code></pre></div>
-<p>and the rest of the workflow was straightforward:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Test&quot;</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">cron</span><span class="kw">:</span><span class="at"> </span><span class="st">'0 1 * * *'</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="at">  </span><span class="fu">tests</span><span class="kw">:</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> cachix/install-nix-action@v6</span></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./steps.sh</span></span></code></pre></div>
+<p>Finally I decided it would be a good time to try GitHub Actions. The CI runs on Microsoft Azure, and their free tier is very generous: I haven’t been able to find a build time limit for public repositories, and the machines appear to be significantly faster than the ones Travis CI uses. Setting up a workflow is also easier than Travis, because there are predefined actions that can be easily included. Since my instructions required Nix, I needed to have it installed, and the fine people behind <a href="https://cachix.org/">Cachix</a> had gone ahead and <a href="https://github.com/cachix/install-nix-action/">done the work for me</a>. Another significant improvement over Travis is the granularity of the <code>cron</code> support: GitHub actions can run every hour at most, while Travis builds cannot be configured to run more frequently than once a day. I was happy to test my instructions daily, but it’s good to know that I can do something more often if I feel like it. In the end I was able to repurpose my testing script from my earlier attempts and the rest of the workflow was straightforward:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Test&quot;</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">cron</span><span class="kw">:</span><span class="at"> </span><span class="st">'0 1 * * *'</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="at">  </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> cachix/install-nix-action@v6</span></span>
+<span id="cb1-13"><a href="#cb1-13"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./steps.sh</span></span></code></pre></div>
+<p>Here’s what each section is doing:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Test&quot;</span></span></code></pre></div>
+<p>This is what the workflow is called in the UI.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">cron</span><span class="kw">:</span><span class="at"> </span><span class="st">'0 1 * * *'</span></span></code></pre></div>
+<p>This action runs on every push, pull request, and at 1:00AM every day.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="at">  </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> cachix/install-nix-action@v6</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./steps.sh</span></span></code></pre></div>
+<p>There’s one job (called <code>tests</code>) which runs on the latest Ubuntu virtual machine image and</p>
+<ol type="1">
+<li>Checks out the repository using the <code>actions/checkout</code> action tagged <code>v1</code></li>
+<li>Installs Nix using the <code>cachix/install-nix-action</code> action tagged <code>v6</code></li>
+<li>Runs <code>steps.sh</code></li>
+</ol>
+<p>GitHub Actions distinguish between <code>uses</code> for actions and <code>run</code> for scripts.</p>
 <p>I think this example highlights the two biggest advantages of GitHub actions over e.g. Travis CI:</p>
 <ol type="1">
 <li>Extremely generous resource limits</li>
 <li>Preconfigured, reusable building blocks</li>
 </ol>
+<p>You can see the final repository <a href="https://github.com/vaibhavsagar/ghc-dev-ci/">here</a>.</p>
 <h2 id="ihaskell-docker">IHaskell Docker</h2>
-<p>I help maintain <a href="https://github.com/gibiansky/IHaskell">IHaskell</a>, and people recently requested <a href="https://github.com/gibiansky/IHaskell/issues/1030">an official IHaskell Docker image</a>. Although this seems like a relatively easy request to fulfill, it’s not feasible to include a Docker build as part of CI, as this can easily take over 50 minutes on its own. I toyed with the idea of using Docker Hub’s own CI infrastructure to build the Docker image, but that only seems to work correctly if it’s wired up by the owner of the repository (not just someone with commit permissions).</p>
-<p>I also looked into replacing Travis CI (which we use for this repository) with GitHub Actions completely, but it turned out that the repository owner was on a legacy plan, and GitHub Actions wasn’t available.</p>
-<p>Eventually I realised that there was nothing stopping me from creating a repository using my own account and effectively polling the IHaskell repository using the <code>cron</code> support. This turned out to be even easier than my previous example, because there is <a href="https://github.com/elgohr/Publish-Docker-Github-Action">a preconfigured action for building and pushing a Docker image</a>! Here’s what I came up with:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Docker&quot;</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">cron</span><span class="kw">:</span><span class="at"> </span><span class="st">'0 1 * * *'</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@722adc63f1aa60a57ec37892e133b1d319cae598</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a><span class="at">        </span><span class="fu">repository</span><span class="kw">:</span><span class="at"> </span><span class="st">'gibiansky/IHaskell'</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> elgohr/Publish-Docker-Github-Action@a72734e15780689886c6518c4dc2e17876d05d4e</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gibiansky/ihaskell</span></span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="at">        </span><span class="fu">username</span><span class="kw">:</span><span class="at"> ${{ secrets.DOCKER_USERNAME }}</span></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="at">        </span><span class="fu">password</span><span class="kw">:</span><span class="at"> ${{ secrets.DOCKER_PASSWORD }}</span></span>
-<span id="cb3-18"><a href="#cb3-18"></a><span class="at">        </span><span class="fu">cache</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p>I help maintain <a href="https://github.com/gibiansky/IHaskell">IHaskell</a>, and people recently requested <a href="https://github.com/gibiansky/IHaskell/issues/1030">an official IHaskell Docker image</a>. Although this seems like a relatively easy request to fulfill, it’s not feasible to include a Docker build as part of our Travis CI setup, as this can easily take over 50 minutes on its own. I toyed with the idea of using Docker Hub’s own CI infrastructure to build the Docker image, but that only seems to work correctly if it’s wired up by the owner of the repository (not just someone with commit permissions).</p>
+<p>I also looked into replacing Travis CI with GitHub Actions completely, but it turned out that the repository owner was on a legacy plan, and GitHub Actions wasn’t available. It seemed like I was stuck.</p>
+<p>Eventually I realised that there was nothing stopping me from creating a repository using my own account and effectively polling the IHaskell repository using the <code>cron</code> support. This turned out to be even easier than my previous example, because there is <a href="https://github.com/elgohr/Publish-Docker-Github-Action">a preconfigured action for building and pushing a Docker image</a>! This is what I came up with:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Docker&quot;</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">cron</span><span class="kw">:</span><span class="at"> </span><span class="st">'0 1 * * *'</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb5-9"><a href="#cb5-9"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@722adc63f1aa60a57ec37892e133b1d319cae598</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12"></a><span class="at">        </span><span class="fu">repository</span><span class="kw">:</span><span class="at"> </span><span class="st">'gibiansky/IHaskell'</span></span>
+<span id="cb5-13"><a href="#cb5-13"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> elgohr/Publish-Docker-Github-Action@a72734e15780689886c6518c4dc2e17876d05d4e</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gibiansky/ihaskell</span></span>
+<span id="cb5-16"><a href="#cb5-16"></a><span class="at">        </span><span class="fu">username</span><span class="kw">:</span><span class="at"> ${{ secrets.DOCKER_USERNAME }}</span></span>
+<span id="cb5-17"><a href="#cb5-17"></a><span class="at">        </span><span class="fu">password</span><span class="kw">:</span><span class="at"> ${{ secrets.DOCKER_PASSWORD }}</span></span>
+<span id="cb5-18"><a href="#cb5-18"></a><span class="at">        </span><span class="fu">cache</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
 <p>Again, I’m happy with running this daily for now, but it’s nice to know that I can run it more frequently if I want to. The combination of generous resource limits and preconfigured building blocks makes working like this very easy.</p>
 <h2 id="caching">Caching</h2>
 <p>Depending on your caching requirements, GitHub Actions may not be a better choice than e.g. Travis CI. GitHub Actions provides 5GB of caching, which is a good amount but not enough for <a href="https://github.com/gibiansky/IHaskell">IHaskell</a>, which tests against multiple GHC versions and needs a lot of cached dependencies to complete in a reasonable amount of time.</p>
