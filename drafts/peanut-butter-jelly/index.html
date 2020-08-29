@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Peanut Butter and Jelly Sandwiches - Vaibhav Sagar</title>
+        <link href="data:," rel="icon">
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../talks/">Talks</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Peanut Butter and Jelly Sandwiches</h1>
+
+            <div class="info">
+    Posted on  1 September 2020
+    
+</div>
+<div class="info">
+    
+        Tags: <a href="../../blog/tags/haskell/">haskell</a>, <a href="../../blog/tags/programming/">programming</a>
+    
+</div>
+
+<p>I’ve been trying to figure out exactly what I think the best thing about statically-typed purely functional programming, Haskell in particular, is. It’s not laziness or monads, although both are wonderful! My current best answer is that it is a combination of three different features that together encourage simple, maintainable, and robust code:</p>
+<ol type="1">
+<li>Pattern matching</li>
+<li>Algebraic data types</li>
+<li>Pure functions</li>
+</ol>
+<p>I like to think of these as analogous to a peanut butter and jelly sandwich (or vegemite on toast, which is really well-buttered toast with only a thin layer of vegemite): pattern matching and algebraic data types pair perfectly, and pure functions are the foundation that they need to be maximally effective.</p>
+<p>What do I mean by this? Allow me to illustrate with some Haskell code for my imaginary tuck shop that sells only Twistys, Grain Waves, and Shapes:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">data</span> <span class="dt">Snack</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a>    <span class="ot">=</span> <span class="dt">Twistys</span> <span class="dt">TwistysFlavour</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>    <span class="op">|</span> <span class="dt">GrainWaves</span> <span class="dt">GrainWavesFlavour</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a>    <span class="op">|</span> <span class="dt">Shapes</span> <span class="dt">ShapesFlavour</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">data</span> <span class="dt">TwistysFlavour</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>    <span class="ot">=</span> <span class="dt">Cheese</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>    <span class="op">|</span> <span class="dt">Chicken</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a></span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">data</span> <span class="dt">GrainWavesFlavour</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a>    <span class="ot">=</span> <span class="dt">Original</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>    <span class="op">|</span> <span class="dt">SweetChilli</span></span>
+<span id="cb1-13"><a href="#cb1-13"></a>    <span class="op">|</span> <span class="dt">SourCreamAndChives</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a></span>
+<span id="cb1-15"><a href="#cb1-15"></a><span class="kw">data</span> <span class="dt">ShapesFlavour</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a>    <span class="ot">=</span> <span class="dt">Barbecue</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a>    <span class="op">|</span> <span class="dt">ChickenCrimpy</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a>    <span class="op">|</span> <span class="dt">Pizza</span></span></code></pre></div>
+<p>More specifically</p>
+
+        </div>
+        <div id="footer">
+            <div class="rc-webring">
+                <a href="https://webring.recurse.com"><img src="https://webring.recurse.com/icon.svg" /> RC Webring</a>
+            </div>
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    </body>
+</html>
