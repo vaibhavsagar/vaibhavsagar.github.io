@@ -198,7 +198,7 @@
 <li>We expose port 3000.</li>
 <li>If you squint this looks a lot like a regular unit file. More on this below.</li>
 </ol>
-<p>It would be useful to look at the systemd service file that gets generated from this configuraation. To do this, we’ll need one more file:</p>
+<p>It would be useful to look at the systemd service file that gets generated from this configuration. To do this, we’ll need one more file:</p>
 <p><em>ops/webserver.nix</em></p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">{</span> <span class="ex">...</span> <span class="kw">}</span>: <span class="kw">{</span></span>
 <span id="cb13-2"><a href="#cb13-2"></a>  <span class="ex">imports</span> = [ ../nix/service.nix ]<span class="kw">;</span></span>
