@@ -30,18 +30,18 @@
 </div>
 <div class="info">
     
-        Tags: <a href="../../blog/tags/programming/">programming</a>, <a href="../../blog/tags/RC/">RC</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../blog/tags/programming/">programming</a>, <a title="All pages tagged 'RC'." href="../../blog/tags/RC/">RC</a>
     
 </div>
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">RC</span> <span class="kw">where</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">RC</span> <span class="kw">where</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ot">    pure  ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">RC</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">RC</span> <span class="kw">where</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="ot">    return ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="ot">    (&gt;&gt;=)  ::</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">RC</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> b</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">RC</span> <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">RC</span> <span class="kw">where</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="ot">    pure  ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="ot">    (&lt;*&gt;) ::</span> <span class="dt">RC</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> b</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">RC</span> <span class="kw">where</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="ot">    return ::</span> a <span class="ot">-&gt;</span> <span class="dt">RC</span> a</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="ot">    (&gt;&gt;=)  ::</span> <span class="dt">RC</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">RC</span> b) <span class="ot">-&gt;</span> <span class="dt">RC</span> b</span></code></pre></div>
 
         </div>
         <div id="footer">

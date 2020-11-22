@@ -30,7 +30,7 @@
 </div>
 <div class="info">
     
-        Tags: <a href="../../../../../blog/tags/programming/">programming</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/">programming</a>
     
 </div>
 
@@ -48,68 +48,68 @@ p.caption {
 }
 </style>
 <figure>
-<img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Scc.png#center" alt /><figcaption>Strongly Connected Components</figcaption>
+<img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Scc.png#center" alt="Strongly Connected Components" /><figcaption aria-hidden="true">Strongly Connected Components</figcaption>
 </figure>
 <p>So why does this matter? I don’t recall ever having the desire to deeply know the SCCs of a particular graph.</p>
 <p>Let’s look at a different problem. Given a directed graph, how do we know if it is acyclic? The context here is that I was wondering how difficult it would be literally draw a Git commit history as a graph and render that to a repo. Git commits form a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic graph</a> (DAG), which is a directed graph without cycles, and I wanted to validate a user-drawn graph as well as process it.</p>
 <figure>
-<img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Tred-G.svg#center" alt /><figcaption>Directed Acyclic Graph</figcaption>
+<img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Tred-G.svg#center" alt="Directed Acyclic Graph" /><figcaption aria-hidden="true">Directed Acyclic Graph</figcaption>
 </figure>
 <p>Consulting <a href="https://stackoverflow.com/questions/583876/how-do-i-check-if-a-directed-graph-is-acyclic">the oracle</a> yielded the concept of a <a href="https://en.wikipedia.org/wiki/Topological_sorting">topological sort</a>, which is where vertices are ordered such that for all vertices <em>u</em> and <em>v</em>, if there is an edge from <em>u</em> to <em>v</em>, <em>u</em> appears earlier than <em>v</em> in the sorted output. The directed edges for a Git commit graph are in the opposite direction from what we want though, because they point from children to parents. What we really want is a reverse topological sort. It would also be nice if I could somehow highlight the subgraphs of an invalid graph that are responsible for it being invalid.</p>
 <figure>
-<img src="https://upload.wikimedia.org/wikipedia/commons/c/c6/Topological_Ordering.svg#center" alt /><figcaption>Topological Sort</figcaption>
+<img src="https://upload.wikimedia.org/wikipedia/commons/c/c6/Topological_Ordering.svg#center" alt="Topological Sort" /><figcaption aria-hidden="true">Topological Sort</figcaption>
 </figure>
 <p>This is where we come back to the SCCs of a graph. If there are any SCCs of more than one vertex, the graph is not a DAG and those SCCs are the cause of this. Collapsing the SCCs of a directed graph to a single vertex always leads to a DAG and this is known as the condensation of a directed graph, which I think is a nice way to visualise the relationship between SCCs and DAGs.</p>
 <figure>
-<img src="https://upload.wikimedia.org/wikipedia/commons/2/20/Graph_Condensation.svg#center" alt /><figcaption>Condensation</figcaption>
+<img src="https://upload.wikimedia.org/wikipedia/commons/2/20/Graph_Condensation.svg#center" alt="Condensation" /><figcaption aria-hidden="true">Condensation</figcaption>
 </figure>
 <p>Alright, so we do actually want to know the SCCs of this graph, but first we want to try to sort it topologically and reverse that order if that is possible, otherwise we calculate the SCCs and identify the offending ones. This seems a bit messy for graph properties that seem somewhat related. How cool would it be if there were an algorithm that could calculate the SCCs and a reverse topological sort for us <em>at the same time</em>?</p>
 <p>It turns out that Tarjan’s SCCs algorithm does exactly that! You’d think that its performance might not be great because it does two things at once, but it is linear in the number of edges and vertices, and has better constant factors than <a href="https://en.wikipedia.org/wiki/Kosaraju's_algorithm">Kosaraju’s algorithm</a>, which only computes SCCs. Here it is as pseudocode:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1"></a> algorithm tarjan is</span>
-<span id="cb1-2"><a href="#cb1-2"></a>  input: graph G = (V, E)</span>
-<span id="cb1-3"><a href="#cb1-3"></a>  output: set of strongly connected components (sets of vertices)</span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a>  index := 0</span>
-<span id="cb1-6"><a href="#cb1-6"></a>  S := empty array</span>
-<span id="cb1-7"><a href="#cb1-7"></a>  for each v in V do</span>
-<span id="cb1-8"><a href="#cb1-8"></a>    if (v.index is undefined) then</span>
-<span id="cb1-9"><a href="#cb1-9"></a>      strongconnect(v)</span>
-<span id="cb1-10"><a href="#cb1-10"></a>    end if</span>
-<span id="cb1-11"><a href="#cb1-11"></a>  end for</span>
-<span id="cb1-12"><a href="#cb1-12"></a></span>
-<span id="cb1-13"><a href="#cb1-13"></a>  function strongconnect(v)</span>
-<span id="cb1-14"><a href="#cb1-14"></a>    // Set the depth index for v to the smallest unused index</span>
-<span id="cb1-15"><a href="#cb1-15"></a>    v.index := index</span>
-<span id="cb1-16"><a href="#cb1-16"></a>    v.lowlink := index</span>
-<span id="cb1-17"><a href="#cb1-17"></a>    index := index + 1</span>
-<span id="cb1-18"><a href="#cb1-18"></a>    S.push(v)</span>
-<span id="cb1-19"><a href="#cb1-19"></a>    v.onStack := true</span>
-<span id="cb1-20"><a href="#cb1-20"></a></span>
-<span id="cb1-21"><a href="#cb1-21"></a>    // Consider successors of v</span>
-<span id="cb1-22"><a href="#cb1-22"></a>    for each (v, w) in E do</span>
-<span id="cb1-23"><a href="#cb1-23"></a>      if (w.index is undefined) then</span>
-<span id="cb1-24"><a href="#cb1-24"></a>        // Successor w has not yet been visited; recurse on it</span>
-<span id="cb1-25"><a href="#cb1-25"></a>        strongconnect(w)</span>
-<span id="cb1-26"><a href="#cb1-26"></a>        v.lowlink  := min(v.lowlink, w.lowlink)</span>
-<span id="cb1-27"><a href="#cb1-27"></a>      else if (w.onStack) then</span>
-<span id="cb1-28"><a href="#cb1-28"></a>        // Successor w is in stack S and hence in the current SCC</span>
-<span id="cb1-29"><a href="#cb1-29"></a>        // Note: The next line may look odd - but is correct.</span>
-<span id="cb1-30"><a href="#cb1-30"></a>        // It says w.index not w.lowlink; that is deliberate and from the original paper</span>
-<span id="cb1-31"><a href="#cb1-31"></a>        v.lowlink  := min(v.lowlink, w.index)</span>
-<span id="cb1-32"><a href="#cb1-32"></a>      end if</span>
-<span id="cb1-33"><a href="#cb1-33"></a>    end for</span>
-<span id="cb1-34"><a href="#cb1-34"></a></span>
-<span id="cb1-35"><a href="#cb1-35"></a>    // If v is a root node, pop the stack and generate an SCC</span>
-<span id="cb1-36"><a href="#cb1-36"></a>    if (v.lowlink = v.index) then</span>
-<span id="cb1-37"><a href="#cb1-37"></a>      start a new strongly connected component</span>
-<span id="cb1-38"><a href="#cb1-38"></a>      repeat</span>
-<span id="cb1-39"><a href="#cb1-39"></a>        w := S.pop()</span>
-<span id="cb1-40"><a href="#cb1-40"></a>        w.onStack := false</span>
-<span id="cb1-41"><a href="#cb1-41"></a>        add w to current strongly connected component</span>
-<span id="cb1-42"><a href="#cb1-42"></a>      while (w != v)</span>
-<span id="cb1-43"><a href="#cb1-43"></a>      output the current strongly connected component</span>
-<span id="cb1-44"><a href="#cb1-44"></a>    end if</span>
-<span id="cb1-45"><a href="#cb1-45"></a>  end function</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a> algorithm tarjan is</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>  input: graph G = (V, E)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>  output: set of strongly connected components (sets of vertices)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>  index := 0</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>  S := empty array</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>  for each v in V do</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    if (v.index is undefined) then</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>      strongconnect(v)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>    end if</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  end for</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  function strongconnect(v)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>    // Set the depth index for v to the smallest unused index</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>    v.index := index</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>    v.lowlink := index</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>    index := index + 1</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>    S.push(v)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>    v.onStack := true</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>    // Consider successors of v</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>    for each (v, w) in E do</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a>      if (w.index is undefined) then</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a>        // Successor w has not yet been visited; recurse on it</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>        strongconnect(w)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>        v.lowlink  := min(v.lowlink, w.lowlink)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a>      else if (w.onStack) then</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>        // Successor w is in stack S and hence in the current SCC</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>        // Note: The next line may look odd - but is correct.</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a>        // It says w.index not w.lowlink; that is deliberate and from the original paper</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>        v.lowlink  := min(v.lowlink, w.index)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a>      end if</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a>    end for</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true"></a>    // If v is a root node, pop the stack and generate an SCC</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true"></a>    if (v.lowlink = v.index) then</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true"></a>      start a new strongly connected component</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true"></a>      repeat</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true"></a>        w := S.pop()</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true"></a>        w.onStack := false</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true"></a>        add w to current strongly connected component</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true"></a>      while (w != v)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true"></a>      output the current strongly connected component</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true"></a>    end if</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true"></a>  end function</span></code></pre></div>
 <p>The algorithm does a depth-first search, keeping track of two properties for each vertex: when it was encountered (the <em>index</em>) and the lowest index of any vertex reachable from this vertex (the <em>lowlink</em>). It pushes vertices on to a stack as it goes and outputs a strongly connected component when it finds a completely processed vertex whose index and lowlink are the same.</p>
 <p>As presented it is very imperative and I like Haskell, but fortunately <a href="../../../../../blog/2017/05/29/imperative-haskell/">imperative Haskell</a> is pretty straightforward and I have an implementation <a href="https://github.com/vaibhavsagar/courses/blob/master/algorithms1/week4/SCC.ipynb">here</a>.</p>
 <p>This seems like an incredibly niche use case, but validating and processing DAGs in this way happens surprisingly frequently. Consider a build process where inputs and outputs are nodes and their relationships are directed edges. The presence of an SCC with more than one vertex indicates a cyclic dependency, and dependencies need to be built before the nodes that depend on them, which implies a reverse topological sort. This generalises to dataflow programming, where loops need to be identified (and usually eliminated). I like to think of this algorithm as an all-in-one DAG toolkit.</p>

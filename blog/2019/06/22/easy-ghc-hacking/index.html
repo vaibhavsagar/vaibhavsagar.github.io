@@ -30,18 +30,18 @@
 </div>
 <div class="info">
     
-        Tags: <a href="../../../../../blog/tags/haskell/">haskell</a>, <a href="../../../../../blog/tags/nix/">nix</a>, <a href="../../../../../blog/tags/programming/">programming</a>
+        Tags: <a title="All pages tagged 'haskell'." href="../../../../../blog/tags/haskell/">haskell</a>, <a title="All pages tagged 'nix'." href="../../../../../blog/tags/nix/">nix</a>, <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/">programming</a>
     
 </div>
 
 <p>At ZuriHac 2019 <a href="https://github.com/mpickering">Matthew Pickering</a> talked about <a href="https://www.youtube.com/watch?v=Q2ZDovqIxCw">tools for working on GHC</a>. There’s <a href="https://mpickering.github.io/posts/2019-06-11-ghc-tools.html">an associated blog post</a> which is also well worth reading.</p>
 <p>I wanted to focus on a small part of his presentation, which is about loading <a href="https://gitlab.haskell.org/ghc/ghc/wikis/building/in-ghci">GHC into GHCi</a> and using <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a> to automatically reload GHC on changes. This has been possible for almost a year now, <a href="https://mgsloan.com/posts/ghcinception/">as described in this blog post by Michael Sloan</a>. It has since been improved to be even easier to use!</p>
 <p>Putting this together with <a href="https://github.com/alpmestan/ghc.nix">Alp Mestanogullari’s <code>ghc.nix</code></a>, it’s now possible to provision a GHC development environment from scratch with just a few commands, assuming that you have <code>nix-shell</code>, <code>cabal-install</code>, and <code>ghcid</code> installed. Here they are:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a>$ <span class="fu">git</span> clone --recursive https://gitlab.haskell.org/ghc/ghc/</span>
-<span id="cb1-2"><a href="#cb1-2"></a>$ <span class="bu">cd</span> ghc</span>
-<span id="cb1-3"><a href="#cb1-3"></a>$ <span class="fu">git</span> clone https://github.com/alpmestan/ghc.nix</span>
-<span id="cb1-4"><a href="#cb1-4"></a>$ <span class="ex">cabal</span> update</span>
-<span id="cb1-5"><a href="#cb1-5"></a>$ <span class="ex">nix-shell</span> ghc.nix/ --run <span class="st">'./boot &amp;&amp; ./configure &amp;&amp; ghcid'</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>$ <span class="fu">git</span> clone --recursive https://gitlab.haskell.org/ghc/ghc/</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>$ <span class="bu">cd</span> ghc</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>$ <span class="fu">git</span> clone https://github.com/alpmestan/ghc.nix</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>$ <span class="ex">cabal</span> update</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>$ <span class="ex">nix-shell</span> ghc.nix/ --run <span class="st">'./boot &amp;&amp; ./configure &amp;&amp; ghcid'</span></span></code></pre></div>
 <p>This will take a while the first time, but <code>ghcid</code> will cache generated artifacts under <code>./hadrian_ghci</code> so even quitting and reloading will be significantly faster.</p>
 <p>Congratulations, you are now a GHC developer!</p>
 

@@ -30,126 +30,126 @@
 </div>
 <div class="info">
     
-        Tags: <a href="../../../../../blog/tags/programming/">programming</a>, <a href="../../../../../blog/tags/haskell/">haskell</a>, <a href="../../../../../blog/tags/nix/">nix</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/">programming</a>, <a title="All pages tagged 'haskell'." href="../../../../../blog/tags/haskell/">haskell</a>, <a title="All pages tagged 'nix'." href="../../../../../blog/tags/nix/">nix</a>
     
 </div>
 
 <p>I like most things about NixOS, but one thing I do not like is the way it integrates with <code>stack</code>. Nix’s own Haskell infrastructure works well enough that this is not an issue for my own projects, but sometimes I want to test that the Stack workflow is fine for people using less opinionated distros like Ubuntu.</p>
 <p>Fortunately, Nixpkgs includes a handy tool called <code>buildFHSUserEnv</code> which will build a chroot wherein everything is laid out according to the <a href="https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard">Filesystem Hierarchy Standard</a> that most software is accustomed to. This means we can provide an environment with Stack and any dependencies and it will happily run.</p>
 <p>Let’s walk through doing this for a package like <a href="https://github.com/gibiansky/IHaskell">IHaskell</a>. We begin by cloning the IHaskell repository and creating a <code>fhsenv.nix</code> with only <code>stack</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="bu">let</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
-<span id="cb1-4"><a href="#cb1-4"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
-<span id="cb1-6"><a href="#cb1-6"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>  ];</span>
-<span id="cb1-8"><a href="#cb1-8"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>  ];</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>}</span></code></pre></div>
 <p>Entering the chroot and running <code>stack build</code> gives us our first error:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a>$ <span class="va">$(</span><span class="ex">nix-build</span> fhsenv.nix<span class="va">)</span><span class="ex">/bin/fhs</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ex">fhs-chrootenv</span>$ stack build</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="ex">HttpExceptionRequest</span> Request {</span>
-<span id="cb2-4"><a href="#cb2-4"></a>  <span class="ex">host</span>                 = <span class="st">&quot;raw.githubusercontent.com&quot;</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>  <span class="ex">port</span>                 = 443</span>
-<span id="cb2-6"><a href="#cb2-6"></a>  <span class="ex">secure</span>               = True</span>
-<span id="cb2-7"><a href="#cb2-7"></a>  <span class="ex">requestHeaders</span>       = []</span>
-<span id="cb2-8"><a href="#cb2-8"></a>  <span class="ex">path</span>                 = <span class="st">&quot;/fpco/stackage-content/master/stack/stack-setup-2.yaml&quot;</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a>  <span class="ex">queryString</span>          = <span class="st">&quot;&quot;</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a>  <span class="ex">method</span>               = <span class="st">&quot;GET&quot;</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a>  <span class="ex">proxy</span>                = Nothing</span>
-<span id="cb2-12"><a href="#cb2-12"></a>  <span class="ex">rawBody</span>              = False</span>
-<span id="cb2-13"><a href="#cb2-13"></a>  <span class="ex">redirectCount</span>        = 10</span>
-<span id="cb2-14"><a href="#cb2-14"></a>  <span class="ex">responseTimeout</span>      = ResponseTimeoutDefault</span>
-<span id="cb2-15"><a href="#cb2-15"></a>  <span class="ex">requestVersion</span>       = HTTP/1.1</span>
-<span id="cb2-16"><a href="#cb2-16"></a>}</span>
-<span id="cb2-17"><a href="#cb2-17"></a> <span class="kw">(</span><span class="ex">ConnectionFailure</span> Network.BSD.getProtocolByName: does not exist (no such protocol name: tcp<span class="kw">)</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>$ <span class="va">$(</span><span class="ex">nix-build</span> fhsenv.nix<span class="va">)</span><span class="ex">/bin/fhs</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="ex">fhs-chrootenv</span>$ stack build</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="ex">HttpExceptionRequest</span> Request {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  <span class="ex">host</span>                 = <span class="st">&quot;raw.githubusercontent.com&quot;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>  <span class="ex">port</span>                 = 443</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>  <span class="ex">secure</span>               = True</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  <span class="ex">requestHeaders</span>       = []</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>  <span class="ex">path</span>                 = <span class="st">&quot;/fpco/stackage-content/master/stack/stack-setup-2.yaml&quot;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>  <span class="ex">queryString</span>          = <span class="st">&quot;&quot;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>  <span class="ex">method</span>               = <span class="st">&quot;GET&quot;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>  <span class="ex">proxy</span>                = Nothing</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>  <span class="ex">rawBody</span>              = False</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>  <span class="ex">redirectCount</span>        = 10</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a>  <span class="ex">responseTimeout</span>      = ResponseTimeoutDefault</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a>  <span class="ex">requestVersion</span>       = HTTP/1.1</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a>}</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a> <span class="kw">(</span><span class="ex">ConnectionFailure</span> Network.BSD.getProtocolByName: does not exist (no such protocol name: tcp<span class="kw">)</span>)</span></code></pre></div>
 <p>Looking through the Nixpkgs issue tracker for similar errors reveals that we need the <code>iana-etc</code> package. Let’s add it:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="bu">let</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
-<span id="cb3-6"><a href="#cb3-6"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>    <span class="ex">pkgs.iana-etc</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>  ];</span>
-<span id="cb3-9"><a href="#cb3-9"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>    <span class="ex">pkgs.iana-etc</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>  ];</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>}</span></code></pre></div>
 <p>Now it’ll start to download GHC, which takes forever for me. This is the wrong download though, so cancel it and let’s move on. More on this in a bit.</p>
 <p>If the download had successfully completed, <code>stack</code> would then have complained that <code>make</code> was unavailable, so we add <code>gnumake</code>. Then it would have complained about the lack of Perl, a missing C compiler, missing <code>libgmp</code>, and no <code>pkg-config</code>, so we add those too. Then it progresses a lot further before it halts, complaining about <code>libtinfo</code> being missing. The closest thing we have is <code>ncurses</code>, so we add that too. Now our expression looks like this:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="bu">let</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
-<span id="cb4-4"><a href="#cb4-4"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
-<span id="cb4-6"><a href="#cb4-6"></a>    <span class="ex">pkgs.iana-etc</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
-<span id="cb4-8"><a href="#cb4-8"></a>    <span class="ex">pkgs.gcc</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>    <span class="ex">pkgs.gmp</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a>    <span class="ex">pkgs.gnumake</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>    <span class="ex">pkgs.perl</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>    <span class="ex">pkgs.pkgconfig</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>    <span class="ex">pkgs.ncurses</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a>  ];</span>
-<span id="cb4-15"><a href="#cb4-15"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="ex">pkgs.iana-etc</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>    <span class="ex">pkgs.gcc</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>    <span class="ex">pkgs.gmp</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="ex">pkgs.gnumake</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    <span class="ex">pkgs.perl</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>    <span class="ex">pkgs.pkgconfig</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>    <span class="ex">pkgs.ncurses</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>  ];</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>}</span></code></pre></div>
 <p>This prompts <code>stack</code> to download a different GHC, but the whole process should complete successfully now.</p>
 <p>At this point, we’re in luck, because IHaskell has been configured to work with <code>stack --nix</code>, which means the dependencies <code>stack</code> needs are already specified under the <code>nix.packages</code> key in <code>stack.yaml</code>, and we can copy them into <code>fhsenv.nix</code> to speed up the process of building everything. At this point I found that header files in <code>/usr/include</code> weren’t being found, but this was easy to fix by specifying <code>C_INCLUDE_PATH</code> in the <code>profile</code> attribute. I’d recommend commenting out <code>ihaskell-widgets</code> at this point, because it takes an absurdly long time to compile and doesn’t seem to have any interesting dependencies. The complete <code>fhsenv.nix</code> for <code>stack build</code> and <code>stack test</code> looks like this:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a><span class="bu">let</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
-<span id="cb5-4"><a href="#cb5-4"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
-<span id="cb5-6"><a href="#cb5-6"></a>    <span class="ex">pkgs.blas</span></span>
-<span id="cb5-7"><a href="#cb5-7"></a>    <span class="ex">pkgs.cairo.dev</span></span>
-<span id="cb5-8"><a href="#cb5-8"></a>    <span class="ex">pkgs.file</span></span>
-<span id="cb5-9"><a href="#cb5-9"></a>    <span class="ex">pkgs.gcc</span></span>
-<span id="cb5-10"><a href="#cb5-10"></a>    <span class="ex">pkgs.glib.dev</span></span>
-<span id="cb5-11"><a href="#cb5-11"></a>    <span class="ex">pkgs.gmp</span></span>
-<span id="cb5-12"><a href="#cb5-12"></a>    <span class="ex">pkgs.gnumake</span></span>
-<span id="cb5-13"><a href="#cb5-13"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
-<span id="cb5-14"><a href="#cb5-14"></a>    <span class="ex">pkgs.iana-etc</span></span>
-<span id="cb5-15"><a href="#cb5-15"></a>    <span class="ex">pkgs.liblapack</span></span>
-<span id="cb5-16"><a href="#cb5-16"></a>    <span class="ex">pkgs.pango.dev</span></span>
-<span id="cb5-17"><a href="#cb5-17"></a>    <span class="ex">pkgs.perl</span></span>
-<span id="cb5-18"><a href="#cb5-18"></a>    <span class="ex">pkgs.pkgconfig</span></span>
-<span id="cb5-19"><a href="#cb5-19"></a>    <span class="ex">pkgs.ncurses</span></span>
-<span id="cb5-20"><a href="#cb5-20"></a>    <span class="ex">pkgs.zeromq</span></span>
-<span id="cb5-21"><a href="#cb5-21"></a>    <span class="ex">pkgs.zlib.dev</span></span>
-<span id="cb5-22"><a href="#cb5-22"></a>  ];</span>
-<span id="cb5-23"><a href="#cb5-23"></a>  <span class="ex">profile</span> = <span class="st">''</span></span>
-<span id="cb5-24"><a href="#cb5-24"></a>    <span class="bu">export</span> <span class="va">C_INCLUDE_PATH=</span>/usr/include:<span class="va">$C_INCLUDE_PATH</span></span>
-<span id="cb5-25"><a href="#cb5-25"></a>  <span class="st">''</span>;</span>
-<span id="cb5-26"><a href="#cb5-26"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>    <span class="ex">pkgs.blas</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>    <span class="ex">pkgs.cairo.dev</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>    <span class="ex">pkgs.file</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    <span class="ex">pkgs.gcc</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    <span class="ex">pkgs.glib.dev</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>    <span class="ex">pkgs.gmp</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>    <span class="ex">pkgs.gnumake</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>    <span class="ex">pkgs.iana-etc</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>    <span class="ex">pkgs.liblapack</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>    <span class="ex">pkgs.pango.dev</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>    <span class="ex">pkgs.perl</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>    <span class="ex">pkgs.pkgconfig</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>    <span class="ex">pkgs.ncurses</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>    <span class="ex">pkgs.zeromq</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>    <span class="ex">pkgs.zlib.dev</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>  ];</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>  <span class="ex">profile</span> = <span class="st">''</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>    <span class="bu">export</span> <span class="va">C_INCLUDE_PATH=</span>/usr/include:<span class="va">$C_INCLUDE_PATH</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>  <span class="st">''</span>;</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a>}</span></code></pre></div>
 <p>Of course, building IHaskell is no fun if we can’t install it and see it in action. Providing the Jupyter notebook environment is an additional line:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1"></a><span class="bu">let</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
-<span id="cb6-4"><a href="#cb6-4"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
-<span id="cb6-6"><a href="#cb6-6"></a>    <span class="ex">pkgs.blas</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>    <span class="ex">pkgs.cairo.dev</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>    <span class="ex">pkgs.file</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a>    <span class="ex">pkgs.gcc</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a>    <span class="ex">pkgs.glib.dev</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>    <span class="ex">pkgs.gmp</span></span>
-<span id="cb6-12"><a href="#cb6-12"></a>    <span class="ex">pkgs.gnumake</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
-<span id="cb6-14"><a href="#cb6-14"></a>    <span class="ex">pkgs.iana-etc</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a>    <span class="ex">pkgs.liblapack</span></span>
-<span id="cb6-16"><a href="#cb6-16"></a>    <span class="ex">pkgs.pango.dev</span></span>
-<span id="cb6-17"><a href="#cb6-17"></a>    <span class="ex">pkgs.perl</span></span>
-<span id="cb6-18"><a href="#cb6-18"></a>    <span class="ex">pkgs.pkgconfig</span></span>
-<span id="cb6-19"><a href="#cb6-19"></a>    <span class="kw">(</span><span class="ex">pkgs.python3.withPackages</span> (ps: [ ps.jupyter ps.notebook ]<span class="kw">)</span>)</span>
-<span id="cb6-20"><a href="#cb6-20"></a>    <span class="ex">pkgs.ncurses</span></span>
-<span id="cb6-21"><a href="#cb6-21"></a>    <span class="ex">pkgs.zeromq</span></span>
-<span id="cb6-22"><a href="#cb6-22"></a>    <span class="ex">pkgs.zlib.dev</span></span>
-<span id="cb6-23"><a href="#cb6-23"></a>  ];</span>
-<span id="cb6-24"><a href="#cb6-24"></a>  <span class="ex">profile</span> = <span class="st">''</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a>    <span class="bu">export</span> <span class="va">C_INCLUDE_PATH=</span>/usr/include:<span class="va">$C_INCLUDE_PATH</span></span>
-<span id="cb6-26"><a href="#cb6-26"></a>  <span class="st">''</span>;</span>
-<span id="cb6-27"><a href="#cb6-27"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {};</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="kw">in</span> <span class="ex">pkgs.buildFHSUserEnv</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>  <span class="ex">name</span> = <span class="st">&quot;fhs&quot;</span><span class="kw">;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>  <span class="ex">targetPkgs</span> = pkgs: [</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>    <span class="ex">pkgs.blas</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    <span class="ex">pkgs.cairo.dev</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>    <span class="ex">pkgs.file</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>    <span class="ex">pkgs.gcc</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>    <span class="ex">pkgs.glib.dev</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>    <span class="ex">pkgs.gmp</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>    <span class="ex">pkgs.gnumake</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>    <span class="ex">pkgs.haskellPackages.stack</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>    <span class="ex">pkgs.iana-etc</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>    <span class="ex">pkgs.liblapack</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>    <span class="ex">pkgs.pango.dev</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a>    <span class="ex">pkgs.perl</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>    <span class="ex">pkgs.pkgconfig</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>    <span class="kw">(</span><span class="ex">pkgs.python3.withPackages</span> (ps: [ ps.jupyter ps.notebook ]<span class="kw">)</span>)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>    <span class="ex">pkgs.ncurses</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>    <span class="ex">pkgs.zeromq</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>    <span class="ex">pkgs.zlib.dev</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>  ];</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>  <span class="ex">profile</span> = <span class="st">''</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>    <span class="bu">export</span> <span class="va">C_INCLUDE_PATH=</span>/usr/include:<span class="va">$C_INCLUDE_PATH</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true"></a>  <span class="st">''</span>;</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true"></a>}</span></code></pre></div>
 <p>and we can install and run IHaskell as usual:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1"></a><span class="ex">fhs-chrootenv</span>$ stack build</span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="ex">fhs-chrootenv</span>$ stack exec -- ihaskell install --stack</span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="ex">fhs-chrootenv</span>$ stack exec -- jupyter notebook</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ex">fhs-chrootenv</span>$ stack build</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="ex">fhs-chrootenv</span>$ stack exec -- ihaskell install --stack</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="ex">fhs-chrootenv</span>$ stack exec -- jupyter notebook</span></code></pre></div>
 <p>Cool!</p>
 <p>This expression is available <a href="https://github.com/vaibhavsagar/experiments/blob/master/stack-env-nix/ihaskell.nix">on GitHub</a>.</p>
 

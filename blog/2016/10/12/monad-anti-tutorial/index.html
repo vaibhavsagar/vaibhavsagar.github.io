@@ -30,16 +30,16 @@
 </div>
 <div class="info">
     
-        Tags: <a href="../../../../../blog/tags/programming/">programming</a>, <a href="../../../../../blog/tags/haskell/">haskell</a>, <a href="../../../../../blog/tags/monads/">monads</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/">programming</a>, <a title="All pages tagged 'haskell'." href="../../../../../blog/tags/haskell/">haskell</a>, <a title="All pages tagged 'monads'." href="../../../../../blog/tags/monads/">monads</a>
     
 </div>
 
 <p>I think becoming familiar with the mechanics of working with monads is more important than the question of what a monad is. For this reason, I think monad tutorials solve the wrong problem. I’m giving you a monad anti-tutorial instead, where I don’t try to explain what a monad is but I do try to show you how to use them.</p>
 <p>I’m assuming basic familiarity with Haskell’s syntax, but even if you’re not I hope you’ll still be able to follow this.</p>
 <p>Let’s start with a definition. <code>Monad</code> in Haskell is a typeclass, which is very much like an interface in many other languages. Because Haskell is not object-oriented, it has types conform to typeclasses instead of objects conforming to interfaces, and each type can declare that it implements a particular typeclass by supplying definitions for each function that the typeclass specifies. <code>Monad</code> looks very much like this:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">class</span> <span class="dt">Monad</span> m <span class="kw">where</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="ot">    return ::</span> a   <span class="ot">-&gt;</span> m a</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="ot">    (&gt;&gt;=)  ::</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Monad</span> m <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="ot">    return ::</span> a   <span class="ot">-&gt;</span> m a</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="ot">    (&gt;&gt;=)  ::</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</span></code></pre></div>
 <p>This means that for any type <code>m</code>, if you provide two function definitions called <code>return</code> and <code>(&gt;&gt;=)</code> (pronounced ‘bind’) with the correct type signatures, you’ve made a <code>Monad</code> instance!</p>
 <p>There are two things I think are confusing about this definition:</p>
 <ol type="1">
@@ -47,44 +47,44 @@
 <li><p>Haskell allows you to define infix operators by surrounding them in parentheses, and this one looks a bit odd and vaguely threatening with its spiky edges.</p></li>
 </ol>
 <p>There are some laws that well-behaved implementations are supposed to observe:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">return</span> a <span class="op">&gt;&gt;=</span> f           <span class="ot">=</span>  f a</span>
-<span id="cb2-2"><a href="#cb2-2"></a>m <span class="op">&gt;&gt;=</span> <span class="fu">return</span>             <span class="ot">=</span>  m</span>
-<span id="cb2-3"><a href="#cb2-3"></a>m <span class="op">&gt;&gt;=</span> (\x <span class="ot">-&gt;</span> f x <span class="op">&gt;&gt;=</span> g)  <span class="ot">=</span>  (m <span class="op">&gt;&gt;=</span> f) <span class="op">&gt;&gt;=</span> g</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="fu">return</span> a <span class="op">&gt;&gt;=</span> f           <span class="ot">=</span>  f a</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>m <span class="op">&gt;&gt;=</span> <span class="fu">return</span>             <span class="ot">=</span>  m</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>m <span class="op">&gt;&gt;=</span> (\x <span class="ot">-&gt;</span> f x <span class="op">&gt;&gt;=</span> g)  <span class="ot">=</span>  (m <span class="op">&gt;&gt;=</span> f) <span class="op">&gt;&gt;=</span> g</span></code></pre></div>
 <p>I include these because they’re an important part of what a <code>Monad</code> is. These laws aren’t enforced by the typeclass definition so it is possible to define unlawful instances. That’s a very bad idea though.</p>
 <p>And that’s all. Really.</p>
 <p>So what’s all the hype about?</p>
 <p>One reason might be that Haskell has syntax sugar for this particular typeclass. This syntax sugar is known as <code>do</code>-notation, and it allows you to write code that looks like</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a>foo a b <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>    a' <span class="ot">&lt;-</span> a</span>
-<span id="cb3-3"><a href="#cb3-3"></a>    b' <span class="ot">&lt;-</span> b</span>
-<span id="cb3-4"><a href="#cb3-4"></a>    <span class="fu">return</span> (a' <span class="op">+</span> b')</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>foo a b <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    a' <span class="ot">&lt;-</span> a</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    b' <span class="ot">&lt;-</span> b</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    <span class="fu">return</span> (a' <span class="op">+</span> b')</span></code></pre></div>
 <p>that then gets rewritten to</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a>foo a b <span class="ot">=</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>    a <span class="op">&gt;&gt;=</span> \a' <span class="ot">-&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a>    b <span class="op">&gt;&gt;=</span> \b' <span class="ot">-&gt;</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a>    <span class="fu">return</span> (a' <span class="op">+</span> b')</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>foo a b <span class="ot">=</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    a <span class="op">&gt;&gt;=</span> \a' <span class="ot">-&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    b <span class="op">&gt;&gt;=</span> \b' <span class="ot">-&gt;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    <span class="fu">return</span> (a' <span class="op">+</span> b')</span></code></pre></div>
 <p>If you want to define variables in between you can use</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a>bar a b <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>    a' <span class="ot">&lt;-</span> a</span>
-<span id="cb5-3"><a href="#cb5-3"></a>    <span class="kw">let</span> a'' <span class="ot">=</span> a' <span class="op">+</span> <span class="dv">1</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a>    b' <span class="ot">&lt;-</span> b</span>
-<span id="cb5-5"><a href="#cb5-5"></a>    <span class="fu">return</span> (a'' <span class="op">+</span> b')</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a>bar a b <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>    a' <span class="ot">&lt;-</span> a</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>    <span class="kw">let</span> a'' <span class="ot">=</span> a' <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>    b' <span class="ot">&lt;-</span> b</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>    <span class="fu">return</span> (a'' <span class="op">+</span> b')</span></code></pre></div>
 <p>and this becomes</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a>bar a b <span class="ot">=</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>    a <span class="op">&gt;&gt;=</span> \a' <span class="ot">-&gt;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a>    <span class="kw">let</span> a'' <span class="ot">=</span> a' <span class="op">+</span> <span class="dv">1</span> <span class="kw">in</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>    b <span class="op">&gt;&gt;=</span> \b' <span class="ot">-&gt;</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>    <span class="fu">return</span> (a'' <span class="op">+</span> b')</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a>bar a b <span class="ot">=</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>    a <span class="op">&gt;&gt;=</span> \a' <span class="ot">-&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>    <span class="kw">let</span> a'' <span class="ot">=</span> a' <span class="op">+</span> <span class="dv">1</span> <span class="kw">in</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    b <span class="op">&gt;&gt;=</span> \b' <span class="ot">-&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    <span class="fu">return</span> (a'' <span class="op">+</span> b')</span></code></pre></div>
 <p>Sometimes you don’t care about the variable on the left hand side of the <code>&lt;-</code>, and you can omit it like</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a>baz a b <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a>    a</span>
-<span id="cb7-3"><a href="#cb7-3"></a>    b' <span class="ot">&lt;-</span> b</span>
-<span id="cb7-4"><a href="#cb7-4"></a>    <span class="fu">return</span> b'</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>baz a b <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>    a</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>    b' <span class="ot">&lt;-</span> b</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>    <span class="fu">return</span> b'</span></code></pre></div>
 <p>which desugars to</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a>baz a b <span class="ot">=</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>    a <span class="op">&gt;&gt;=</span> \_  <span class="ot">-&gt;</span></span>
-<span id="cb8-3"><a href="#cb8-3"></a>    b <span class="op">&gt;&gt;=</span> \b' <span class="ot">-&gt;</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a>    <span class="fu">return</span> b'</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>baz a b <span class="ot">=</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>    a <span class="op">&gt;&gt;=</span> \_  <span class="ot">-&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>    b <span class="op">&gt;&gt;=</span> \b' <span class="ot">-&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>    <span class="fu">return</span> b'</span></code></pre></div>
 <p>I’ll be using the above definitions in my examples, so if you find yourself wondering where <code>bar</code> came from a bit later, check back here.</p>
 <p>I think it’s worth spending time on understanding <code>do</code> notation and converting between the sugared and desugared representations because:</p>
 <ol type="1">
@@ -93,81 +93,81 @@
 </ol>
 <p>But enough about that. Let’s walk through some contrived examples to see how we can use the same typeclass (and the same functions) to do a bunch of very different things!</p>
 <p>I’d like to start with the <code>Maybe</code> type, which allows us to work with possibly <code>null</code> values in a way I think is better than most other approaches. The implementation (or <code>instance</code>) of <code>Monad</code> looks like</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Maybe</span> <span class="kw">where</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>    <span class="fu">return</span> v         <span class="ot">=</span> <span class="dt">Just</span> v</span>
-<span id="cb9-3"><a href="#cb9-3"></a>    (<span class="op">&gt;&gt;=</span>) <span class="dt">Nothing</span>  _ <span class="ot">=</span> <span class="dt">Nothing</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a>    (<span class="op">&gt;&gt;=</span>) (<span class="dt">Just</span> v) f <span class="ot">=</span> f v</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Maybe</span> <span class="kw">where</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>    <span class="fu">return</span> v         <span class="ot">=</span> <span class="dt">Just</span> v</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    (<span class="op">&gt;&gt;=</span>) <span class="dt">Nothing</span>  _ <span class="ot">=</span> <span class="dt">Nothing</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    (<span class="op">&gt;&gt;=</span>) (<span class="dt">Just</span> v) f <span class="ot">=</span> f v</span></code></pre></div>
 <p>and in use it looks like</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a>λ<span class="op">&gt;</span> foo (<span class="dt">Just</span> <span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">2</span>)</span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="dt">Just</span> <span class="dv">3</span></span>
-<span id="cb10-3"><a href="#cb10-3"></a>λ<span class="op">&gt;</span> foo <span class="dt">Nothing</span> (<span class="dt">Just</span> <span class="dv">2</span>)</span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="dt">Nothing</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a>λ<span class="op">&gt;</span> foo (<span class="dt">Just</span> <span class="dv">1</span>) <span class="dt">Nothing</span></span>
-<span id="cb10-6"><a href="#cb10-6"></a><span class="dt">Nothing</span></span>
-<span id="cb10-7"><a href="#cb10-7"></a>λ<span class="op">&gt;</span> bar (<span class="dt">Just</span> <span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">2</span>)</span>
-<span id="cb10-8"><a href="#cb10-8"></a><span class="dt">Just</span> <span class="dv">4</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>λ<span class="op">&gt;</span> foo (<span class="dt">Just</span> <span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">2</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="dt">Just</span> <span class="dv">3</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>λ<span class="op">&gt;</span> foo <span class="dt">Nothing</span> (<span class="dt">Just</span> <span class="dv">2</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="dt">Nothing</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a>λ<span class="op">&gt;</span> foo (<span class="dt">Just</span> <span class="dv">1</span>) <span class="dt">Nothing</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a><span class="dt">Nothing</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a>λ<span class="op">&gt;</span> bar (<span class="dt">Just</span> <span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">2</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a><span class="dt">Just</span> <span class="dv">4</span></span></code></pre></div>
 <p>This captures the idea that if any of the parameters is <code>Nothing</code>, the overall result should also be <code>Nothing</code>. The cool part is that we don’t need to worry about this when defining <code>foo</code>, because the underlying implementation takes care of it for us.</p>
 <p>In a language like Python, we don’t really have a way to abstract away the fact that an input can be possibly null, and we have to specifically account for this possibility. Similar code in Python would look like</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">def</span> foo(a, b):</span>
-<span id="cb11-2"><a href="#cb11-2"></a>   <span class="cf">if</span> a <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> b <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb11-3"><a href="#cb11-3"></a>      <span class="cf">return</span> a <span class="op">+</span> b</span>
-<span id="cb11-4"><a href="#cb11-4"></a>   <span class="cf">else</span>:</span>
-<span id="cb11-5"><a href="#cb11-5"></a>      <span class="cf">return</span> <span class="va">None</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="kw">def</span> foo(a, b):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>   <span class="cf">if</span> a <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> b <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>      <span class="cf">return</span> a <span class="op">+</span> b</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>   <span class="cf">else</span>:</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true"></a>      <span class="cf">return</span> <span class="va">None</span></span></code></pre></div>
 <p>and this code would not work without modification for any of the following examples.</p>
 <p>A second example is the <code>List</code> type. A valid instance looks like</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> [] <span class="kw">where</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>    <span class="fu">return</span> v   <span class="ot">=</span> [v]</span>
-<span id="cb12-3"><a href="#cb12-3"></a>    (<span class="op">&gt;&gt;=</span>)  v f <span class="ot">=</span> <span class="fu">concatMap</span> f v</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Monad</span> [] <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>    <span class="fu">return</span> v   <span class="ot">=</span> [v]</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a>    (<span class="op">&gt;&gt;=</span>)  v f <span class="ot">=</span> <span class="fu">concatMap</span> f v</span></code></pre></div>
 <p>and you would use this like</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a>λ<span class="op">&gt;</span> foo [<span class="dv">1</span>, <span class="dv">2</span>] [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
-<span id="cb13-2"><a href="#cb13-2"></a>[<span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>]</span>
-<span id="cb13-3"><a href="#cb13-3"></a>λ<span class="op">&gt;</span> foo [] [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
-<span id="cb13-4"><a href="#cb13-4"></a>[]</span>
-<span id="cb13-5"><a href="#cb13-5"></a>λ<span class="op">&gt;</span> bar [<span class="dv">1</span>, <span class="dv">2</span>] [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
-<span id="cb13-6"><a href="#cb13-6"></a>[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a>λ<span class="op">&gt;</span> foo [<span class="dv">1</span>, <span class="dv">2</span>] [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a>[<span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a>λ<span class="op">&gt;</span> foo [] [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a>[]</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true"></a>λ<span class="op">&gt;</span> bar [<span class="dv">1</span>, <span class="dv">2</span>] [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true"></a>[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]</span></code></pre></div>
 <p>Where a <code>Maybe</code> can be one of two possible values, a <code>List</code> is an arbitrary number of values.</p>
 <p>In Python this would be a list comprehension:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">def</span> foo(a, b):</span>
-<span id="cb14-2"><a href="#cb14-2"></a>   <span class="cf">return</span> [a_<span class="op">+</span>b_ <span class="cf">for</span> a_ <span class="kw">in</span> a <span class="cf">for</span> b_ <span class="kw">in</span> b]</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="kw">def</span> foo(a, b):</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a>   <span class="cf">return</span> [a_<span class="op">+</span>b_ <span class="cf">for</span> a_ <span class="kw">in</span> a <span class="cf">for</span> b_ <span class="kw">in</span> b]</span></code></pre></div>
 <p>which, again, is too specific to work with any of the other examples.</p>
 <p>The <code>Maybe</code> type could be thought of as a box containing either one or no elements, and similarly <code>List</code> may be thought of as a box containing an arbitrary number of elements. It may be tempting to think of all monads as boxes of some kind, but monads are more general than that. Let’s look at the <code>Reader</code> type, which allows us to <code>ask</code> for some value that can be passed in later (in some circles this is called dependency injection):</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">data</span> <span class="dt">Reader</span> e a <span class="ot">=</span> <span class="dt">Reader</span> {<span class="ot">runReader ::</span> e <span class="ot">-&gt;</span> a}</span>
-<span id="cb15-2"><a href="#cb15-2"></a></span>
-<span id="cb15-3"><a href="#cb15-3"></a>ask <span class="ot">=</span> <span class="dt">Reader</span> (\e <span class="ot">-&gt;</span> e)</span>
-<span id="cb15-4"><a href="#cb15-4"></a></span>
-<span id="cb15-5"><a href="#cb15-5"></a><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Reader</span> e) <span class="kw">where</span></span>
-<span id="cb15-6"><a href="#cb15-6"></a>   <span class="fu">return</span> a           <span class="ot">=</span> <span class="dt">Reader</span> (\_ <span class="ot">-&gt;</span> a)</span>
-<span id="cb15-7"><a href="#cb15-7"></a>   (<span class="op">&gt;&gt;=</span>) (<span class="dt">Reader</span> r) f <span class="ot">=</span> <span class="dt">Reader</span> (\e <span class="ot">-&gt;</span> runReader (f (r e)) e)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">Reader</span> e a <span class="ot">=</span> <span class="dt">Reader</span> {<span class="ot">runReader ::</span> e <span class="ot">-&gt;</span> a}</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a>ask <span class="ot">=</span> <span class="dt">Reader</span> (\e <span class="ot">-&gt;</span> e)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Reader</span> e) <span class="kw">where</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a>   <span class="fu">return</span> a           <span class="ot">=</span> <span class="dt">Reader</span> (\_ <span class="ot">-&gt;</span> a)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true"></a>   (<span class="op">&gt;&gt;=</span>) (<span class="dt">Reader</span> r) f <span class="ot">=</span> <span class="dt">Reader</span> (\e <span class="ot">-&gt;</span> runReader (f (r e)) e)</span></code></pre></div>
 <p>I had to look this one up. I don’t expect you to immediately understand this implementation, my point is that this is bog-standard Haskell code. It’s a bit more interesting to use:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a>x <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb16-2"><a href="#cb16-2"></a>   value <span class="ot">&lt;-</span> ask</span>
-<span id="cb16-3"><a href="#cb16-3"></a>   <span class="fu">return</span> (value <span class="op">+</span> <span class="dv">1</span>)</span>
-<span id="cb16-4"><a href="#cb16-4"></a></span>
-<span id="cb16-5"><a href="#cb16-5"></a>y <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb16-6"><a href="#cb16-6"></a>   value <span class="ot">&lt;-</span> ask</span>
-<span id="cb16-7"><a href="#cb16-7"></a>   <span class="fu">return</span> (value <span class="op">+</span> <span class="dv">2</span>)</span>
-<span id="cb16-8"><a href="#cb16-8"></a></span>
-<span id="cb16-9"><a href="#cb16-9"></a>λ<span class="op">&gt;</span> runReader (foo x y) <span class="dv">1</span></span>
-<span id="cb16-10"><a href="#cb16-10"></a><span class="dv">5</span></span>
-<span id="cb16-11"><a href="#cb16-11"></a>λ<span class="op">&gt;</span> runReader (foo x y) <span class="dv">2</span></span>
-<span id="cb16-12"><a href="#cb16-12"></a><span class="dv">7</span></span>
-<span id="cb16-13"><a href="#cb16-13"></a>λ<span class="op">&gt;</span> runReader (bar x y) <span class="dv">1</span></span>
-<span id="cb16-14"><a href="#cb16-14"></a><span class="dv">6</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a>x <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a>   value <span class="ot">&lt;-</span> ask</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true"></a>   <span class="fu">return</span> (value <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true"></a>y <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true"></a>   value <span class="ot">&lt;-</span> ask</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true"></a>   <span class="fu">return</span> (value <span class="op">+</span> <span class="dv">2</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true"></a>λ<span class="op">&gt;</span> runReader (foo x y) <span class="dv">1</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true"></a><span class="dv">5</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true"></a>λ<span class="op">&gt;</span> runReader (foo x y) <span class="dv">2</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true"></a><span class="dv">7</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true"></a>λ<span class="op">&gt;</span> runReader (bar x y) <span class="dv">1</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true"></a><span class="dv">6</span></span></code></pre></div>
 <p>I have no idea how you’d do this in Python, but I can guarantee it’s not general either.</p>
 <p>Finally, let’s look at the <code>IO</code> type, which I find a bit scary. I don’t really understand how it’s implemented. so I’ll be skipping that section. Fortunately, we know how to use it, because we are familiar with the interface, so let’s go straight to that.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a>getInt <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb17-2"><a href="#cb17-2"></a>   input <span class="ot">&lt;-</span> baz (<span class="fu">putStr</span> <span class="st">&quot;Enter integer: &quot;</span>) <span class="fu">getLine</span></span>
-<span id="cb17-3"><a href="#cb17-3"></a>   <span class="kw">let</span> int <span class="ot">=</span> <span class="fu">read</span><span class="ot"> input ::</span> <span class="dt">Int</span></span>
-<span id="cb17-4"><a href="#cb17-4"></a>   <span class="fu">return</span> int</span>
-<span id="cb17-5"><a href="#cb17-5"></a></span>
-<span id="cb17-6"><a href="#cb17-6"></a>λ<span class="op">&gt;</span> foo getInt getInt</span>
-<span id="cb17-7"><a href="#cb17-7"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">1</span></span>
-<span id="cb17-8"><a href="#cb17-8"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">2</span></span>
-<span id="cb17-9"><a href="#cb17-9"></a><span class="dv">3</span></span>
-<span id="cb17-10"><a href="#cb17-10"></a>λ<span class="op">&gt;</span> bar getInt getInt</span>
-<span id="cb17-11"><a href="#cb17-11"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">1</span></span>
-<span id="cb17-12"><a href="#cb17-12"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">2</span></span>
-<span id="cb17-13"><a href="#cb17-13"></a><span class="dv">4</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a>getInt <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a>   input <span class="ot">&lt;-</span> baz (<span class="fu">putStr</span> <span class="st">&quot;Enter integer: &quot;</span>) <span class="fu">getLine</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true"></a>   <span class="kw">let</span> int <span class="ot">=</span> <span class="fu">read</span><span class="ot"> input ::</span> <span class="dt">Int</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true"></a>   <span class="fu">return</span> int</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true"></a>λ<span class="op">&gt;</span> foo getInt getInt</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">1</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">2</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true"></a><span class="dv">3</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true"></a>λ<span class="op">&gt;</span> bar getInt getInt</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">1</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true"></a><span class="dt">Enter</span> integer<span class="op">:</span> <span class="dv">2</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true"></a><span class="dv">4</span></span></code></pre></div>
 <p>Okay, enough examples. As you can see, we’ve used the same interface to deal with failure, an arbitrary number of values, an extra parameter, and input/output. There are many useful monad instances in Haskell, from container types such as Seq and Tree to abstractions such as Writer and State, through to control flow as implemented by the Cont monad.</p>
 <p>If you can make your type conform to the typeclass, Haskell will give you a pretty general and flexible API to work with it. Even if you don’t completely understand what’s going on with a certain type, you know enough to use it based on your knowledge of the interface. As far as I’m concerned, this is the point of monads in Haskell.</p>
 <p>Thanks to <a href="http://jamesporter.me/">James Porter</a>, <a href="https://nick-platt.com/">Nick Platt</a>, and <a href="http://composition.al/">Lindsey Kuper</a> for their feedback on this post.</p>

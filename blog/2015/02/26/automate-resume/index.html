@@ -30,91 +30,91 @@
 </div>
 <div class="info">
     
-        Tags: <a href="../../../../../blog/tags/programming/">programming</a>, <a href="../../../../../blog/tags/automation/">automation</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/">programming</a>, <a title="All pages tagged 'automation'." href="../../../../../blog/tags/automation/">automation</a>
     
 </div>
 
 <p>After <a href="../../../../../blog/2015/02/01/blog-setup">automating my blog</a>, I decided to aim a little higher and use Travis-CI to automate document generation from my resume. I use <a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written in Markdown to Github-flavoured Markdown, an HTML file for my website, and a PDF (via LaTeX) that I’ve spent a ludicrous amount of time styling. I do have all these packages configured on my home computer, but it was becoming tedious to make changes and commit three separate files instead of just one. I was also finding it difficult to keep the PDF version of my resume up to date with the rest of my changes, and I thought it would be an interesting challenge to get everything set up in a repeatable manner. One good reference is <a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/">this blog post</a> by Steve Klabnik.</p>
 <p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for its workers) are hopelessly out of date, so my first problem was getting the newest version of <code>pandoc</code> installed. I used <code>stack</code> to download and install this.</p>
 <p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb1-1"><a href="#cb1-1"></a><span class="dv">all:</span><span class="dt">: pdf html readme</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="dv">travis:</span><span class="dt">: html readme</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="dv">pdf:</span><span class="dt">: resume.md templates/header.tex</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>	pandoc resume.md -H templates/header.tex -o Vaibhav_Sagar_resume.pdf</span>
-<span id="cb1-7"><a href="#cb1-7"></a></span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="dv">html:</span><span class="dt">: resume.md templates/header.css</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>	pandoc resume.md -s -H templates/header.css -o index.html</span>
-<span id="cb1-10"><a href="#cb1-10"></a></span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="dv">readme:</span><span class="dt">: resume.md</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a>	pandoc resume.md -t markdown_github -o readme.md</span>
-<span id="cb1-13"><a href="#cb1-13"></a></span>
-<span id="cb1-14"><a href="#cb1-14"></a><span class="dv">clean:</span><span class="dt">:</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a>	rm Vaibhav_Sagar_resume.pdf</span>
-<span id="cb1-16"><a href="#cb1-16"></a>	rm readme.md</span>
-<span id="cb1-17"><a href="#cb1-17"></a>	rm index.html</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="dv">all:</span><span class="dt">: pdf html readme</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="dv">travis:</span><span class="dt">: html readme</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="dv">pdf:</span><span class="dt">: resume.md templates/header.tex</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>	pandoc resume.md -H templates/header.tex -o Vaibhav_Sagar_resume.pdf</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a><span class="dv">html:</span><span class="dt">: resume.md templates/header.css</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>	pandoc resume.md -s -H templates/header.css -o index.html</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a><span class="dv">readme:</span><span class="dt">: resume.md</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>	pandoc resume.md -t markdown_github -o readme.md</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a><span class="dv">clean:</span><span class="dt">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>	rm Vaibhav_Sagar_resume.pdf</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>	rm readme.md</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>	rm index.html</span></code></pre></div>
 <p>I decided it would be best if the build process updated my <code>gh-pages</code> branch instead of uploading to a different repository:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">#!/usr/bin/env bash</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="va">BRANCH=</span>gh-pages</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="va">TARGET_REPO=</span>vaibhavsagar/resume.git</span>
-<span id="cb2-4"><a href="#cb2-4"></a></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS_PULL_REQUEST</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;false&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>    <span class="bu">echo</span> -e <span class="st">&quot;Starting to deploy to Github Pages\n&quot;</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>    <span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;true&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>        <span class="fu">git</span> config --global user.email <span class="st">&quot;travis@travis-ci.org&quot;</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a>        <span class="fu">git</span> config --global user.name <span class="st">&quot;Travis&quot;</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a>    <span class="kw">fi</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a>    <span class="co"># using token clone gh-pages branch</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a>    <span class="fu">git</span> clone --quiet --branch=<span class="va">$BRANCH</span> https://<span class="va">${GH_TOKEN}</span>@github.com/<span class="va">$TARGET_REPO</span> build <span class="op">&gt;</span> /dev/null</span>
-<span id="cb2-13"><a href="#cb2-13"></a>    <span class="co"># go into directory and copy data we're interested in to that directory</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a>    <span class="bu">cd</span> build</span>
-<span id="cb2-15"><a href="#cb2-15"></a>    <span class="fu">cp</span> ../readme.md ../index.html .</span>
-<span id="cb2-16"><a href="#cb2-16"></a>    <span class="co"># add, commit and push files</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a>    <span class="fu">git</span> add -f .</span>
-<span id="cb2-18"><a href="#cb2-18"></a>    <span class="fu">git</span> commit -m <span class="st">&quot;Travis build </span><span class="va">$TRAVIS_BUILD_NUMBER</span><span class="st"> pushed to Github Pages&quot;</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a>    <span class="fu">git</span> push -fq origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null</span>
-<span id="cb2-20"><a href="#cb2-20"></a>    <span class="bu">echo</span> -e <span class="st">&quot;Deploy completed\n&quot;</span></span>
-<span id="cb2-21"><a href="#cb2-21"></a><span class="kw">fi</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co">#!/usr/bin/env bash</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="va">BRANCH=</span>gh-pages</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="va">TARGET_REPO=</span>vaibhavsagar/resume.git</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS_PULL_REQUEST</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;false&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>    <span class="bu">echo</span> -e <span class="st">&quot;Starting to deploy to Github Pages\n&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>    <span class="kw">if</span><span class="bu"> [</span> <span class="st">&quot;</span><span class="va">$TRAVIS</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;true&quot;</span><span class="bu"> ]</span>; <span class="kw">then</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>        <span class="fu">git</span> config --global user.email <span class="st">&quot;travis@travis-ci.org&quot;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>        <span class="fu">git</span> config --global user.name <span class="st">&quot;Travis&quot;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>    <span class="kw">fi</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>    <span class="co"># using token clone gh-pages branch</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>    <span class="fu">git</span> clone --quiet --branch=<span class="va">$BRANCH</span> https://<span class="va">${GH_TOKEN}</span>@github.com/<span class="va">$TARGET_REPO</span> build <span class="op">&gt;</span> /dev/null</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>    <span class="co"># go into directory and copy data we're interested in to that directory</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a>    <span class="bu">cd</span> build</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a>    <span class="fu">cp</span> ../readme.md ../index.html .</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a>    <span class="co"># add, commit and push files</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a>    <span class="fu">git</span> add -f .</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a>    <span class="fu">git</span> commit -m <span class="st">&quot;Travis build </span><span class="va">$TRAVIS_BUILD_NUMBER</span><span class="st"> pushed to Github Pages&quot;</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a>    <span class="fu">git</span> push -fq origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a>    <span class="bu">echo</span> -e <span class="st">&quot;Deploy completed\n&quot;</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true"></a><span class="kw">fi</span></span></code></pre></div>
 <p>The next challenge was actually generating my PDF and uploading it to Github Releases. Travis CI has excellent support for deploying binaries to Releases but using the <code>travis</code> gem to configure support makes a completely new Github token which I thought was a bit redundant. The documentation for <code>travis encrypt</code> is pretty comprehensive and I just encrypted my old token and used that instead. My completed <code>.travis.yml</code> is as follows:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> c</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">sudo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="fu">cache</span><span class="kw">:</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="at">  </span><span class="fu">directories</span><span class="kw">:</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="at">  </span><span class="kw">-</span><span class="at"> $HOME/.stack</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a><span class="at">  </span><span class="kw">-</span><span class="at"> /usr/local/texlive/2016/bin/x86_64-linux</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="fu">addons</span><span class="kw">:</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a><span class="at">  </span><span class="fu">apt</span><span class="kw">:</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a><span class="at">    </span><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="at">    </span><span class="kw">-</span><span class="at"> libgmp-dev</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a><span class="at">    </span><span class="kw">-</span><span class="at"> xzdec</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a><span class="fu">before_install</span><span class="kw">:</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a><span class="kw">-</span><span class="at"> mkdir -p $HOME/.local/bin</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a><span class="kw">-</span><span class="at"> travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'</span></span>
-<span id="cb3-16"><a href="#cb3-16"></a></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="fu">install</span><span class="kw">:</span></span>
-<span id="cb3-18"><a href="#cb3-18"></a><span class="kw">-</span><span class="at"> stack setup</span></span>
-<span id="cb3-19"><a href="#cb3-19"></a><span class="kw">-</span><span class="at"> stack install pandoc</span></span>
-<span id="cb3-20"><a href="#cb3-20"></a><span class="fu">script</span><span class="kw">:</span><span class="at"> make travis</span></span>
-<span id="cb3-21"><a href="#cb3-21"></a><span class="fu">notifications</span><span class="kw">:</span></span>
-<span id="cb3-22"><a href="#cb3-22"></a><span class="at">  </span><span class="fu">email</span><span class="kw">:</span></span>
-<span id="cb3-23"><a href="#cb3-23"></a><span class="at">    </span><span class="fu">on_success</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb3-24"><a href="#cb3-24"></a><span class="at">    </span><span class="fu">on_failure</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb3-25"><a href="#cb3-25"></a><span class="fu">after_success</span><span class="kw">:</span><span class="at"> bash .ci/update_pages.sh</span></span>
-<span id="cb3-26"><a href="#cb3-26"></a><span class="fu">before_deploy</span><span class="kw">:</span><span class="at"> bash .ci/build_pdf.sh</span></span>
-<span id="cb3-27"><a href="#cb3-27"></a><span class="fu">deploy</span><span class="kw">:</span></span>
-<span id="cb3-28"><a href="#cb3-28"></a><span class="at">  </span><span class="fu">provider</span><span class="kw">:</span><span class="at"> releases</span></span>
-<span id="cb3-29"><a href="#cb3-29"></a><span class="at">  </span><span class="fu">file</span><span class="kw">:</span><span class="at"> Vaibhav_Sagar_resume.pdf</span></span>
-<span id="cb3-30"><a href="#cb3-30"></a><span class="at">  </span><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb3-31"><a href="#cb3-31"></a><span class="at">    </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> vaibhavsagar/resume</span></span>
-<span id="cb3-32"><a href="#cb3-32"></a><span class="at">    </span><span class="fu">all_branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-33"><a href="#cb3-33"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-34"><a href="#cb3-34"></a><span class="at">  </span><span class="fu">api_key</span><span class="kw">:</span></span>
-<span id="cb3-35"><a href="#cb3-35"></a><span class="at">    </span><span class="fu">secure</span><span class="kw">:</span><span class="at"> gtBPUeDXL9S6h4aWyXCEhWxbtkATx2lIBmkVTcWDHMvgwQHmfo42OPq7rQWjO6g/iOlv71Q1VQMQc84ERcZjtBRSE0pb1s1Baqs2Hk7ec/JeWsEXDZmBIs/Z3V6pHb14zCs5GNYyerXDpQ97P4RG9Vjdy+rc3I1+kkuCMF7zB3k=</span></span>
-<span id="cb3-36"><a href="#cb3-36"></a><span class="fu">env</span><span class="kw">:</span></span>
-<span id="cb3-37"><a href="#cb3-37"></a><span class="at">  </span><span class="fu">global</span><span class="kw">:</span></span>
-<span id="cb3-38"><a href="#cb3-38"></a><span class="at">    </span><span class="fu">secure</span><span class="kw">:</span><span class="at"> Bzof/7yN7HgV2eJk7FNliNx/cagIU4I113SwNJhChFyYOSy816oPrwQaCMyZuwvbcEIfLMY0K0qxtQK1MoPq7zTYiCTW3UPB2+mzTfTHPMTm5nWjZv0BmdqVoG8IJwxfo5cIV8hfKiu2ezNKcDuqgwb80mYwpTwlQPsY9gOm1Tc=</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> c</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="fu">sudo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="fu">cache</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="at">  </span><span class="fu">directories</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> $HOME/.stack</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> /usr/local/texlive/2016/bin/x86_64-linux</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a><span class="fu">addons</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a><span class="at">  </span><span class="fu">apt</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a><span class="at">    </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> libgmp-dev</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> xzdec</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a><span class="fu">before_install</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a><span class="kw">-</span><span class="at"> mkdir -p $HOME/.local/bin</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a><span class="kw">-</span><span class="at"> travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a><span class="fu">install</span><span class="kw">:</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a><span class="kw">-</span><span class="at"> stack setup</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a><span class="kw">-</span><span class="at"> stack install pandoc</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a><span class="fu">script</span><span class="kw">:</span><span class="at"> make travis</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a><span class="fu">notifications</span><span class="kw">:</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a><span class="at">  </span><span class="fu">email</span><span class="kw">:</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a><span class="at">    </span><span class="fu">on_success</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a><span class="at">    </span><span class="fu">on_failure</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a><span class="fu">after_success</span><span class="kw">:</span><span class="at"> bash .ci/update_pages.sh</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a><span class="fu">before_deploy</span><span class="kw">:</span><span class="at"> bash .ci/build_pdf.sh</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a><span class="fu">deploy</span><span class="kw">:</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a><span class="at">  </span><span class="fu">provider</span><span class="kw">:</span><span class="at"> releases</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a><span class="at">  </span><span class="fu">file</span><span class="kw">:</span><span class="at"> Vaibhav_Sagar_resume.pdf</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a><span class="at">  </span><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a><span class="at">    </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> vaibhavsagar/resume</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true"></a><span class="at">    </span><span class="fu">all_branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true"></a><span class="at">  </span><span class="fu">api_key</span><span class="kw">:</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true"></a><span class="at">    </span><span class="fu">secure</span><span class="kw">:</span><span class="at"> gtBPUeDXL9S6h4aWyXCEhWxbtkATx2lIBmkVTcWDHMvgwQHmfo42OPq7rQWjO6g/iOlv71Q1VQMQc84ERcZjtBRSE0pb1s1Baqs2Hk7ec/JeWsEXDZmBIs/Z3V6pHb14zCs5GNYyerXDpQ97P4RG9Vjdy+rc3I1+kkuCMF7zB3k=</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true"></a><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true"></a><span class="at">  </span><span class="fu">global</span><span class="kw">:</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true"></a><span class="at">    </span><span class="fu">secure</span><span class="kw">:</span><span class="at"> Bzof/7yN7HgV2eJk7FNliNx/cagIU4I113SwNJhChFyYOSy816oPrwQaCMyZuwvbcEIfLMY0K0qxtQK1MoPq7zTYiCTW3UPB2+mzTfTHPMTm5nWjZv0BmdqVoG8IJwxfo5cIV8hfKiu2ezNKcDuqgwb80mYwpTwlQPsY9gOm1Tc=</span></span></code></pre></div>
 <p>If you’re trying something similar and you’re getting stuck, feel free to reach out and I’ll be more than happy to help.</p>
 
         </div>
