@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Updating IHaskell to a Newer GHC - Vaibhav Sagar</title>
+        <link href="data:," rel="icon">
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../talks/">Talks</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Updating IHaskell to a Newer GHC</h1>
+
+            <div class="info">
+    Posted on 10 May 2021
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged 'programming'." href="../../blog/tags/programming/">programming</a>, <a title="All pages tagged 'nix'." href="../../blog/tags/nix/">nix</a>, <a title="All pages tagged 'haskell'." href="../../blog/tags/haskell/">haskell</a>
+    
+</div>
+
+<p>As the current maintainer of IHaskell, I see myself as having one primary responsibility: keeping it up-to-date with newer GHC releases. The chain of events that led to me becoming a maintainer started with the then-latest version of IHaskell not having support for GHC 8.0, and I still remember how frustrated I felt when dealing with this limitation, which drives me to make sure nobody else has to experience this.</p>
+<p>Since then I’ve had the opportunity to add GHC 8.2, 8.4, 8.6, 8.8, 8.10, and now 9.0 support, but because I only have to do this every 6 months or so (at the earliest) I promptly forget the details of this work afterwards and have to spelunk through old (often retroactively amended) commits to rediscover what past me (who is notoriously bad at documentation) did.</p>
+<p>At the time of writing, GHC 9.2 is expected to be released soon and I don’t want to forget everything I’ve just (re)learned when that happens. Additionally, it is conceivable that at some point someone other than me would like to take a crack at updating IHaskell to the newest version of GHC. This blog post exists to make these tasks easier.</p>
+<h2 id="building-ihaskells-dependencies">Building IHaskell’s dependencies</h2>
+<p>I should start by saying that my current approach relies heavily on Nix and the infrastructure available in <a href="https://github.com/NixOS/nixpkgs"><code>nixpkgs</code></a>. If you don’t want to use Nix for whatever reason the general ideas might still translate to whatever method you use instead but the details will almost certainly vary widely.</p>
+<p>The objective of this first step is to get us to the point where all of IHaskell’s dependencies are building, so that we can then focus on <code>ghc-parser</code>, <code>ipython-kernel</code>, and <code>ihaskell</code> exclusively.</p>
+<p>I start with a version of Nixpkgs that has the necessary GHC version and package overrides to minimise work. As of this writing, the Nixpkgs maintainers base the Haskell package set they use on <a href="https://www.stackage.org/">Stackage</a> Nightlies with overrides added from <a href="https://gitlab.haskell.org/ghc/head.hackage"><code>head.hackage</code></a>. Updates seem to go into the <a href="https://github.com/NixOS/nixpkgs/tree/haskell-updates"><code>haskell-updates</code></a> branch first and are then periodically merged into <code>master</code>. I started with <a href="https://github.com/NixOS/nixpkgs/commit/64c6086db4a6c19bb9960baf165c867c1774ab3d">this commit</a> but it had issues with building <code>alex</code> that I sent pull requests for <a href="https://github.com/NixOS/nixpkgs/pull/120535">to Nixpkgs</a> and <a href="https://github.com/simonmar/alex/pull/185">to the project</a>. In the meantime it’s very easy to make any required changes to a fork or a local copy of Nixpkgs. I start by copying <code>release.nix</code> from the IHaskell project root and changing the reference to Nixpkgs:</p>
+<details>
+<summary style="cursor: pointer">
+Changing Nixpkgs
+</summary>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>  <span class="ex">nixpkgs-src</span> = builtins.fetchTarball {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/NixOS/nixpkgs/tarball/8795d39ce70f04e3fd609422d522e5b2594f3a70&quot;</span><span class="kw">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>    <span class="ex">sha256</span> = <span class="st">&quot;01w7q0nqydippj0ygbg77byb770snhc5rnqzc6isws58642l8z4s&quot;</span><span class="kw">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>  };</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="kw">in</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="kw">{</span> <span class="ex">compiler</span> ? <span class="st">&quot;ghc901&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>, <span class="ex">jupyterlabAppDir</span> ? null</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>, <span class="ex">nixpkgs</span> ? import nixpkgs-src {<span class="kw">}</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>, <span class="ex">packages</span> ? (_: [])</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>, <span class="ex">pythonPackages</span> ? (_: [])</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>, <span class="ex">rtsopts</span> ? <span class="st">&quot;-M3g -N2&quot;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>, <span class="ex">systemPackages</span> ? (_: [])</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>}:</span></code></pre></div>
+</details>
+<p>Then it’s possible to build this and see how many packages need changes:</p>
+<pre class="shell"><code>$ nix-build release-9.0.nix --keep-going 2&gt;&amp;1 | wc -l</code></pre>
+<p>Fixing the affected packages might involve patching, jailbreaking it so that its dependency bounds are relaxed, using a newer version that is not included in the package set by default, or any number of other changes. Here’s what I ended up with this time:</p>
+<details>
+<summary style="cursor: pointer">
+Package set overrides
+</summary>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>      <span class="ex">cryptohash-md5</span>    = nixpkgs.haskell.lib.doJailbreak super.cryptohash-md5<span class="kw">;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>      <span class="ex">cryptohash-sha1</span>   = nixpkgs.haskell.lib.doJailbreak super.cryptohash-sha1<span class="kw">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>      <span class="ex">basement</span>          = super.basement_0_0_12<span class="kw">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>      <span class="ex">foundation</span>        = super.foundation_0_0_26_1<span class="kw">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>      <span class="ex">memory</span>            = nixpkgs.haskell.lib.appendPatch super.memory (nixpkgs.fetchpatch {</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>        <span class="ex">url</span> = <span class="st">&quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/c89c1e27af8f180b3be476e102147557f922b224/patches/memory-0.15.0.patch&quot;</span><span class="kw">;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>        <span class="ex">sha256</span> = <span class="st">&quot;0mkjbrzi05h1xds8rf5wfky176hrl03q0d7ipklp9x4ls3yyqj5x&quot;</span><span class="kw">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>      });</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>      <span class="ex">cryptonite</span>        = nixpkgs.haskell.lib.appendPatch super.cryptonite (nixpkgs.fetchpatch {</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>        <span class="ex">url</span> = <span class="st">&quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/6a65307bbdc73c5eb4165a67ee97c7b9faa818e1/patches/cryptonite-0.28.patch&quot;</span><span class="kw">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>        <span class="ex">sha256</span> = <span class="st">&quot;1wq9hw16qj2yqy7lyqbi7106lhk199hvnkj5xr7h0ip854gjsr5j&quot;</span><span class="kw">;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>      });</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>      <span class="ex">profunctors</span>       = self.callCabal2nix <span class="st">&quot;profunctors&quot;</span> profunctors-src {}; # <span class="kw">`</span><span class="ex">profunctors-src</span><span class="kw">`</span> <span class="ex">is</span> defined above</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>      <span class="ex">mono-traversable</span>  = nixpkgs.haskell.lib.dontCheck super.mono-traversable<span class="kw">;</span></span></code></pre></div>
+</details>
+<p>After every few changes, I like to rerun <code>nix-build</code> and watch the number go down. It’s also possible to build an individual package, e.g. to build <code>foundation</code> (and any dependencies) one would run</p>
+<pre class="shell"><code>$ nix-build release-9.0.nix -A passthru.haskellPackages.foundation</code></pre>
+<p><a href="https://github.com/gibiansky/IHaskell/pull/1215/commits/12f50f34d9cf6dceb3ca5adc9fa450cee6e7dcee">This is what the final <code>release-9.0.nix</code> looked like</a>.</p>
+<p>Eventually only <code>ghc-parser</code>, maybe <code>ipython-kernel</code>, and <code>ihaskell</code> should fail to build.</p>
+<h2 id="updating-ghc-parser">Updating <code>ghc-parser</code></h2>
+<p><code>ghc-parser</code> has the fewest dependencies of the three packages we are changing so it makes sense to start there. I’m relatively low-tech as far as development workflow goes and I prefer <code>ghcid</code> and a text editor, mostly because I haven’t yet figured out how to get anything more advanced to work. To get <code>ghcid</code> running, assuming you have it installed globally like I do, you can run</p>
+<pre class="shell"><code>$ nix-shell release-9.0.nix -A passthru.haskellPackages.ghc-parser.env
+$ cd ghc-parser
+$ runhaskell Setup.hs configure
+Warning: ghc-parser.cabal:17:28: Packages with 'cabal-version: 1.12' or later
+should specify a specific version of the Cabal spec of the form
+'cabal-version: x.y'. Use 'cabal-version: 1.16'.
+Configuring ghc-parser-0.2.2.0...
+Setup.hs: Encountered missing or private dependencies:
+ghc &gt;=8.0 &amp;&amp; &lt;8.11
+$ # After fixing the error above by editing `ghc-parser.cabal`
+$ runhaskell Setup.hs configure
+$ ghcid -c runhaskell Setup.hs repl lib:ghc-parser</code></pre>
+
+        </div>
+        <div id="footer">
+            <div class="rc-webring">
+                <a href="https://webring.recurse.com"><img src="https://webring.recurse.com/icon.svg" /> RC Webring</a>
+            </div>
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    </body>
+</html>
