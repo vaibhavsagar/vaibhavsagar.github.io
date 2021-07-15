@@ -634,6 +634,7 @@ pinned <code>versions.json</code>
     
 </div>
 
+<p><em>Translated to <a href="https://pngset.com/ru-weird-cpu-instruction">Russian</a> by <a href="https://pngset.com/">Babur Muradov</a>.</em></p>
 <p><em>This is a pseudo-transcript of <a href="https://www.youtube.com/watch?v=bLFqLfz2Fmc">a presentation I did at !!Con 2019</a>.</em></p>
 <p>Most CPU architectures in use today have an instruction called <code>popcount</code>, short for “population count”. Here’s what it does: it counts the number of set bits in a machine word. For example (assuming 8-bit words for simplicity), <code>popcount(00100110)</code> is <code>3</code> and <code>popcount(01100000)</code> is <code>2</code>.</p>
 <p>You might be wondering, like I was, if there’s more to this instruction, but that’s all it does! This doesn’t seem very useful, right?</p>
