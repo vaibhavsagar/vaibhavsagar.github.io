@@ -36,62 +36,62 @@
 
 <p>The <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/Server.html#nested-apis">meat of the Servant tutorial</a> starts with an imposing list of language extensions and imports and only gets more confusing from there. I don’t think this gives newbies (i.e. me) the best first impression of Servant. Let’s build the simplest possible key-value store with it instead.</p>
 <p>We’re going to write this as a <code>stack</code> script so everything is in one file.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co">#!/usr/bin/env stack</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env stack</span></span></code></pre></div>
 <p>Let’s import the modules we need.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co">{- stack --resolver lts-7 --install-ghc runghc</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="co">    --package aeson</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="co">    --package servant-server</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="co">    --package text</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="co">    --package transformers</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="co">    --package unordered-containers</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="co">    --package warp</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="co">    -}</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">{- stack --resolver lts-7 --install-ghc runghc</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">    --package aeson</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">    --package servant-server</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">    --package text</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">    --package transformers</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">    --package unordered-containers</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">    --package warp</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">    -}</span></span></code></pre></div>
 <p>At minimum we need <code>servant-server</code> for Servant goodness and <code>warp</code> to actually run our web service. The plan is to create an <code>IORef</code> holding a <code>HashMap</code> and use that as our store, which is why we need <code>unordered-containers</code>. I’d like to store arbitrary JSON, therefore <code>aeson</code>, and I think our keys should be <code>Text</code>, because <code>aeson</code> and <code>Text</code> are great together. That leaves <code>transformers</code>, which we need because of <code>liftIO</code>.</p>
 <p>It turns out that we only need two language extensions for this example.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ot">{-# LANGUAGE DataKinds #-}</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="ot">{-# LANGUAGE TypeOperators #-}</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE DataKinds #-}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TypeOperators #-}</span></span></code></pre></div>
 <p>As far as I can tell, both these extensions are needed for Servant’s cute API specification EDSL. We’ll let you have this one, Servant.</p>
 <p>Time for a (hopefully manageable) list of imports!</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Control.Monad.IO.Class</span>   (liftIO)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span>               (<span class="dt">Value</span>)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.IORef</span>               (<span class="dt">IORef</span>, newIORef, readIORef, atomicModifyIORef')</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.HashMap.Strict</span>      (<span class="dt">HashMap</span>, lookup, insert, empty)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.Text</span>                (<span class="dt">Text</span>)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Network.Wai.Handler.Warp</span> (run)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">System.Environment</span>       (getArgs)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span>           (lookup)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Servant</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad.IO.Class</span>   (liftIO)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span>               (<span class="dt">Value</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.IORef</span>               (<span class="dt">IORef</span>, newIORef, readIORef, atomicModifyIORef')</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.HashMap.Strict</span>      (<span class="dt">HashMap</span>, lookup, insert, empty)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Text</span>                (<span class="dt">Text</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Network.Wai.Handler.Warp</span> (run)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">System.Environment</span>       (getArgs)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span>           (lookup)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Servant</span></span></code></pre></div>
 <p>All imports are explicit except <code>Servant</code>’s.</p>
 <p>Speaking of the EDSL:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">API</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>    <span class="ot">=</span>    <span class="st">&quot;get&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span> <span class="op">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] (<span class="dt">Maybe</span> <span class="dt">Value</span>)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>    <span class="op">:&lt;|&gt;</span> <span class="st">&quot;put&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>        <span class="op">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>] <span class="dt">Value</span>     <span class="op">:&gt;</span> <span class="dt">Put</span> '[<span class="dt">JSON</span>] <span class="dt">Text</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span>    <span class="st">&quot;get&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span> <span class="op">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] (<span class="dt">Maybe</span> <span class="dt">Value</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">:&lt;|&gt;</span> <span class="st">&quot;put&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;key&quot;</span> <span class="dt">Text</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>] <span class="dt">Value</span>     <span class="op">:&gt;</span> <span class="dt">Put</span> '[<span class="dt">JSON</span>] <span class="dt">Text</span></span></code></pre></div>
 <p>This API has two endpoints: a “/get/:key” endpoint that provides the value associated with a key if the key exists in our store, or a “put/:key” endpoint that allows us to associate some JSON with a key, returning the key used. How this fits together is still a bit magical to me, but <a href="http://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html">this blog post</a> provides the best explanation I’ve read so far. The section of the Servant tutorial <a href="http://haskell-servant.readthedocs.io/en/stable/tutorial/ApiType.html">on the API specification EDSL</a> is also quite good.</p>
 <p>Let’s define a type synonym so we don’t have to keep writing <code>IORef (HashMap Text Value)</code> over and over again:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Store</span> <span class="ot">=</span> <span class="dt">IORef</span> (<span class="dt">HashMap</span> <span class="dt">Text</span> <span class="dt">Value</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Store</span> <span class="ot">=</span> <span class="dt">IORef</span> (<span class="dt">HashMap</span> <span class="dt">Text</span> <span class="dt">Value</span>)</span></code></pre></div>
 <p>Servant uses the same operator to define the type and the serving action:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ot">server ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>server store <span class="ot">=</span> getValue store <span class="op">:&lt;|&gt;</span> putValue store</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>server store <span class="ot">=</span> getValue store <span class="op">:&lt;|&gt;</span> putValue store</span></code></pre></div>
 <p>The order in which these actions are composed needs to match the order used in the API definition.</p>
 <p>Next we define <code>getValue</code> and <code>putValue</code>. We need actions of type <code>Handler</code>, which is <code>ExceptT ServantErr IO</code>, so we <code>liftIO</code> as necessary:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ot">getValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> (<span class="dt">Maybe</span> <span class="dt">Value</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>getValue store key <span class="ot">=</span> liftIO <span class="op">$</span> <span class="fu">lookup</span> key <span class="op">&lt;$&gt;</span> readIORef store</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="ot">putValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Text</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>putValue store key value <span class="ot">=</span> liftIO <span class="op">$</span> atomicModifyIORef' store modify</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>    <span class="kw">where</span> modify kv <span class="ot">=</span> (insert key value kv, key)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">getValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> (<span class="dt">Maybe</span> <span class="dt">Value</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>getValue store key <span class="ot">=</span> liftIO <span class="op">$</span> <span class="fu">lookup</span> key <span class="op">&lt;$&gt;</span> readIORef store</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ot">putValue ::</span> <span class="dt">Store</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Text</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>putValue store key value <span class="ot">=</span> liftIO <span class="op">$</span> atomicModifyIORef' store modify</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> modify kv <span class="ot">=</span> (insert key value kv, key)</span></code></pre></div>
 <p>Almost there. We declare the API we want to serve:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ot">kvAPI ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>kvAPI <span class="ot">=</span> <span class="dt">Proxy</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">kvAPI ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>kvAPI <span class="ot">=</span> <span class="dt">Proxy</span></span></code></pre></div>
 <p>Once again, Kwang Yul Seo has <a href="http://kseo.github.io/posts/2017-01-15-data-proxy.html">a great blog post</a> on this.</p>
 <p>Finally, we define our entry point:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>    port <span class="ot">&lt;-</span> <span class="fu">read</span> <span class="op">.</span> <span class="fu">head</span> <span class="op">&lt;$&gt;</span><span class="ot"> getArgs ::</span> <span class="dt">IO</span> <span class="dt">Int</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a>    run port <span class="op">.</span> serve kvAPI <span class="op">.</span> server <span class="op">=&lt;&lt;</span> newIORef empty</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    port <span class="ot">&lt;-</span> <span class="fu">read</span> <span class="op">.</span> <span class="fu">head</span> <span class="op">&lt;$&gt;</span><span class="ot"> getArgs ::</span> <span class="dt">IO</span> <span class="dt">Int</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    run port <span class="op">.</span> serve kvAPI <span class="op">.</span> server <span class="op">=&lt;&lt;</span> newIORef empty</span></code></pre></div>
 <p>To recap: we define our API as a type, our handlers, and the type we want to serve, and then we plug it all together.</p>
 <p>And we’re done! We can now <code>chmod +x KVStore.hs</code> (or whatever you called the file) and run it: <code>./KVStore.hs 8081</code>.</p>
 <p>I hope this provides a better starting point for learning Servant. If desired, the full script is available <a href="https://gist.github.com/vaibhavsagar/694e0a823c5a4a5b52ddb4277b55ba1d">here</a>.</p>
