@@ -44,7 +44,7 @@
 <li>Sets the current system profile to the new system configuration. This isn’t strictly necessary, but allows us to roll back to this configuration later.</li>
 <li>Switches to the new system configuration.</li>
 </ol>
-<p>This workflow has been described before <a href="https://typeclasses.com/nixos-on-aws">in Typeclasses</a> and <a href="http://www.haskellforall.com/2018/08/nixos-in-production.html">by Gabriel Gonzalez</a>, but I thought one more post demonstrating how to use these commands wouldn’t hurt. Since the AWS use case has been covered so thoroughly by Typeclasses, I’m going to use the <a href="https://www.packet.com/">packet.net</a> cloud instead.</p>
+<p>This workflow has been described before <a href="https://typeclasses.com/nixos-on-aws">in Typeclasses</a> and <a href="http://www.haskellforall.com/2018/08/nixos-in-production.html">by Gabriella Gonzalez</a>, but I thought one more post demonstrating how to use these commands wouldn’t hurt. Since the AWS use case has been covered so thoroughly by Typeclasses, I’m going to use the <a href="https://www.packet.com/">packet.net</a> cloud instead.</p>
 <h4 id="provisioning">Provisioning</h4>
 <p>I logged on to the Packet console and launched a <code>t1.small.x86</code> instance running NixOS 19.03 (the latest as of this writing). It was assigned the IP address <code>147.75.38.113</code>. Since I added my SSH keys when I first created my Packet account, I was able to SSH into this instance at <code>root@147.75.38.113</code> without any further configuration.</p>
 <h4 id="copying-the-existing-configuration">Copying the existing configuration</h4>
@@ -74,7 +74,7 @@
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="er">in</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">nixos.system</span></span></code></pre></div>
-<p>but this doesn’t provide any way of pinning <code>nixpkgs</code>. Another way (<a href="http://www.haskellforall.com/2018/08/nixos-in-production.html#pinning-nixpkgs">as described by Gabriel Gonzalez</a>), is to explicitly depend on a particular revision of <code>nixpkgs</code>:</p>
+<p>but this doesn’t provide any way of pinning <code>nixpkgs</code>. Another way (<a href="http://www.haskellforall.com/2018/08/nixos-in-production.html#pinning-nixpkgs">as described by Gabriella Gonzalez</a>), is to explicitly depend on a particular revision of <code>nixpkgs</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">nixpkgs</span> = builtins.fetchTarball {</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/NixOS/nixpkgs/archive/b74b1cdb2fecc31ff7a127c5bc89771f887c93bb.tar.gz&quot;</span><span class="kw">;</span></span>
