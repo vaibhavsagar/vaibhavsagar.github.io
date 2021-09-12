@@ -108,7 +108,7 @@ $ ghcid -c runhaskell Setup.hs repl lib:ihaskell</code></pre>
 <h2 id="using-the-updated-ihaskell">Using the updated IHaskell</h2>
 <p>We’re done! I like to quickly try out a new notebook, as a quick test that everything works as expected (and also for the novelty of being the first person to try IHaskell on the newest GHC). To do this, I run</p>
 <pre class="shell"><code>$ nix-build release-9.0.nix
-$ result/bin/ihaskell-notebook</code></pre>
+$ result/bin/jupyter-notebook</code></pre>
 </summary>
 </entry>
 <entry>
@@ -998,7 +998,7 @@ pinned <code>versions.json</code>
 <span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>      <span class="ex">nixpkgs.bashInteractive</span></span>
 <span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    <span class="ex">]</span><span class="kw">;</span></span>
 <span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    <span class="ex">config</span> = {</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>      <span class="ex">Cmd</span> = [<span class="st">&quot;ihaskell-notebook&quot;</span> <span class="st">&quot;--ip&quot;</span> <span class="st">&quot;0.0.0.0&quot;</span>]<span class="kw">;</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>      <span class="ex">Cmd</span> = [<span class="st">&quot;jupyter-notebook&quot;</span> <span class="st">&quot;--ip=0.0.0.0&quot;</span>]<span class="kw">;</span></span>
 <span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>      <span class="ex">User</span> = NB_USER<span class="kw">;</span></span>
 <span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>      <span class="ex">WorkingDir</span> = <span class="st">&quot;/home/</span><span class="va">${NB_USER}</span><span class="st">&quot;</span><span class="kw">;</span></span>
 <span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    <span class="er">}</span><span class="kw">;</span></span>
