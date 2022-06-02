@@ -34,14 +34,33 @@
     
 </div>
 
-<p>I’ve been having a lot of fun migrating the CI systems of my repositories to use GitHub Actions, but it’s been more difficult to do the same with projects that are owned by someone else because I don’t have access to the repository settings that would allow me to create secrets. This means that I can build and test those projects but not e.g. upload a Docker container as part of a successful build or upload artifacts somewhere else.</p>
-<p>I’ve tried to work around this limitation by creating a separate repository that I own and using the <code>cron</code> functionality to do this on a schedule, but this is a poor substitute. I’ve been frustrated by this situation for a while, and while reading the <a href="https://help.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets">documentation</a> I noticed this interesting snippet:</p>
+<p>I’ve been having a lot of fun migrating the CI systems of my repositories to
+use GitHub Actions, but it’s been more difficult to do the same with projects
+that are owned by someone else because I don’t have access to the repository
+settings that would allow me to create secrets. This means that I can build and
+test those projects but not e.g. upload a Docker container as part of
+a successful build or upload artifacts somewhere else.</p>
+<p>I’ve tried to work around this limitation by creating a separate repository
+that I own and using the <code>cron</code> functionality to do this on a schedule, but
+this is a poor substitute. I’ve been frustrated by this situation for a while,
+and while reading the
+<a href="https://help.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets">documentation</a>
+I noticed this interesting snippet:</p>
 <blockquote>
-<p>If you are using the REST API to create secrets, anyone with write access to the repository can create secrets. For more information, see <a href="https://developer.github.com/v3/actions/secrets/#create-or-update-a-secret-for-a-repository">“GitHub Actions secrets API”</a> in the GitHub Developer documentation.</p>
+<p>If you are using the REST API to create secrets, anyone with write access to
+the repository can create secrets. For more information, see <a href="https://developer.github.com/v3/actions/secrets/#create-or-update-a-secret-for-a-repository">“GitHub Actions
+secrets
+API”</a>
+in the GitHub Developer documentation.</p>
 </blockquote>
-<p>Amazing! This makes it sound like it’s purely a UI issue. So emboldened, I was able to create and use my secrets only a couple of hours later by poking at the GitHub API.</p>
-<p>I’m going to go ahead and write down the steps I took in order to make this happen, because this seems like the kind of thing I might have to do more than once and it’s just fiddly enough that I will quickly forget if I don’t.</p>
-<p>The first thing I need is a GitHub Personal Access Token with the <code>repo</code> scope, which I can create from <a href="https://github.com/settings/tokens">this page</a>.</p>
+<p>Amazing! This makes it sound like it’s purely a UI issue. So emboldened, I was
+able to create and use my secrets only a couple of hours later by poking at the
+GitHub API.</p>
+<p>I’m going to go ahead and write down the steps I took in order to make this
+happen, because this seems like the kind of thing I might have to do more than
+once and it’s just fiddly enough that I will quickly forget if I don’t.</p>
+<p>The first thing I need is a GitHub Personal Access Token with the <code>repo</code> scope,
+which I can create from <a href="https://github.com/settings/tokens">this page</a>.</p>
 <p>The next thing to do is to retrieve the public key for the relevant repository:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-H</span> <span class="st">&quot;Authorization: token </span><span class="va">$TOKEN</span><span class="st">&quot;</span> https://api.github.com/repos/gibiansky/IHaskell/actions/secrets/public-key</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span></span>
@@ -55,7 +74,8 @@
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;secrets&quot;</span><span class="ex">:</span> [</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">]</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code></pre></div>
-<p>The secrets need to be encrypted, and there is sample code for doing this in Python:</p>
+<p>The secrets need to be encrypted, and there is sample code for doing this in
+Python:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> base64 <span class="im">import</span> b64encode</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nacl <span class="im">import</span> encoding, public</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -65,7 +85,8 @@
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    sealed_box <span class="op">=</span> public.SealedBox(public_key)</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    encrypted <span class="op">=</span> sealed_box.encrypt(secret_value.encode(<span class="st">&quot;utf-8&quot;</span>))</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> b64encode(encrypted).decode(<span class="st">&quot;utf-8&quot;</span>)</span></code></pre></div>
-<p>I added a Nix shebang line and decided to generate all the encrypted secrets I needed:</p>
+<p>I added a Nix shebang line and decided to generate all the encrypted secrets
+I needed:</p>
 <p><em>secret.py</em></p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#! /usr/bin/env nix-shell</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#! nix-shell -i python</span></span>
@@ -92,7 +113,9 @@
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="va">CACHIX_SIGNING_KEY</span><span class="op">=</span> <span class="va">$ENCRYPTED_CACHIX_SIGNING_KEY</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="va">DOCKER_USERNAME</span><span class="op">=</span> <span class="va">$ENCRYPTED_DOCKER_USERNAME</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="va">DOCKER_PASSWORD</span><span class="op">=</span> <span class="va">$ENCRYPTED_DOCKER_PASSWORD</span></span></code></pre></div>
-<p>And I chose to update the secrets manually with <code>curl</code> even though I could have automated it with <code>requests</code> or something similar (which I might if I have to do this again soon), for example:</p>
+<p>And I chose to update the secrets manually with <code>curl</code> even though I could have
+automated it with <code>requests</code> or something similar (which I might if I have to
+do this again soon), for example:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-X</span> PUT <span class="at">-H</span> <span class="st">&quot;Authorization: token </span><span class="va">$TOKEN</span><span class="st">&quot;</span> <span class="at">-H</span> <span class="st">&quot;Content-Type: application/json&quot;</span> <span class="at">-i</span> https://api.github.com/repos/gibiansky/IHaskell/actions/secrets/CACHIX_SIGNING_KEY <span class="at">-d</span> <span class="st">'{&quot;key_id&quot;: &quot;$KEY_ID&quot;, &quot;encrypted_value&quot;: &quot;$ENCRYPTED_CACHIX_SIGNING_KEY&quot;}'</span></span></code></pre></div>
 <p>Finally I can check that the secrets were created correctly:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-H</span> <span class="st">&quot;Authorization: token </span><span class="va">$TOKEN</span><span class="st">&quot;</span> https://api.github.com/repos/gibiansky/IHaskell/actions/secrets</span>

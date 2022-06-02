@@ -34,9 +34,24 @@
     
 </div>
 
-<p>After <a href="../../../../../blog/2015/02/01/blog-setup">automating my blog</a>, I decided to aim a little higher and use Travis-CI to automate document generation from my resume. I use <a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written in Markdown to Github-flavoured Markdown, an HTML file for my website, and a PDF (via LaTeX) that I’ve spent a ludicrous amount of time styling. I do have all these packages configured on my home computer, but it was becoming tedious to make changes and commit three separate files instead of just one. I was also finding it difficult to keep the PDF version of my resume up to date with the rest of my changes, and I thought it would be an interesting challenge to get everything set up in a repeatable manner. One good reference is <a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/">this blog post</a> by Steve Klabnik.</p>
-<p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for its workers) are hopelessly out of date, so my first problem was getting the newest version of <code>pandoc</code> installed. I used <code>stack</code> to download and install this.</p>
-<p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
+<p>After <a href="../../../../../blog/2015/02/01/blog-setup">automating my blog</a>, I decided to aim a little
+higher and use Travis-CI to automate document generation from my resume. I use
+<a href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert my source resume written
+in Markdown to Github-flavoured Markdown, an HTML file for my website, and a
+PDF (via LaTeX) that I’ve spent a ludicrous amount of time styling. I do have
+all these packages configured on my home computer, but it was becoming tedious
+to make changes and commit three separate files instead of just one. I was also
+finding it difficult to keep the PDF version of my resume up to date with the
+rest of my changes, and I thought it would be an interesting challenge to get
+everything set up in a repeatable manner. One good reference is <a href="http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/">this blog
+post</a>
+by Steve Klabnik.</p>
+<p>The versions of <code>pandoc</code> and <code>LaTeX</code> on Ubuntu 12.04 (which Travis-CI uses for
+its workers) are hopelessly out of date, so my first problem was getting the
+newest version of <code>pandoc</code> installed. I used <code>stack</code> to download and install
+this.</p>
+<p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured
+Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">all:</span><span class="dt">: pdf html readme</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dv">travis:</span><span class="dt">: html readme</span></span>
@@ -54,7 +69,8 @@
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>	rm Vaibhav_Sagar_resume.pdf</span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>	rm readme.md</span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>	rm index.html</span></code></pre></div>
-<p>I decided it would be best if the build process updated my <code>gh-pages</code> branch instead of uploading to a different repository:</p>
+<p>I decided it would be best if the build process updated my <code>gh-pages</code> branch
+instead of uploading to a different repository:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env bash</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">BRANCH</span><span class="op">=</span>gh-pages</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_REPO</span><span class="op">=</span>vaibhavsagar/resume.git</span>
@@ -76,7 +92,11 @@
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">git</span> push <span class="at">-fq</span> origin <span class="va">$BRANCH</span> <span class="op">&gt;</span> /dev/null</span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="at">-e</span> <span class="st">&quot;Deploy completed\n&quot;</span></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code></pre></div>
-<p>The next challenge was actually generating my PDF and uploading it to Github Releases. Travis CI has excellent support for deploying binaries to Releases but using the <code>travis</code> gem to configure support makes a completely new Github token which I thought was a bit redundant. The documentation for <code>travis encrypt</code> is pretty comprehensive and I just encrypted my old token and used that instead. My completed <code>.travis.yml</code> is as follows:</p>
+<p>The next challenge was actually generating my PDF and uploading it to Github
+Releases. Travis CI has excellent support for deploying binaries to Releases
+but using the <code>travis</code> gem to configure support makes a completely new Github
+token which I thought was a bit redundant. The documentation for <code>travis encrypt</code> is pretty comprehensive and I just encrypted my old token and used
+that instead. My completed <code>.travis.yml</code> is as follows:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> c</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -115,7 +135,8 @@
 <span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span><span class="kw">:</span></span>
 <span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">global</span><span class="kw">:</span></span>
 <span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">secure</span><span class="kw">:</span><span class="at"> Bzof/7yN7HgV2eJk7FNliNx/cagIU4I113SwNJhChFyYOSy816oPrwQaCMyZuwvbcEIfLMY0K0qxtQK1MoPq7zTYiCTW3UPB2+mzTfTHPMTm5nWjZv0BmdqVoG8IJwxfo5cIV8hfKiu2ezNKcDuqgwb80mYwpTwlQPsY9gOm1Tc=</span></span></code></pre></div>
-<p>If you’re trying something similar and you’re getting stuck, feel free to reach out and I’ll be more than happy to help.</p>
+<p>If you’re trying something similar and you’re getting stuck, feel free to reach
+out and I’ll be more than happy to help.</p>
 
         </div>
         <div id="footer">

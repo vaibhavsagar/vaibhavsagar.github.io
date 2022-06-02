@@ -34,10 +34,29 @@
     
 </div>
 
-<p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a joy</a>. I’ve certainly found this to be the case, but what does that mean in practice? I thought it might be useful to demonstrate by refactoring some of my own code.</p>
-<p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly Connected Components algorithm</a> used to determine whether a given <a href="https://en.wikipedia.org/wiki/2-satisfiability">2-SAT problem</a> is satisfiable or not, and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online course</a> that is now offered in a different form. I’ve <a href="../../../../../blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm previously</a> and it can be used to determine the satisfiability of a 2-SAT problem by checking if any SCC contains both a variable and its negation. If it does, we have a contradiction and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
-<p>This code isn’t particularly elegant or easy to follow, and it’s lousy with mutable state. Despite these drawbacks, it is still relatively straightforward to refactor.</p>
-<p>If you’d like to follow along, I have the code (and some test data) available <a href="https://gist.github.com/vaibhavsagar/2418c9dd79da431065ad0d80e690b12f">at this gist</a> with each revision representing a refactoring step.</p>
+<p>Many people claim that <a href="https://twitter.com/search?q=haskell%20refactoring">refactoring Haskell is a
+joy</a>. I’ve certainly found
+this to be the case, but what does that mean in practice? I thought it might be
+useful to demonstrate by refactoring some of my own code.</p>
+<p>The code we’re looking at today is an implementation of <a href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm">Tarjan’s Strongly
+Connected Components
+algorithm</a>
+used to determine whether a given <a href="https://en.wikipedia.org/wiki/2-satisfiability">2-SAT
+problem</a> is satisfiable or not,
+and was written to complete <a href="https://online.stanford.edu/course/algorithms-design-and-analysis-part-1">an online
+course</a>
+that is now offered in a different form. I’ve <a href="../../../../../blog/2017/06/10/dag-toolkit/">written about Tarjan’s algorithm
+previously</a> and it can be
+used to determine the satisfiability of a 2-SAT problem by checking if any SCC
+contains both a variable and its negation. If it does, we have a contradiction
+and the problem is unsatisfiable, otherwise the problem is satisfiable.</p>
+<p>This code isn’t particularly elegant or easy to follow, and it’s lousy with
+mutable state. Despite these drawbacks, it is still relatively straightforward
+to refactor.</p>
+<p>If you’d like to follow along, I have the code (and some test data) available
+<a href="https://gist.github.com/vaibhavsagar/2418c9dd79da431065ad0d80e690b12f">at this
+gist</a>
+with each revision representing a refactoring step.</p>
 <p>The initial version of the code is as follows:</p>
 <details>
 <summary style="cursor: pointer">
@@ -143,9 +162,18 @@ Initial 2SAT.hs
 <span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>        pGraph <span class="ot">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="op">*</span>pNo) <span class="op">$</span> <span class="fu">concatMap</span> (clauses pNo) pn</span>
 <span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
-<p>I’ve included 2SAT-specific functionality for completeness, but I’ll only be changing the <code>tarjan</code> function and the functions it depends on (<code>strongConnect</code>, <code>addSCC</code>, <code>push</code>, and <code>pop</code>).</p>
-<p>The first change is using more suitable data structures. Tarjan’s algorithm is only linear in the size of the graph when operations, such as checking if <code>w</code> is on the stack and looking up indices, happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees and are <span class="math inline"><em>O</em>(log<em>n</em>)</span> in these operations. A better choice would be <a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a> from the <code>vector</code> package, which does have constant-time operations.</p>
-<p>This refactoring mostly consists of initialising vectors with a known length and replacing calls to <code>lookup</code> and <code>insert</code> with calls to <code>read</code> and <code>write</code>.</p>
+<p>I’ve included 2SAT-specific functionality for completeness, but I’ll only be
+changing the <code>tarjan</code> function and the functions it depends on
+(<code>strongConnect</code>, <code>addSCC</code>, <code>push</code>, and <code>pop</code>).</p>
+<p>The first change is using more suitable data structures. Tarjan’s algorithm is
+only linear in the size of the graph when operations, such as checking if <code>w</code> is
+on the stack and looking up indices, happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m
+currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees
+and are <span class="math inline"><em>O</em>(log<em>n</em>)</span> in these operations. A better choice would be
+<a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a>
+from the <code>vector</code> package, which does have constant-time operations.</p>
+<p>This refactoring mostly consists of initialising vectors with a known length
+and replacing calls to <code>lookup</code> and <code>insert</code> with calls to <code>read</code> and <code>write</code>.</p>
 <details>
 <summary style="cursor: pointer">
 2SAT.hs using <code>vector</code>
@@ -248,8 +276,14 @@ Initial 2SAT.hs
 <span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        pGraph <span class="ot">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="op">*</span>pNo) <span class="op">$</span> <span class="fu">concatMap</span> (clauses pNo) pn</span>
 <span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
-<p>I didn’t notice a significant difference in speed on my inputs, but it’s good to know that the algorithm has been implemented with the correct asymptotics now!</p>
-<p><em>Sidenote: A <code>Vector</code> of <code>Bool</code>s can be much more compactly represented as a sequence of 0s and 1s, which are just machine words. For implementations of this in Haskell, see the <a href="https://hackage.haskell.org/package/bv">bv</a> or <a href="https://hackage.haskell.org/package/bv-little">bv-little</a> packages. Using these could be another possible refactoring.</em></p>
+<p>I didn’t notice a significant difference in speed on my inputs, but it’s good
+to know that the algorithm has been implemented with the correct asymptotics
+now!</p>
+<p><em>Sidenote: A <code>Vector</code> of <code>Bool</code>s can be much more compactly represented as a
+sequence of 0s and 1s, which are just machine words. For implementations of
+this in Haskell, see the <a href="https://hackage.haskell.org/package/bv">bv</a> or
+<a href="https://hackage.haskell.org/package/bv-little">bv-little</a> packages. Using
+these could be another possible refactoring.</em></p>
 <p>Looking at the code again, I notice some repetition of the form</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> fromJust <span class="op">&lt;$&gt;</span> <span class="fu">lookup</span> vectorX i</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> fromJust <span class="op">&lt;$&gt;</span> <span class="fu">lookup</span> vectorY j</span>
@@ -357,10 +391,13 @@ Initial 2SAT.hs
 <span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
 <p>This is much nicer with the applicative combinators.</p>
-<p>I would like to clean up that <code>when</code> as well, and for that I’d need a function like</p>
+<p>I would like to clean up that <code>when</code> as well, and for that I’d need a function
+like</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">whenM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m <span class="dt">Bool</span> <span class="ot">-&gt;</span> m () <span class="ot">-&gt;</span> m ()</span></code></pre></div>
-<p>which is <a href="hackage.haskell.org/package/extra/docs/Control-Monad-Extra.html#v:whenM">available in Neil Mitchell’s <code>extra</code> package</a>.</p>
-<p>I don’t think it’s worth pulling in that dependency though, so I’ll just copy that definition:</p>
+<p>which is <a href="hackage.haskell.org/package/extra/docs/Control-Monad-Extra.html#v:whenM">available in Neil Mitchell’s <code>extra</code>
+package</a>.</p>
+<p>I don’t think it’s worth pulling in that dependency though, so I’ll just copy
+that definition:</p>
 <details>
 <summary style="cursor: pointer">
 2SAT.hs using <code>whenM</code>
@@ -458,7 +495,12 @@ Initial 2SAT.hs
 <span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
 <p>Now I don’t actually even need <code>when</code> anymore!</p>
-<p>Since most of the auxiliary functions aren’t used outside <code>strongConnect</code>, it might make sense to put them under a <code>where</code> clause. This would also make the parameters passed to <code>strongConnect</code> available to these functions. This is one place that the <code>ScopedTypeVariables</code> language extension is necessary, otherwise GHC can’t tell that the <code>s</code> in the type signature of <code>strongConnect</code> is the same <code>s</code> as the one in each type signature under the <code>where</code> clause.</p>
+<p>Since most of the auxiliary functions aren’t used outside <code>strongConnect</code>, it
+might make sense to put them under a <code>where</code> clause. This would also make the
+parameters passed to <code>strongConnect</code> available to these functions. This is one
+place that the <code>ScopedTypeVariables</code> language extension is necessary, otherwise
+GHC can’t tell that the <code>s</code> in the type signature of <code>strongConnect</code> is the
+same <code>s</code> as the one in each type signature under the <code>where</code> clause.</p>
 <details>
 <summary style="cursor: pointer">
 2SAT.hs using <code>where</code>
@@ -555,8 +597,11 @@ Initial 2SAT.hs
 <span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a>        pGraph <span class="ot">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="op">*</span>pNo) <span class="op">$</span> <span class="fu">concatMap</span> (clauses pNo) pn</span>
 <span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
-<p>I think the logic is clearer now that the auxiliary functions take fewer arguments.</p>
-<p>Instead of a large number of implictly related variables, it might be nice to define a single product type containing our entire environment and pass just one value around. With <code>NamedFieldPuns</code> only minimal code changes are required:</p>
+<p>I think the logic is clearer now that the auxiliary functions take fewer
+arguments.</p>
+<p>Instead of a large number of implictly related variables, it might be nice to
+define a single product type containing our entire environment and pass just
+one value around. With <code>NamedFieldPuns</code> only minimal code changes are required:</p>
 <details>
 <summary style="cursor: pointer">
 2SAT.hs using <code>NamedFieldPuns</code>
@@ -653,8 +698,23 @@ Initial 2SAT.hs
 <span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>        pGraph <span class="ot">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="op">*</span>pNo) <span class="op">$</span> <span class="fu">concatMap</span> (clauses pNo) pn</span>
 <span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
-<p>Let’s pause here. Although more refactoring is certainly possible, my last two steps did not reduce the line count and may have in fact made the code harder to understand.</p>
-<p>How have we benefited from this refactoring? Aside from the code being shorter and better structured, it’s now easier to make meaningful improvements. For example, this implementation is more inefficient than it needs to be, because it doesn’t short-circuit when it finds that the current problem is unsatisfiable. Instead it works through the rest of the problem, only to throw all that work away. A sophisticated solution to this problem might involve the use of the <a href="https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-Except.html"><code>ExceptT</code></a> monad transformer to throw an exception and exit early, but there is a simpler approach: we can store an extra boolean variable denoting whether or not the current problem is possibly satisfiable, and only continue working if it is. I’ll call this variable <code>possible</code>, update it in <code>addSCC</code>, and check for it before each call to <code>strongConnect</code> in <code>tarjan</code>. It takes more effort to reformat the code than to make this change:</p>
+<p>Let’s pause here. Although more refactoring is certainly possible, my last two
+steps did not reduce the line count and may have in fact made the code harder
+to understand.</p>
+<p>How have we benefited from this refactoring? Aside from the code being shorter
+and better structured, it’s now easier to make meaningful improvements. For
+example, this implementation is more inefficient than it needs to be, because
+it doesn’t short-circuit when it finds that the current problem is
+unsatisfiable. Instead it works through the rest of the problem, only to throw
+all that work away. A sophisticated solution to this problem might involve the
+use of the
+<a href="https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-Except.html"><code>ExceptT</code></a>
+monad transformer to throw an exception and exit early, but there is a simpler
+approach: we can store an extra boolean variable denoting whether or not the
+current problem is possibly satisfiable, and only continue working if it is.
+I’ll call this variable <code>possible</code>, update it in <code>addSCC</code>, and check for it
+before each call to <code>strongConnect</code> in <code>tarjan</code>. It takes more effort to
+reformat the code than to make this change:</p>
 <details>
 <summary style="cursor: pointer">
 2SAT.hs with short-circuiting
@@ -757,9 +817,18 @@ Initial 2SAT.hs
 <span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a>        pGraph <span class="ot">=</span> G.buildG (<span class="dv">0</span>,<span class="dv">2</span><span class="op">*</span>pNo) <span class="op">$</span> <span class="fu">concatMap</span> (clauses pNo) pn</span>
 <span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> <span class="op">$</span> (<span class="dt">Nothing</span> <span class="op">/=</span>) <span class="op">$</span> tarjan pNo pGraph</span></code></pre></div>
 </details>
-<p>This change does seem to make a significant difference, and it’s good to know we’re not doing useless work.</p>
-<p>I think this is a good place to stop, and I hope I’ve been able to demonstrate some of Haskell’s strengths when it comes to refactoring. In my experience, it’s not usually necessary to deeply understand Haskell code in order to attempt a refactoring, especially if it’s backed by well-chosen types and a good test suite. I also find that I’m able to be more daring when writing new code, because bad up-front design is less costly and even the jankiest working code can be gently massaged into something presentable.</p>
-<p><em>Thanks to <a href="https://joelburget.com/">Joel Burget</a>, <a href="http://www.matfournier.com/">Mat Fournier</a>, <a href="https://eskimor.gonimo.com/">Robert Klotzner</a>, <a href="https://github.com/L8D">Tenor</a>, <a href="http://www.tomharding.me/">Tom Harding</a>, and <a href="http://www.tylerweir.com/">Tyler Weir</a> for suggestions and feedback.</em></p>
+<p>This change does seem to make a significant difference, and it’s good to know
+we’re not doing useless work.</p>
+<p>I think this is a good place to stop, and I hope I’ve been able to demonstrate
+some of Haskell’s strengths when it comes to refactoring. In my experience,
+it’s not usually necessary to deeply understand Haskell code in order to
+attempt a refactoring, especially if it’s backed by well-chosen types and a
+good test suite. I also find that I’m able to be more daring when writing new
+code, because bad up-front design is less costly and even the jankiest working
+code can be gently massaged into something presentable.</p>
+<p><em>Thanks to
+<a href="https://joelburget.com/">Joel Burget</a>, <a href="http://www.matfournier.com/">Mat Fournier</a>, <a href="https://eskimor.gonimo.com/">Robert Klotzner</a>, <a href="https://github.com/L8D">Tenor</a>, <a href="http://www.tomharding.me/">Tom Harding</a>, and <a href="http://www.tylerweir.com/">Tyler Weir</a> for suggestions and
+feedback.</em></p>
 
         </div>
         <div id="footer">

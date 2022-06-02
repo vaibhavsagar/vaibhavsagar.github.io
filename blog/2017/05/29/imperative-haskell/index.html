@@ -34,14 +34,26 @@
     
 </div>
 
-<p><em><a href="http://getcolorings.com/">Get Colorings</a> has kindly <a href="http://getcolorings.com/ru-imperative-haskell">translated this post</a> to Russian.</em></p>
-<p><em>This post covers essentially the same material as a 5-minute presentation I gave at <a href="https://www.recurse.com/scout/click?t=5ac465e5d3396a7e491e42afac4c5c90">RC</a>, because giving that talk over and over again doesn’t scale and there are things I would like to cover that are difficult within that time limit.</em></p>
-<p>I was working through Tim Roughgarden’s <a href="https://www.coursera.org/learn/algorithm-design-analysis/">Algorithms 1</a> (which has now been replaced by two smaller courses) and attempting to do all the exercises in Haskell when I bumped up against an uncomfortable truth. Haskell’s ‘quicksort’:</p>
+<p><em><a href="http://getcolorings.com/">Get Colorings</a> has kindly <a href="http://getcolorings.com/ru-imperative-haskell">translated this
+post</a> to Russian.</em></p>
+<p><em>This post covers essentially the same material as a 5-minute presentation I
+gave at
+<a href="https://www.recurse.com/scout/click?t=5ac465e5d3396a7e491e42afac4c5c90">RC</a>,
+because giving that talk over and over again doesn’t scale and there are things
+I would like to cover that are difficult within that time limit.</em></p>
+<p>I was working through Tim Roughgarden’s <a href="https://www.coursera.org/learn/algorithm-design-analysis/">Algorithms
+1</a> (which has now
+been replaced by two smaller courses) and attempting to do all the exercises in
+Haskell when I bumped up against an uncomfortable truth. Haskell’s ‘quicksort’:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>qsort []     <span class="ot">=</span> []</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>qsort (x<span class="op">:</span>xs) <span class="ot">=</span> lt <span class="op">++</span> [x] <span class="op">++</span> gt</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> lt <span class="ot">=</span> qsort [e <span class="op">|</span> e <span class="ot">&lt;-</span> xs, e <span class="op">&lt;</span>  x]</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>          gt <span class="ot">=</span> qsort [e <span class="op">|</span> e <span class="ot">&lt;-</span> xs, e <span class="op">&gt;=</span> x]</span></code></pre></div>
-<p>isn’t a true quicksort! Specifically, it doesn’t sort the elements in place, and the assignment I was working on involved counting the number of comparisons, so I couldn’t get away with my fake quicksort. With my tail between my legs, I gave up on my pure Haskell approach and implemented a solution in Python:</p>
+<p>isn’t a true quicksort! Specifically, it doesn’t sort the elements in place,
+and the assignment I was working on involved counting the number of
+comparisons, so I couldn’t get away with my fake quicksort. With my tail
+between my legs, I gave up on my pure Haskell approach and implemented a
+solution in Python:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sys.setrecursionlimit(<span class="dv">10000</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -102,17 +114,27 @@
 <span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>inp3 <span class="op">=</span> contents.copy()</span>
 <span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>quicksort(inp3, <span class="dv">0</span>, <span class="bu">len</span>(inp3), partition_median)</span>
 <span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span></code></pre></div>
-<p>This implementation is not particularly Pythonic: note the recursion limit and the use of a global variable. I actually forgot to reset the variable to 0 between iterations, which was fun to track down. But it works!</p>
-<p>So far, so good. This isn’t something we’d be able to do in Haskell, right? And even if we could, the equivalent implementation would be so different as to be unrecognisable. At least this is what I thought until I took a closer look at <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Monad-ST.html">Control.Monad.ST</a> and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-STRef.html">Data.STRef</a>.</p>
-<p>One of my biggest gripes with Haskell is the quality of the documentation. <code>Control.Monad.ST</code> is introduced as</p>
+<p>This implementation is not particularly Pythonic: note the recursion limit and
+the use of a global variable. I actually forgot to reset the variable to 0
+between iterations, which was fun to track down. But it works!</p>
+<p>So far, so good. This isn’t something we’d be able to do in Haskell, right? And
+even if we could, the equivalent implementation would be so different as to be
+unrecognisable. At least this is what I thought until I took a closer look at
+<a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Monad-ST.html">Control.Monad.ST</a> and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-STRef.html">Data.STRef</a>.</p>
+<p>One of my biggest gripes with Haskell is the quality of the documentation.
+<code>Control.Monad.ST</code> is introduced as</p>
 <blockquote>
-<p>This library provides support for strict state threads, as described in the PLDI ’94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional State Threads</em>.</p>
+<p>This library provides support for strict state threads, as described in the
+PLDI ’94 paper by John Launchbury and Simon Peyton Jones <em>Lazy Functional
+State Threads</em>.</p>
 </blockquote>
 <p>and <code>Data.STRef</code> is introduced as</p>
 <blockquote>
 <p>Mutable references in the (strict) ST monad.</p>
 </blockquote>
-<p>I don’t want to read a paper to figure out how to use these libraries, and in fact I don’t have to! In recognition of this, I humbly present alternative descriptions for <code>Control.Monad.ST</code>:</p>
+<p>I don’t want to read a paper to figure out how to use these libraries, and in
+fact I don’t have to! In recognition of this, I humbly present alternative
+descriptions for <code>Control.Monad.ST</code>:</p>
 <blockquote>
 <p>You asked for mutable state, here it is!</p>
 </blockquote>
@@ -120,7 +142,9 @@
 <blockquote>
 <p>Variables that you can actually vary!!!1!1!one!1eleventyone</p>
 </blockquote>
-<p>Code utilising these libraries can look very familiar to people used to imperative languages, e.g. past me. Here’s the above quicksort rewritten in Haskell:</p>
+<p>Code utilising these libraries can look very familiar to people used to
+imperative languages, e.g. past me. Here’s the above quicksort rewritten in
+Haskell:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE RankNTypes #-}</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></span>
@@ -183,9 +207,14 @@
 <span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>quicksort' vector partitionFirst</span>
 <span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>quicksort' vector partitionLast</span>
 <span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>quicksort' vector partitionMedian</span></code></pre></div>
-<p>This is roughly the same length as the Python implementation, and even improves on it in some ways: no recursion limit fiddling and no global variables.</p>
-<p>If we can write Haskell that resembles Python, and Python is executable pseudocode, can we cut out the middleman and translate pseudocode directly to Haskell? Let’s take a look at another problem.</p>
-<p>I needed to calculate the size of the strongly connected components of a graph for another assignment, and I decided to use Tarjan’s Strongly Connected Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
+<p>This is roughly the same length as the Python implementation, and even improves
+on it in some ways: no recursion limit fiddling and no global variables.</p>
+<p>If we can write Haskell that resembles Python, and Python is executable
+pseudocode, can we cut out the middleman and translate pseudocode directly to
+Haskell? Let’s take a look at another problem.</p>
+<p>I needed to calculate the size of the strongly connected components of a graph
+for another assignment, and I decided to use Tarjan’s Strongly Connected
+Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode noweb"><code class="sourceCode noweb"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a> algorithm tarjan is</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  input: graph G = (V, E)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  output: set of strongly connected components (sets of vertices)</span>
@@ -289,12 +318,41 @@
 <span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>            modifySTRef' stack <span class="fu">tail</span></span>
 <span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>            write stackSet e <span class="dt">False</span></span>
 <span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>            <span class="fu">return</span> e</span></code></pre></div>
-<p>Aside from explicitly declaring our variables and passing them around, I think this looks pretty close.</p>
-<p>How do we square this with Haskell’s reputation for purity and referential transparency? That’s the subject of <a href="https://www.microsoft.com/en-us/research/publication/lazy-functional-state-threads/">the paper mentioned above</a> that you don’t have to read (but totally can if you want)! They figured out a way to provide a principled pure interface to mutable state by passing the references as arguments into each function that makes use of them and leveraging the type system to make sure any impurity is well contained. The correctness of this approach was <a href="https://iris-project.org/pdfs/2018-popl-runST-final.pdf">very recently verified</a>. If desired, we can replace any of the functions with purer and more idiomatic definitions without changing the output, and that satisfies the definition of referential transparency!</p>
-<p>Why don’t we do this all the time, when Haskell is at least a serviceable imperative language? Because writing imperative programs is hard! They don’t compose as well, have less useful type signatures, and are harder to reason about. Getting away from those things is why we have Haskell to begin with! The real question should be: how can we avoid doing things this way as much as possible?</p>
-<p>Before I discovered this part of Haskell, I had this perception of Haskell (and declarative programming more generally) as “imperative programming but less” from a practical perspective. I thought that although writing declarative code in Python was purely (heh) a matter of discipline, writing imperative code in Haskell required completely reconceptualising the algorithm. Thanks to <code>ST</code>, I now know that this not the case, which is a huge relief. If required, I can do a literal translation of the algorithm, and clean it up (or not) later. In fact Haskell is “imperative programming and more”, and that’s awesome!</p>
-<p>Thanks to <a href="http://blog.podsnap.com/">Peter Fraenkel</a>, <a href="https://jvns.ca/">Julia Evans</a>, and <a href="http://msteigerwalt.com/">Michelle Steigerwalt</a> for feedback.</p>
-<p><em>If you’d rather try to make sense of the <a href="https://github.com/vaibhavsagar/presentations/tree/master/imperative-haskell">set of disconnected files</a> that constitutes my slides for that presentation, you can do that instead, although I wouldn’t recommend it.</em></p>
+<p>Aside from explicitly declaring our variables and passing them around, I think
+this looks pretty close.</p>
+<p>How do we square this with Haskell’s reputation for purity and referential
+transparency? That’s the subject of <a href="https://www.microsoft.com/en-us/research/publication/lazy-functional-state-threads/">the paper mentioned
+above</a>
+that you don’t have to read (but totally can if you want)! They figured out a
+way to provide a principled pure interface to mutable state by passing the
+references as arguments into each function that makes use of them and
+leveraging the type system to make sure any impurity is well contained. The
+correctness of this approach was <a href="https://iris-project.org/pdfs/2018-popl-runST-final.pdf">very recently
+verified</a>. If
+desired, we can replace any of the functions with purer and more idiomatic
+definitions without changing the output, and that satisfies the definition of
+referential transparency!</p>
+<p>Why don’t we do this all the time, when Haskell is at least a serviceable
+imperative language? Because writing imperative programs is hard! They don’t
+compose as well, have less useful type signatures, and are harder to reason
+about. Getting away from those things is why we have Haskell to begin with! The
+real question should be: how can we avoid doing things this way as much as
+possible?</p>
+<p>Before I discovered this part of Haskell, I had this perception of Haskell (and
+declarative programming more generally) as “imperative programming but less”
+from a practical perspective. I thought that although writing declarative code
+in Python was purely (heh) a matter of discipline, writing imperative code in
+Haskell required completely reconceptualising the algorithm. Thanks to <code>ST</code>, I
+now know that this not the case, which is a huge relief. If required, I can do
+a literal translation of the algorithm, and clean it up (or not) later. In fact
+Haskell is “imperative programming and more”, and that’s awesome!</p>
+<p>Thanks to <a href="http://blog.podsnap.com/">Peter Fraenkel</a>, <a href="https://jvns.ca/">Julia
+Evans</a>, and <a href="http://msteigerwalt.com/">Michelle Steigerwalt</a>
+for feedback.</p>
+<p><em>If you’d rather try to make sense of the <a href="https://github.com/vaibhavsagar/presentations/tree/master/imperative-haskell">set of disconnected
+files</a>
+that constitutes my slides for that presentation, you can do that instead,
+although I wouldn’t recommend it.</em></p>
 
         </div>
         <div id="footer">

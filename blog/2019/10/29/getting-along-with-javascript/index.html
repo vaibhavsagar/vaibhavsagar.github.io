@@ -34,11 +34,36 @@
     
 </div>
 
-<p>For the last couple of weeks, I’ve been obsessed with the idea of running Haskell in the browser. I know this is possible, because this is what I do at work every day, but the applications I work on professionally are complex beasts with Haskell backends and dedicated servers making them available to users. I’m looking for something lighter that I can serve statically using GitHub Pages or <a href="https://glitch.com">Glitch</a>, so I can plop some code on a webpage and never worry about hosting ever again.</p>
-<p>My first instinct was to reach for a tool like <a href="https://github.com/obsidiansystems/obelisk">Obelisk</a>, which bills itself as “an easy way to develop and deploy your Reflex project”. Although it does work as advertised(!), it is geared towards the needs of the large apps I mentioned above. It prerenders webpages where possible to make projects as snappy as possible, works best within the confines of the Obelisk libraries, and assumes at least one NixOS target that will host your website, all of which mean it doesn’t yet scale down to my comparatively modest needs. It is possible to use Obelisk anyway, but I found myself using too few of its features to justify the effort, and I decided to move down a level and use <a href="https://github.com/reflex-frp/reflex-platform">Reflex Platform</a> directly, which is a set of changes and overrides to a revision of <a href="https://github.com/NixOS/nixpkgs">Nixpkgs</a> to best support building full-stack and mobile Haskell applications.</p>
-<p>If you’d like to follow along, I have the code available <a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8">at this gist</a> with <a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/revisions">each revision</a> representing a step in the progression.</p>
+<p>For the last couple of weeks, I’ve been obsessed with the idea of running
+Haskell in the browser. I know this is possible, because this is what I do at
+work every day, but the applications I work on professionally are complex
+beasts with Haskell backends and dedicated servers making them available to
+users. I’m looking for something lighter that I can serve statically using
+GitHub Pages or <a href="https://glitch.com">Glitch</a>, so I can plop some code on a
+webpage and never worry about hosting ever again.</p>
+<p>My first instinct was to reach for a tool like
+<a href="https://github.com/obsidiansystems/obelisk">Obelisk</a>, which bills itself as
+“an easy way to develop and deploy your Reflex project”. Although it does work
+as advertised(!), it is geared towards the needs of the large apps I mentioned
+above. It prerenders webpages where possible to make projects as snappy as
+possible, works best within the confines of the Obelisk libraries, and assumes
+at least one NixOS target that will host your website, all of which mean it
+doesn’t yet scale down to my comparatively modest needs. It is possible to use
+Obelisk anyway, but I found myself using too few of its features to justify the
+effort, and I decided to move down a level and use <a href="https://github.com/reflex-frp/reflex-platform">Reflex
+Platform</a> directly, which is a
+set of changes and overrides to a revision of
+<a href="https://github.com/NixOS/nixpkgs">Nixpkgs</a> to best support building full-stack
+and mobile Haskell applications.</p>
+<p>If you’d like to follow along, I have the code available <a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8">at this
+gist</a>
+with <a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/revisions">each
+revision</a>
+representing a step in the progression.</p>
 <h3 id="setting-up-reflex-platform">Setting up reflex-platform</h3>
-<p>I like to use the <code>updater</code> script described in <a href="../../../../../blog/2018/05/27/quick-easy-nixpkgs-pinning">a previous blog post</a>, so I’ll start by copying that over and creating a <code>versions.json</code> with the following contents:</p>
+<p>I like to use the <code>updater</code> script described in <a href="../../../../../blog/2018/05/27/quick-easy-nixpkgs-pinning">a previous blog
+post</a>, so I’ll start by copying that over and
+creating a <code>versions.json</code> with the following contents:</p>
 <details>
 <summary style="cursor: pointer">
 <code>versions.json</code>
@@ -55,7 +80,8 @@
 </details>
 <p>I can then update this by running:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ./updater versions.json reflex-platform</span></code></pre></div>
-<p>to get the latest <code>reflex-platform</code>. At the time of writing, this is the revision I used:</p>
+<p>to get the latest <code>reflex-platform</code>. At the time of writing, this is the
+revision I used:</p>
 <details>
 <summary style="cursor: pointer">
 pinned <code>versions.json</code>
@@ -75,42 +101,57 @@ pinned <code>versions.json</code>
 <p>The next step is to get a Haskell project skeleton in place. I used <code>cabal init</code> for this as follows:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-shell <span class="at">-p</span> ghc cabal-install <span class="at">--run</span> <span class="st">'cabal init -lBSD3'</span></span></code></pre></div>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/d4c4f9ff39b595f5c8858892328adfa6ab4a4cc8#file-small-viz-cabal">revision</a>)</em></p>
-<p>which generated an executable-only project, just like I wanted. I named this project <code>small-viz</code>, because it’s a small project using the <a href="http://viz-js.com/">Viz.js</a> library, but more on that later.</p>
-<p>The next step is to actually use <code>reflex-platform</code> to develop this project, for which we need to write a little Nix. Here’s the <code>default.nix</code> I used:</p>
+<p>which generated an executable-only project, just like I wanted. I named this
+project <code>small-viz</code>, because it’s a small project using the
+<a href="http://viz-js.com/">Viz.js</a> library, but more on that later.</p>
+<p>The next step is to actually use <code>reflex-platform</code> to develop this project, for
+which we need to write a little Nix. Here’s the <code>default.nix</code> I used:</p>
 <details>
 <summary style="cursor: pointer">
 <code>default.nix</code>
 </summary>
-<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fetcher</span> = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">inherit</span> sha256<span class="kw">;</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">reflex-platform</span> = fetcher <span class="er">(</span><span class="ex">builtins.fromJSON</span> <span class="er">(</span><span class="ex">builtins.readFile</span> ./versions.json<span class="kw">))</span><span class="ex">.reflex-platform</span><span class="kw">;</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="er">in</span> <span class="kw">(</span><span class="ex">import</span> reflex-platform { system = builtins.currentSystem<span class="kw">;</span> <span class="er">}</span><span class="kw">)</span><span class="ex">.project</span> <span class="er">(</span><span class="kw">{</span> <span class="ex">pkgs,</span> ... }: {</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">useWarp</span> = true<span class="kw">;</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="ex">withHoogle</span> = false<span class="kw">;</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="ex">packages</span> = {</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="ex">small-viz</span> = ./.<span class="kw">;</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">};</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="ex">shells</span> = {</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="ex">ghc</span> = [<span class="st">&quot;small-viz&quot;</span>]<span class="kw">;</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="ex">ghcjs</span> = [<span class="st">&quot;small-viz&quot;</span>]<span class="kw">;</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="er">}</span><span class="kw">)</span></span></code></pre></div>
+<pre class="nix"><code>let
+  # ./updater versions.json reflex-platform
+  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
+    inherit sha256;
+    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
+  };
+  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
+in (import reflex-platform { system = builtins.currentSystem; }).project ({ pkgs, ... }: {
+  useWarp = true;
+  withHoogle = false;
+  packages = {
+    small-viz = ./.;
+  };
+  shells = {
+    ghc = [&quot;small-viz&quot;];
+    ghcjs = [&quot;small-viz&quot;];
+  };
+})</code></pre>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/348b759019bc19aec9833a6b5f042c1d2f5e9b13#file-default-nix">revision</a>)</em></p>
-<p>This sets up our project to build with both GHC and GHCJS, because we want to develop with GHC but eventually use GHCJS to create our final artifact. I also set a few more options:</p>
+<p>This sets up our project to build with both GHC and GHCJS, because we want to
+develop with GHC but eventually use GHCJS to create our final artifact. I also
+set a few more options:</p>
 <ol type="1">
-<li><p><code>useWarp = true</code> changes the JSaddle backend to <code>jsaddle-warp</code> so we can develop using the browser, as described <a href="https://github.com/reflex-frp/reflex-platform/blob/8f4b8973a06f78c7aaf1a222f8f8443cd934569f/docs/project-development.md#building-frontends-with-ghc">here</a>.</p></li>
-<li><p><code>withHoogle = false</code> means we don’t build a local Hoogle database every time our packages are updated, because this step is slow and I never used the local documentation anyway.</p></li>
+<li><p><code>useWarp = true</code> changes the JSaddle backend to <code>jsaddle-warp</code> so we can
+develop using the browser, as described
+<a href="https://github.com/reflex-frp/reflex-platform/blob/8f4b8973a06f78c7aaf1a222f8f8443cd934569f/docs/project-development.md#building-frontends-with-ghc">here</a>.</p></li>
+<li><p><code>withHoogle = false</code> means we don’t build a local Hoogle database every time
+our packages are updated, because this step is slow and I never used the
+local documentation anyway.</p></li>
 </ol>
-<p>For the next step I’ll assume binary cache substitution has been set up as described <a href="https://github.com/reflex-frp/reflex-platform/blob/develop/notes/NixOS.md#enabling-the-binary-cache-on-nixos">here</a>:</p>
+<p>For the next step I’ll assume binary cache substitution has been set up as
+described
+<a href="https://github.com/reflex-frp/reflex-platform/blob/develop/notes/NixOS.md#enabling-the-binary-cache-on-nixos">here</a>:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-shell <span class="at">-A</span> shells.ghc</span></code></pre></div>
-<p>This should download a lot (and build almost nothing from source since we are pulling from the cache), and then enter a shell environment with our dependencies in scope.</p>
+<p>This should download a lot (and build almost nothing from source since we are
+pulling from the cache), and then enter a shell environment with our
+dependencies in scope.</p>
 <h3 id="starting-our-reflex-app">Starting our Reflex app</h3>
-<p>Now we can start developing our Reflex app! We can start from the small example described <a href="https://github.com/reflex-frp/reflex-platform/tree/8f4b8973a06f78c7aaf1a222f8f8443cd934569f#dynamics-and-events">here</a>:</p>
+<p>Now we can start developing our Reflex app! We can start from the small example
+described
+<a href="https://github.com/reflex-frp/reflex-platform/tree/8f4b8973a06f78c7aaf1a222f8f8443cd934569f#dynamics-and-events">here</a>:</p>
 <details>
 <summary style="cursor: pointer">
 <code>Main.hs</code>
@@ -123,10 +164,28 @@ pinned <code>versions.json</code>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  dynText <span class="op">$</span> _inputElement_value t</span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/93c510d77f7a8d6b1d8d63bb1cb0be37c6d575b5#file-main-hs">revision</a>)</em></p>
-<p>We also have to add <code>reflex-dom</code> and <code>reflex</code> to our dependencies in our <code>.cabal</code> file, and then we can get a automatically-reloading development build with one command:</p>
+<p>We also have to add <code>reflex-dom</code> and <code>reflex</code> to our dependencies in our
+<code>.cabal</code> file, and then we can get a automatically-reloading development build
+with one command:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-shell <span class="at">-A</span> shells.ghc <span class="at">--run</span> <span class="st">'ghcid -T &quot;Main.main&quot; --command &quot;cabal new-repl&quot;'</span></span></code></pre></div>
-<p>This allows a native Haskell process to control a web page, so we can navigate to it using our browser at <code>http://localhost:3003</code> and have a fast feedback loop. In practice there is a lot of browser refreshing involved, but this is still much nicer than having to do a GHCJS build each time we want to look at our changes. Now we have an input box that repeats what we type into it, which is a good start. I should point out that this works a lot better on Google Chrome (or Chromium) than it does on Firefox, and that’s what I’ll be using for development. The final GHCJS output does not have this limitation.</p>
-<p>So where are we going with this? My plan is to build a crude version of the <a href="http://viz-js.com">Viz.js</a> homepage, where you can write <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> and see it rendered instantly. Viz.js is the result of compiling the venerable <a href="http://graphviz.org/">Graphviz</a> to JavaScript using <a href="https://emscripten.org">Emscripten</a>. It’s no longer maintained but still works fine as far as I can tell. In order to do this I want to use some kind of JavaScript FFI to call out to <code>viz.js</code>, but first I want to swap out our text input for a text area, and move the repeated output to just below the text area instead of beside it.</p>
+<p>This allows a native Haskell process to control a web page, so we can navigate
+to it using our browser at <code>http://localhost:3003</code> and have a fast feedback
+loop. In practice there is a lot of browser refreshing involved, but this is
+still much nicer than having to do a GHCJS build each time we want to look at
+our changes. Now we have an input box that repeats what we type into it, which
+is a good start. I should point out that this works a lot better on Google
+Chrome (or Chromium) than it does on Firefox, and that’s what I’ll be using for
+development. The final GHCJS output does not have this limitation.</p>
+<p>So where are we going with this? My plan is to build a crude version of the
+<a href="http://viz-js.com">Viz.js</a> homepage, where you can write
+<a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> and see
+it rendered instantly. Viz.js is the result of compiling the venerable
+<a href="http://graphviz.org/">Graphviz</a> to JavaScript using
+<a href="https://emscripten.org">Emscripten</a>. It’s no longer maintained but still works
+fine as far as I can tell. In order to do this I want to use some kind of
+JavaScript FFI to call out to <code>viz.js</code>, but first I want to swap out our text
+input for a text area, and move the repeated output to just below the text area
+instead of beside it.</p>
 <details>
 <summary style="cursor: pointer">
 <code>Main.hs</code>
@@ -141,7 +200,9 @@ pinned <code>versions.json</code>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/d5ff4725b26db3dd596abb2e751711f5c568b6bc#file-main-hs">revision</a>)</em></p>
 <h3 id="integrating-with-viz.js">Integrating with Viz.js</h3>
-<p>The latest version of Viz.js is available <a href="https://www.jsdelivr.com/package/npm/viz.js">here</a>, and we can include it using <code>mainWidgetWithHead</code>:</p>
+<p>The latest version of Viz.js is available
+<a href="https://www.jsdelivr.com/package/npm/viz.js">here</a>, and we can include it
+using <code>mainWidgetWithHead</code>:</p>
 <details>
 <summary style="cursor: pointer">
 <code>Main.hs</code>
@@ -161,7 +222,9 @@ pinned <code>versions.json</code>
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    script src <span class="ot">=</span> elAttr <span class="st">&quot;script&quot;</span> (<span class="st">&quot;type&quot;</span> <span class="op">=:</span> <span class="st">&quot;text/javascript&quot;</span> <span class="op">&lt;&gt;</span> <span class="st">&quot;src&quot;</span> <span class="op">=:</span> src) blank</span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/6a856c34755f730793f3b588a82f0fc9f836bf9c#file-main-hs">revision</a>)</em></p>
-<p>Now we can poke around with our browser developer tools until we have a useful JavaScript function. Here’s what I came up with, based on the examples in the <a href="https://github.com/mdaines/viz.js/wiki/Usage#using-a-script-tag">wiki</a>:</p>
+<p>Now we can poke around with our browser developer tools until we have a useful
+JavaScript function. Here’s what I came up with, based on the examples in the
+<a href="https://github.com/mdaines/viz.js/wiki/Usage#using-a-script-tag">wiki</a>:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span>(e<span class="op">,</span> string) {</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> viz <span class="op">=</span> <span class="kw">new</span> <span class="fu">Viz</span>()<span class="op">;</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  viz<span class="op">.</span><span class="fu">renderSVGElement</span>(string)</span>
@@ -172,7 +235,18 @@ pinned <code>versions.json</code>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    e<span class="op">.</span><span class="at">innerHTML</span> <span class="op">=</span> error<span class="op">;</span></span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  })</span>
 <span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>Then we can start thinking about how we want to do JavaScript interop! Although there is a GHCJS FFI as described <a href="https://github.com/ghcjs/ghcjs/wiki/A-few-examples-of-Foreign-Function-Interface">in the wiki</a>, this doesn’t seem to work at all with GHC, and that means we can’t use it during development. I don’t think that’s good enough, and fortunately we don’t have to settle for this and instead can use <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0"><code>jsaddle</code></a>, which describes itself as “an EDSL for calling JavaScript that can be used both from GHCJS and GHC”. We can add <code>jsaddle</code> to our dependencies, add <code>Viz</code> to the <code>exposed-modules</code> stanza in our <code>.cabal</code> file, and create a new module <code>Viz</code>, and then we can use the <code>eval</code> and <code>call</code> functions to call our JavaScript directly:</p>
+<p>Then we can start thinking about how we want to do JavaScript interop! Although
+there is a GHCJS FFI as described <a href="https://github.com/ghcjs/ghcjs/wiki/A-few-examples-of-Foreign-Function-Interface">in the
+wiki</a>,
+this doesn’t seem to work at all with GHC, and that means we can’t use it
+during development. I don’t think that’s good enough, and fortunately we don’t
+have to settle for this and instead can use
+<a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0"><code>jsaddle</code></a>, which
+describes itself as “an EDSL for calling JavaScript that can be used both from
+GHCJS and GHC”. We can add <code>jsaddle</code> to our dependencies, add <code>Viz</code> to the
+<code>exposed-modules</code> stanza in our <code>.cabal</code> file, and create a new module <code>Viz</code>,
+and then we can use the <code>eval</code> and <code>call</code> functions to call our JavaScript
+directly:</p>
 <details>
 <summary style="cursor: pointer">
 <code>Viz.hs</code>
@@ -200,7 +274,10 @@ pinned <code>versions.json</code>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="st">  \})&quot;</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/b234b2649022b1b560df1281f053bac30289ce12#file-viz-hs">revision</a>)</em></p>
-<p>JSaddle runs operations in <code>JSM</code>, which is similar to <code>IO</code>, and all functions take values of type <code>JSVal</code> that can be represented as JavaScript values. We pass <code>vizJs</code> to <code>call</code> twice because the second parameter represents the <code>this</code> keyword.</p>
+<p>JSaddle runs operations in <code>JSM</code>, which is similar to <code>IO</code>, and all functions
+take values of type <code>JSVal</code> that can be represented as JavaScript values. We
+pass <code>vizJs</code> to <code>call</code> twice because the second parameter represents the <code>this</code>
+keyword.</p>
 <p>Wiring everything up together is just a few more lines of code:</p>
 <details>
 <summary style="cursor: pointer">
@@ -227,11 +304,33 @@ pinned <code>versions.json</code>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/e0e886959e338803f9c4a1a3596f8eb88474424d#file-main-hs">revision</a>)</em></p>
 <p>There’s a lot going on here, so I’ll explain in a little more detail.</p>
-<p>Instead of an element which displays the textarea contents as they are updated, we just want a reference to a blank <code>&lt;div&gt;</code>, so we use the <a href="https://hackage.haskell.org/package/reflex-dom-core-0.5/docs/Reflex-Dom-Widget-Basic.html#v:el-39-"><code>el'</code></a> function and pull out the raw element. <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-PerformEvent-Class.html#v:performEvent_"><code>performEvent_</code></a> mediates the interaction between Reflex and side-effecting actions, like our function that updates the DOM with a rendered graph, so we want to use it to render a new graph every time the textarea is updated.</p>
-<p>An introduction to Reflex is out of scope for this blog post, but it’s worth mentioning that the textarea value is represented as a <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Dynamic"><code>Dynamic</code></a>, which can change over time and notify consumers when it has changed. This can be thought of as the combination of a related <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Behavior"><code>Behavior</code></a> and <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Event"><code>Event</code></a>. <code>performEvent_</code> only takes an <code>Event</code>, and we can get the underlying <code>Event</code> out of a <code>Dynamic</code> with <a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#v:updated"><code>updated</code></a>.</p>
-<p><code>ffor</code> is just <code>flip fmap</code>, and we use it to operate on the underlying <code>Text</code> value, convert both it and the reference to the element we want to update to <code>JSVal</code>s, and then pass them as arguments to the <code>viz</code> function we defined earlier. Now we should have a working GraphViz renderer in our browser!</p>
+<p>Instead of an element which displays the textarea contents as they are updated,
+we just want a reference to a blank <code>&lt;div&gt;</code>, so we use the
+<a href="https://hackage.haskell.org/package/reflex-dom-core-0.5/docs/Reflex-Dom-Widget-Basic.html#v:el-39-"><code>el'</code></a>
+function and pull out the raw element.
+<a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-PerformEvent-Class.html#v:performEvent_"><code>performEvent_</code></a>
+mediates the interaction between Reflex and side-effecting actions, like our
+function that updates the DOM with a rendered graph, so we want to use it to
+render a new graph every time the textarea is updated.</p>
+<p>An introduction to Reflex is out of scope for this blog post, but it’s worth
+mentioning that the textarea value is represented as a
+<a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Dynamic"><code>Dynamic</code></a>,
+which can change over time and notify consumers when it has changed. This can
+be thought of as the combination of a related
+<a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Behavior"><code>Behavior</code></a>
+and
+<a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#t:Event"><code>Event</code></a>.
+<code>performEvent_</code> only takes an <code>Event</code>, and we can get the underlying <code>Event</code>
+out of a <code>Dynamic</code> with
+<a href="http://hackage.haskell.org/package/reflex-0.6.2.4/docs/Reflex-Class.html#v:updated"><code>updated</code></a>.</p>
+<p><code>ffor</code> is just <code>flip fmap</code>, and we use it to operate on the underlying <code>Text</code>
+value, convert both it and the reference to the element we want to update to
+<code>JSVal</code>s, and then pass them as arguments to the <code>viz</code> function we defined
+earlier. Now we should have a working GraphViz renderer in our browser!</p>
 <h3 id="using-the-ffi-better">Using the FFI better</h3>
-<p>We could stop here, but I think we can do better than evaluating JavaScript strings directly. JSaddle is an EDSL, which means we can rewrite our JavaScript in Haskell:</p>
+<p>We could stop here, but I think we can do better than evaluating JavaScript
+strings directly. JSaddle is an EDSL, which means we can rewrite our JavaScript
+in Haskell:</p>
 <details>
 <summary style="cursor: pointer">
 <code>Viz.hs</code>
@@ -256,12 +355,17 @@ pinned <code>versions.json</code>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/96e0dbda1ba9dc5712342bf1b123fe5d463201d0#file-viz-hs">revision</a>)</em></p>
 <p>This is recognisably the same logic as before, using some new JSaddle operators:</p>
 <ul>
-<li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-35-"><code>#</code></a> is for calling a JavaScript function</li>
-<li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-33-"><code>!</code></a> is for property access</li>
-<li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-60--35-"><code>&lt;#</code></a> is a setter</li>
+<li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-35-"><code>#</code></a>
+is for calling a JavaScript function</li>
+<li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-33-"><code>!</code></a>
+is for property access</li>
+<li><a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:-60--35-"><code>&lt;#</code></a>
+is a setter</li>
 </ul>
-<p>Note also that all callables take a list of <code>JSVal</code>s as arguments, since JSaddle doesn’t know how many arguments we intend to pass in advance.</p>
-<p>This is an improvement, but we can do even better using the lensy API (after adding <code>lens</code> to our dependencies):</p>
+<p>Note also that all callables take a list of <code>JSVal</code>s as arguments, since
+JSaddle doesn’t know how many arguments we intend to pass in advance.</p>
+<p>This is an improvement, but we can do even better using the lensy API (after
+adding <code>lens</code> to our dependencies):</p>
 <details>
 <summary style="cursor: pointer">
 <code>Viz.hs</code>
@@ -283,13 +387,23 @@ pinned <code>versions.json</code>
 <span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> ()</span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/2ede687d9969666897fb1ca944ed83d239b4386b#file-viz-hs">revision</a>)</em></p>
-<p>Again, not much has changed except that we can use convenience functions like <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:js1"><code>js1</code></a> and <a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:jss"><code>jss</code></a>.</p>
-<p>I’m told that there is some overhead to using JSaddle which it’s possible to get rid of by using a library like <a href="https://hackage.haskell.org/package/ghcjs-dom"><code>ghcjs-dom</code></a>, but I haven’t explored this approach and I will leave this as an exercise for the reader. If you learn how to do this, please teach me!</p>
-<p>Now we are able to run Haskell on the frontend without having to write any JavaScript ourselves. The final step is to put this on the internet somewhere!</p>
+<p>Again, not much has changed except that we can use convenience functions like
+<a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:js1"><code>js1</code></a>
+and
+<a href="http://hackage.haskell.org/package/jsaddle-0.9.6.0/docs/Language-Javascript-JSaddle.html#v:jss"><code>jss</code></a>.</p>
+<p>I’m told that there is some overhead to using JSaddle which it’s possible to
+get rid of by using a library like
+<a href="https://hackage.haskell.org/package/ghcjs-dom"><code>ghcjs-dom</code></a>, but I haven’t
+explored this approach and I will leave this as an exercise for the reader. If
+you learn how to do this, please teach me!</p>
+<p>Now we are able to run Haskell on the frontend without having to write any
+JavaScript ourselves. The final step is to put this on the internet somewhere!</p>
 <h3 id="deploying-our-app">Deploying our app</h3>
 <p>Building with GHCJS is straightforward:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-build <span class="at">-A</span> ghcjs.small-viz</span></code></pre></div>
-<p>I’m enamoured of the idea of deploying this to <a href="https://glitch.com/">Glitch</a>, so let’s look into doing that. The <code>index.html</code> created by the default GHCJS build is unnecessary, and we can simplify it:</p>
+<p>I’m enamoured of the idea of deploying this to <a href="https://glitch.com/">Glitch</a>,
+so let’s look into doing that. The <code>index.html</code> created by the default GHCJS
+build is unnecessary, and we can simplify it:</p>
 <details>
 <summary style="cursor: pointer">
 <code>index.html</code>
@@ -303,79 +417,92 @@ pinned <code>versions.json</code>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;/body&gt;</span></span>
 <span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;/html&gt;</span></span></code></pre></div>
 </details>
-<p>The only JavaScript file that needs to be copied over is then <code>all.js</code>. We can write a <code>glitch.nix</code> file to simplify this process:</p>
+<p>The only JavaScript file that needs to be copied over is then <code>all.js</code>. We can
+write a <code>glitch.nix</code> file to simplify this process:</p>
 <details>
 <summary style="cursor: pointer">
 <code>glitch.nix</code>
 </summary>
-<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fetcher</span> = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">inherit</span> sha256<span class="kw">;</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">reflex-platform</span> = fetcher <span class="er">(</span><span class="ex">builtins.fromJSON</span> <span class="er">(</span><span class="ex">builtins.readFile</span> ./versions.json<span class="kw">))</span><span class="ex">.reflex-platform</span><span class="kw">;</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pkgs</span> = <span class="er">(</span><span class="ex">import</span> reflex-platform {}<span class="kw">)</span><span class="ex">.nixpkgs</span><span class="kw">;</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">project</span> = import ./default.nix<span class="kw">;</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="ex">html</span> = pkgs.writeText <span class="st">&quot;index.html&quot;</span> <span class="st">''</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>!DOCTYPE <span class="ex">html</span><span class="op">&gt;</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>html<span class="op">&gt;</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>head<span class="op">&gt;</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;</span>script <span class="va">language</span><span class="op">=</span><span class="st">&quot;javascript&quot;</span> <span class="va">src</span><span class="op">=</span><span class="st">&quot;all.js&quot;</span><span class="op">&gt;&lt;</span>/script<span class="op">&gt;</span></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>/head<span class="op">&gt;</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>body<span class="op">&gt;</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>/body<span class="op">&gt;</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>/html<span class="op">&gt;</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">''</span><span class="kw">;</span></span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="er">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;glitch&quot;</span> {} <span class="st">''</span></span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$out</span></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> <span class="va">${html}</span> <span class="va">$out</span>/index.html</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> <span class="va">${project</span><span class="er">.ghcjs.small-viz</span><span class="va">}</span>/bin/small-viz.jsexe/all.js <span class="va">$out</span>/all.js</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="st">''</span></span></code></pre></div>
+<pre class="nix"><code>let
+  # ./updater versions.json reflex-platform
+  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
+    inherit sha256;
+    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
+  };
+  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
+  pkgs = (import reflex-platform {}).nixpkgs;
+  project = import ./default.nix;
+  html = pkgs.writeText &quot;index.html&quot; ''
+    &lt;!DOCTYPE html&gt;
+    &lt;html&gt;
+      &lt;head&gt;
+        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  '';
+in pkgs.runCommand &quot;glitch&quot; {} ''
+  mkdir -p $out
+  cp ${html} $out/index.html
+  cp ${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js $out/all.js
+''</code></pre>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/a0127badaee44f316156121153c0e4bc41af9460#file-glitch-nix">revision</a>)</em></p>
 <p>And then produce the files we need to copy over with:</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-build glitch.nix</span></code></pre></div>
-<p>I’ve gone ahead and done this, and it’s up on <a href="https://small-viz.glitch.me/">small-viz.glitch.me/</a>.</p>
-<p>Now that everything’s working, it would be nice to reduce the size of <code>all.js</code>, which is currently over 5MB. Obelisk uses the <a href="https://developers.google.com/closure/compiler">Closure Compiler</a> to minify JavaScript, and we can adapt <a href="https://github.com/obsidiansystems/obelisk/blob/071e2edb92e623b4415fb6deedc4219ad1f829f0/default.nix#L147">what it does</a> and <a href="https://github.com/tomsmalley/marking/blob/a522b8c75a96146883a7e32acf5b17bb5f4abf1b/makefile#L5-L10">another example by Tom Smalley</a> that I found when I was looking into this to update <code>glitch.nix</code>:</p>
+<p>I’ve gone ahead and done this, and it’s up on
+<a href="https://small-viz.glitch.me/">small-viz.glitch.me/</a>.</p>
+<p>Now that everything’s working, it would be nice to reduce the size of <code>all.js</code>,
+which is currently over 5MB. Obelisk uses the <a href="https://developers.google.com/closure/compiler">Closure
+Compiler</a> to minify JavaScript,
+and we can adapt <a href="https://github.com/obsidiansystems/obelisk/blob/071e2edb92e623b4415fb6deedc4219ad1f829f0/default.nix#L147">what it
+does</a>
+and <a href="https://github.com/tomsmalley/marking/blob/a522b8c75a96146883a7e32acf5b17bb5f4abf1b/makefile#L5-L10">another example by Tom
+Smalley</a>
+that I found when I was looking into this to update <code>glitch.nix</code>:</p>
 <details>
 <summary style="cursor: pointer">
 <code>glitch.nix</code>
 </summary>
-<div class="sourceCode" id="cb20"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fetcher</span> = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">inherit</span> sha256<span class="kw">;</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/</span><span class="va">${owner}</span><span class="st">/</span><span class="va">${repo}</span><span class="st">/tarball/</span><span class="va">${rev}</span><span class="st">&quot;</span><span class="kw">;</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">reflex-platform</span> = fetcher <span class="er">(</span><span class="ex">builtins.fromJSON</span> <span class="er">(</span><span class="ex">builtins.readFile</span> ./versions.json<span class="kw">))</span><span class="ex">.reflex-platform</span><span class="kw">;</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pkgs</span> = <span class="er">(</span><span class="ex">import</span> reflex-platform {}<span class="kw">)</span><span class="ex">.nixpkgs</span><span class="kw">;</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">project</span> = import ./default.nix<span class="kw">;</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="ex">html</span> = pkgs.writeText <span class="st">&quot;index.html&quot;</span> <span class="st">''</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>!DOCTYPE <span class="ex">html</span><span class="op">&gt;</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>html<span class="op">&gt;</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>head<span class="op">&gt;</span></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;</span>script <span class="va">language</span><span class="op">=</span><span class="st">&quot;javascript&quot;</span> <span class="va">src</span><span class="op">=</span><span class="st">&quot;all.js&quot;</span><span class="op">&gt;&lt;</span>/script<span class="op">&gt;</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>/head<span class="op">&gt;</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>body<span class="op">&gt;</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span>/body<span class="op">&gt;</span></span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>/html<span class="op">&gt;</span></span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">''</span><span class="kw">;</span></span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="er">in</span> <span class="ex">pkgs.runCommand</span> <span class="st">&quot;glitch&quot;</span> {} <span class="st">''</span></span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$out</span></span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> <span class="va">${html}</span> <span class="va">$out</span>/index.html</span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>  <span class="va">${pkgs</span><span class="er">.closurecompiler</span><span class="va">}</span><span class="ex">/bin/closure-compiler</span> <span class="dt">\</span></span>
-<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">--externs</span><span class="op">=</span><span class="va">${project</span><span class="er">.ghcjs.small-viz</span><span class="va">}</span>/bin/small-viz.jsexe/all.js.externs <span class="dt">\</span></span>
-<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">--jscomp_off</span><span class="op">=</span>checkVars <span class="dt">\</span></span>
-<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">--js_output_file</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$out</span><span class="st">/all.js&quot;</span> <span class="dt">\</span></span>
-<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">-O</span> ADVANCED <span class="dt">\</span></span>
-<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">-W</span> QUIET <span class="dt">\</span></span>
-<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>    <span class="va">${project</span><span class="er">.ghcjs.small-viz</span><span class="va">}</span>/bin/small-viz.jsexe/all.js</span>
-<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a><span class="st">''</span></span></code></pre></div>
+<pre class="nix"><code>let
+  # ./updater versions.json reflex-platform
+  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
+    inherit sha256;
+    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
+  };
+  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
+  pkgs = (import reflex-platform {}).nixpkgs;
+  project = import ./default.nix;
+  html = pkgs.writeText &quot;index.html&quot; ''
+    &lt;!DOCTYPE html&gt;
+    &lt;html&gt;
+      &lt;head&gt;
+        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  '';
+in pkgs.runCommand &quot;glitch&quot; {} ''
+  mkdir -p $out
+  cp ${html} $out/index.html
+  ${pkgs.closurecompiler}/bin/closure-compiler \
+    --externs=${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js.externs \
+    --jscomp_off=checkVars \
+    --js_output_file=&quot;$out/all.js&quot; \
+    -O ADVANCED \
+    -W QUIET \
+    ${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js
+''</code></pre>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/aac5fe1258ccfc8c9b8ca685b9db1a4f538ae183#file-glitch-nix">revision</a>)</em></p>
 <p>And this brings the size down to under 2MB.</p>
-<p><a href="https://github.com/tomsmalley">Tom Smalley</a> points out that there is even a <code>-dedupe</code> flag that GHCJS accepts, and although I couldn’t find good documentation for this (beyond <a href="https://www.reddit.com/r/haskell/comments/54knub/ghcjs_dedupe/">a Reddit post</a>), it does get the filesize down to 1MB:</p>
+<p><a href="https://github.com/tomsmalley">Tom Smalley</a> points out that there is even a
+<code>-dedupe</code> flag that GHCJS accepts, and although I couldn’t find good
+documentation for this (beyond
+<a href="https://www.reddit.com/r/haskell/comments/54knub/ghcjs_dedupe/">a Reddit post</a>), it
+does get the filesize down to 1MB:</p>
 <details>
 <summary style="cursor: pointer">
 <code>small-viz.cabal</code>
@@ -420,8 +547,11 @@ pinned <code>versions.json</code>
 <li>Used the JSaddle FFI idiomatically</li>
 <li>Deployed to Glitch</li>
 </ol>
-<p>and I hope I’ve convinced you to take a closer look at Haskell the next time you want to write something that runs in the browser.</p>
-<p><em>Thanks to <a href="https://github.com/ali-abrar">Ali Abrar</a>, <a href="https://twitter.com/itsfarseen">Farseen Abdul Salam</a>, and <a href="https://github.com/tomsmalley">Tom Smalley</a> for comments and feedback.</em></p>
+<p>and I hope I’ve convinced you to take a closer look at Haskell the next time
+you want to write something that runs in the browser.</p>
+<p><em>Thanks to <a href="https://github.com/ali-abrar">Ali Abrar</a>, <a href="https://twitter.com/itsfarseen">Farseen Abdul
+Salam</a>, and <a href="https://github.com/tomsmalley">Tom
+Smalley</a> for comments and feedback.</em></p>
 
         </div>
         <div id="footer">

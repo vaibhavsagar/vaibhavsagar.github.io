@@ -34,14 +34,22 @@
     
 </div>
 
-<p>I’ve been trying to figure out exactly what I think the best thing about statically-typed purely functional programming, Haskell in particular, is. It’s not laziness or monads, although both are wonderful! My current best answer is that it is a combination of three different features that together encourage simple, maintainable, and robust code:</p>
+<p>I’ve been trying to figure out exactly what I think the best thing about
+statically-typed purely functional programming, Haskell in particular, is. It’s
+not laziness or monads, although both are wonderful! My current best answer is
+that it is a combination of three different features that together encourage
+simple, maintainable, and robust code:</p>
 <ol type="1">
 <li>Pattern matching</li>
 <li>Algebraic data types</li>
 <li>Pure functions</li>
 </ol>
-<p>I like to think of these as analogous to a peanut butter and jelly sandwich (or vegemite on toast, which is really well-buttered toast with only a thin layer of vegemite): pattern matching and algebraic data types pair perfectly, and pure functions are the foundation that they need to be maximally effective.</p>
-<p>What do I mean by this? Allow me to illustrate with some Haskell code for my imaginary tuck shop that sells only Twistys, Grain Waves, and Shapes:</p>
+<p>I like to think of these as analogous to a peanut butter and jelly sandwich (or
+vegemite on toast, which is really well-buttered toast with only a thin layer
+of vegemite): pattern matching and algebraic data types pair perfectly, and
+pure functions are the foundation that they need to be maximally effective.</p>
+<p>What do I mean by this? Allow me to illustrate with some Haskell code for my
+imaginary tuck shop that sells only Twistys, Grain Waves, and Shapes:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Snack</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="dt">Twistys</span> <span class="dt">TwistysFlavour</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">GrainWaves</span> <span class="dt">GrainWavesFlavour</span></span>

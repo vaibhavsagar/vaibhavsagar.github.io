@@ -34,27 +34,46 @@
     
 </div>
 
-<p><em>This blog post is essentially a transcript of <a href="https://www.youtube.com/watch?v=0oo8wIi2qBE">a 10-minute talk I gave at !!Con</a>, the slides for which are available <a href="../../../../../presentations/typed-holes/">here</a>.</em></p>
-<p>Let’s talk about typed holes. What’s a typed hole? A definition I like is <em>“a placeholder for an expression with a known type and an unknown value”</em>.</p>
-<p>Why are typed holes useful? Because they allow the language to help us write programs! To demonstrate, let’s look at some code in Python, a language that lacks this feature.</p>
-<p>Suppose I want to write a function that takes another function and a list and applies the function to each element of that list. A first stab might look like this:</p>
+<p><em>This blog post is essentially a transcript of <a href="https://www.youtube.com/watch?v=0oo8wIi2qBE">a 10-minute talk I gave at
+!!Con</a>, the slides for which are
+available <a href="../../../../../presentations/typed-holes/">here</a>.</em></p>
+<p>Let’s talk about typed holes. What’s a typed hole? A definition I like is <em>“a
+placeholder for an expression with a known type and an unknown value”</em>.</p>
+<p>Why are typed holes useful? Because they allow the language to help us write
+programs! To demonstrate, let’s look at some code in Python, a language that
+lacks this feature.</p>
+<p>Suppose I want to write a function that takes another function and a list and
+applies the function to each element of that list. A first stab might look like
+this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): <span class="cf">return</span> []</span></code></pre></div>
-<p>This is obviously wrong: this function ignores its arguments and gives us an empty list each time. This is no good, but what’s worse is that Python will accept this definition without complaint. It doesn’t seem to know (or care).</p>
-<p>Let’s try again. I hear the way to do things with lists in Python is to use a list comprehension, so I make sure to use one of those this time:</p>
+<p>This is obviously wrong: this function ignores its arguments and gives us an
+empty list each time. This is no good, but what’s worse is that Python will
+accept this definition without complaint. It doesn’t seem to know (or care).</p>
+<p>Let’s try again. I hear the way to do things with lists in Python is to use a
+list comprehension, so I make sure to use one of those this time:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): [f(e) <span class="cf">for</span> e <span class="kw">in</span> ls]</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>...</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> plusOne <span class="op">=</span> <span class="kw">lambda</span> i: i <span class="op">+</span> <span class="dv">1</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(<span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]))</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="va">None</span></span></code></pre></div>
-<p>But this definition is still wrong, because I forgot to put a <code>return</code> statement in! Again, Python will happily accept this.</p>
-<p>I’m getting a bit frustrated at this point, so I look at how <code>map</code> is actually implemented. It uses a generator comprehension instead of a list comprehension, which makes it more general somehow, so I make sure to use that, and I remember to put a <code>return</code> statement in this time:</p>
+<p>But this definition is still wrong, because I forgot to put a <code>return</code>
+statement in! Again, Python will happily accept this.</p>
+<p>I’m getting a bit frustrated at this point, so I look at how <code>map</code> is actually
+implemented. It uses a generator comprehension instead of a list comprehension,
+which makes it more general somehow, so I make sure to use that, and I remember
+to put a <code>return</code> statement in this time:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): <span class="cf">return</span> (f(e) <span class="cf">for</span> e <span class="kw">in</span> ls)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>...</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(<span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]))</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>generator <span class="bu">object</span> <span class="bu">map</span>.<span class="op">&lt;</span><span class="bu">locals</span><span class="op">&gt;</span>.<span class="op">&lt;</span>genexpr<span class="op">&gt;</span> at <span class="bn">0x7ffb92103ca8</span><span class="op">&gt;</span></span></code></pre></div>
-<p>And now instead of giving me something useful, this function gives me an address in memory, which seems especially pointless.</p>
-<p>I give up. This example seems contrived, but over the course of my relationship with Python, which is more than a decade long now, I’ve seen the same dynamic play out embarrassingly many times. How do I write programs that work? Surely this is a simple question with a straightforward answer.</p>
-<p>Indeed, the most common response I get when I ask this question is to write tests. That sounds reasonable, so let’s do that:</p>
+<p>And now instead of giving me something useful, this function gives me an
+address in memory, which seems especially pointless.</p>
+<p>I give up. This example seems contrived, but over the course of my relationship
+with Python, which is more than a decade long now, I’ve seen the same dynamic
+play out embarrassingly many times. How do I write programs that work? Surely
+this is a simple question with a straightforward answer.</p>
+<p>Indeed, the most common response I get when I ask this question is to write
+tests. That sounds reasonable, so let’s do that:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls):</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>...     <span class="bu">print</span>(<span class="st">&quot;Where are your tests now?&quot;</span>)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>...     <span class="cf">return</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
@@ -63,14 +82,30 @@
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>Where are your tests now?</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="va">True</span></span></code></pre></div>
 <p>Okay, my test passes, so everything must be good, right?</p>
-<p>I contend that tests are necessary, but not sufficient. They are problematic for at least two reasons:</p>
+<p>I contend that tests are necessary, but not sufficient. They are problematic
+for at least two reasons:</p>
 <ol type="1">
-<li>They are only as good as the specification they imply for how a program should behave. If that specification is incomplete or wrong, no amount of tests will guarantee software that works.</li>
-<li>The language doesn’t understand tests, by which I mean that it’s extremely difficult to automatically go from a failing test to the part of the code where the error lives. The programmer has to do the legwork of tracking down the bug based on essentially one bit of information in many cases.</li>
+<li>They are only as good as the specification they imply for how a program
+should behave. If that specification is incomplete or wrong, no amount of
+tests will guarantee software that works.</li>
+<li>The language doesn’t understand tests, by which I mean that it’s extremely
+difficult to automatically go from a failing test to the part of the code
+where the error lives. The programmer has to do the legwork of tracking down
+the bug based on essentially one bit of information in many cases.</li>
 </ol>
-<p>Fortunately, tests aren’t the only specification of how a program should behave. Types can also serve as specifications, and they have the advantage that they are extremely well integrated into the language in a way tests usually are not.</p>
-<p>What does this mean in practice? Let’s look at Haskell. Haskell is statically typed, which means it expects to know the types of all the expressions in your program at compile time. This is nothing special though, lots of other languages also claim to be statically typed. What is special about Haskell though is that it has type inference, which means that you don’t have to annotate expressions with their types most of the time because the compiler can figure it out. If you put these two features together, you get typed holes!</p>
-<p>Let’s try to write that same program in Haskell with typed holes. To start, let’s create a file called <code>Main.hs</code> with the following contents:</p>
+<p>Fortunately, tests aren’t the only specification of how a program should
+behave. Types can also serve as specifications, and they have the advantage
+that they are extremely well integrated into the language in a way tests
+usually are not.</p>
+<p>What does this mean in practice? Let’s look at Haskell. Haskell is statically
+typed, which means it expects to know the types of all the expressions in your
+program at compile time. This is nothing special though, lots of other
+languages also claim to be statically typed. What is special about Haskell
+though is that it has type inference, which means that you don’t have to
+annotate expressions with their types most of the time because the compiler can
+figure it out. If you put these two features together, you get typed holes!</p>
+<p>Let’s try to write that same program in Haskell with typed holes. To start,
+let’s create a file called <code>Main.hs</code> with the following contents:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span>
@@ -81,7 +116,10 @@
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="fu">print</span> ((<span class="fu">map</span> plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="op">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>To automate the cycle of loading this file into GHCi every time we make a change, we’re going to use <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a>, which does essentially that and not much else. This is the result of running <code>ghcid Main.hs</code>:</p>
+<p>To automate the cycle of loading this file into GHCi every time we make a
+change, we’re going to use <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a>,
+which does essentially that and not much else. This is the result of running
+<code>ghcid Main.hs</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Main.hs:4:12: error:</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    • Found hole: _ :: [b]</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>      Where: ‘b’ is a rigid type variable bound by</span>
@@ -97,8 +135,15 @@
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  |</span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>4 | map f ls = _</span>
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  |            ^</span></code></pre></div>
-<p>I’d suggest ignoring the middle and instead focusing on the top, which tells us the type of the hole, and the bottom, which tells us which bindings are in scope that we can use to fill in the hole.</p>
-<p>In this case we aren’t learning anything new, and we already know that the hole is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most promising, and we can split it into one of two cases: an empty list, or some element and the rest of the list. We can put a typed hole on the right hand side of each case alternative:</p>
+<p>I’d suggest ignoring the middle and instead focusing on the top, which tells us
+the type of the hole, and the bottom, which tells us which bindings are in
+scope that we can use to fill in the hole.</p>
+<p>In this case we aren’t learning anything new, and we already know that the hole
+is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees
+with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most
+promising, and we can split it into one of two cases: an empty list, or some
+element and the rest of the list. We can put a typed hole on the right hand
+side of each case alternative:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span>
@@ -154,7 +199,10 @@
 <span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>  |</span>
 <span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>6 |     x:xs -&gt; _2</span>
 <span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>  |             ^^</span></code></pre></div>
-<p>We haven’t learned anything new about the types, but we can make progress another way. The only sensible thing to put on the right hand side when given an empty list is another empty list, and after splitting a list apart the most reasonable thing to do is to combine two other things into a new list:</p>
+<p>We haven’t learned anything new about the types, but we can make progress
+another way. The only sensible thing to put on the right hand side when given
+an empty list is another empty list, and after splitting a list apart the most
+reasonable thing to do is to combine two other things into a new list:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span>
@@ -206,7 +254,10 @@
 <span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>  |</span>
 <span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>6 |     x:xs -&gt; _1:_2</span>
 <span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>  |                ^^</span></code></pre></div>
-<p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>, and we see that the most reasonable way to get a value of this type is to recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
+<p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value
+of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>,
+and we see that the most reasonable way to get a value of this type is to
+recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span>
@@ -224,8 +275,10 @@
 <p>It compiles! But does it work?</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> runhaskell Main.hs</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">True</span></span></code></pre></div>
-<p>Fantastic! We were able to ask the compiler for hints and get useful answers back. This is a gigantic improvement over anything I’m aware of in Python land.</p>
-<p>Unfortunately, there is a catch: this program is too easy to break. Let me demonstrate my favourite way:</p>
+<p>Fantastic! We were able to ask the compiler for hints and get useful answers
+back. This is a gigantic improvement over anything I’m aware of in Python land.</p>
+<p>Unfortunately, there is a catch: this program is too easy to break. Let me
+demonstrate my favourite way:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (map)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span>
@@ -236,12 +289,20 @@
 <span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
 <span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="fu">print</span> ((<span class="fu">map</span> plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="op">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>The astute reader will notice that this is the Haskell equivalent of the obviously broken Python program we started with. Here is what <code>ghcid</code> has to say:</p>
+<p>The astute reader will notice that this is the Haskell equivalent of the
+obviously broken Python program we started with. Here is what <code>ghcid</code> has to
+say:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>All good (1 module, at &lt;time&gt;)</span></code></pre></div>
-<p>So what’s going on here? It turns out an empty list is a valid list of any type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
-<p>One way of avoiding this class of incorrect program is to specify that the input and the output lists should be of the same length. It’s possible to do this in Haskell, but it is a lot of work. Can we do better?</p>
+<p>So what’s going on here? It turns out an empty list is a valid list of any
+type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
+<p>One way of avoiding this class of incorrect program is to specify that the
+input and the output lists should be of the same length. It’s possible to do
+this in Haskell, but it is a lot of work. Can we do better?</p>
 <p>Enter Idris.</p>
-<p>Idris is a functional programming language with a more sophisticated type system than Haskell’s. Unfortunately it trades off some type inference to achieve this, so it’s not strictly better than Haskell in every way. It has excellent built-in editor support, and therefore has fancier typed holes!</p>
+<p>Idris is a functional programming language with a more sophisticated type
+system than Haskell’s. Unfortunately it trades off some type inference to
+achieve this, so it’s not strictly better than Haskell in every way. It has
+excellent built-in editor support, and therefore has fancier typed holes!</p>
 <p>Let’s try to implement <code>map</code> again:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
@@ -258,7 +319,11 @@
 <span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
 <span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>Instead of implementing <code>map</code> on lists, we’ll use a more interesting type called <code>Vect</code> which is essentially a list that knows about its length. A <code>Vect</code> can either be <code>Nil</code> of length <code>0</code> or an element on the front of another <code>Vect</code> of some length <code>length</code> giving us a new <code>Vect</code> of length <code>length + 1</code>. I’ve also gone ahead defined equality on these <code>Vect</code>s because I use it in <code>main</code>.</p>
+<p>Instead of implementing <code>map</code> on lists, we’ll use a more interesting type
+called <code>Vect</code> which is essentially a list that knows about its length. A <code>Vect</code>
+can either be <code>Nil</code> of length <code>0</code> or an element on the front of another <code>Vect</code>
+of some length <code>length</code> giving us a new <code>Vect</code> of length <code>length + 1</code>. I’ve
+also gone ahead defined equality on these <code>Vect</code>s because I use it in <code>main</code>.</p>
 <p>Loading the file into the Idris REPL gives us access to the editor integration:</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> idris Main.idr</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>     <span class="ex">____</span>    __     _</span>
@@ -272,7 +337,8 @@
 <span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="ex">Type</span> checking ./Main.idr</span>
 <span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="ex">Holes:</span> Main.map</span>
 <span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="ex">*Main</span><span class="op">&gt;</span></span></code></pre></div>
-<p>In vim, I can use <code>&lt;localleader&gt;d</code> with the cursor on <code>map</code> to fill in a skeleton definition:</p>
+<p>In vim, I can use <code>&lt;localleader&gt;d</code> with the cursor on <code>map</code> to fill in a
+skeleton definition:</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
@@ -289,7 +355,8 @@
 <span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
 <span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>Using <code>&lt;localleader&gt;t</code> with the cursor on the typed hole provides a type for us:</p>
+<p>Using <code>&lt;localleader&gt;t</code> with the cursor on the typed hole provides a type for
+us:</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>  b : Type</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  a : Type</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  f : a -&gt; b</span>
@@ -297,7 +364,8 @@
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  x : Vect length a</span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>--------------------------------------</span>
 <span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>map_rhs : Vect length b</span></code></pre></div>
-<p>But we don’t need to go down this route. We can make Idris do a case-split for us with <code>&lt;localleader&gt;c</code> with the cursor on <code>x</code>:</p>
+<p>But we don’t need to go down this route. We can make Idris do a case-split for
+us with <code>&lt;localleader&gt;c</code> with the cursor on <code>x</code>:</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
@@ -315,7 +383,11 @@
 <span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
 <span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>Again, as with our Haskell example, the only sensible output when the input is an empty <code>Vect</code> is another empty <code>Vect</code>. We think so, but what does Idris think? It has a nifty feature called “proof search” that can search the space of all possible programs that fit and choose the first one. We can use this with <code>&lt;localleader&gt;o</code> (‘o’ is for obvious):</p>
+<p>Again, as with our Haskell example, the only sensible output when the input is
+an empty <code>Vect</code> is another empty <code>Vect</code>. We think so, but what does Idris
+think? It has a nifty feature called “proof search” that can search the space
+of all possible programs that fit and choose the first one. We can use this
+with <code>&lt;localleader&gt;o</code> (‘o’ is for obvious):</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
@@ -333,7 +405,8 @@
 <span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
 <span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>And we get the result we expect. This works for the simple case, but does it work for the more complex one?</p>
+<p>And we get the result we expect. This works for the simple case, but does it
+work for the more complex one?</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
@@ -393,9 +466,26 @@
 <span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>Holes: Main.map</span></code></pre></div>
 <p>We get a useful and informative error message.</p>
-<p>And we’ve done it! You can download and use these languages today. When using other languages with static types, I always felt that they existed merely as busywork and I essentially had to shove them down the compiler’s throat in order to get it to accept my program, and I feel the opposite way about these languages. In other words, types are friends, not food! They can help you design your program, write that program, and even debug it if necessary.</p>
-<p>One aspect of programming that always bothered me was my perception of the compiler (or interpreter) as some sort of gatekeeper whose job was to dismiss my program until it met some arbitrary standard. Even worse, I would find myself writing a program that passed but was subtly incorrect, and I would iterate on this process, writing a series of subtly incorrect programs without any guidance from my tools. Discovering typed holes and the style of programming they enable has shown me a different approach, where I can open up a dialogue with my language and collaborate on writing a program whose correctness I am more confident of.</p>
-<p>That’s all I have to say about typed holes, but there’s recently been interesting work on untyped holes that I would like to mention briefly. Suppose you like the idea of holes but not the idea of types, or you work in a language that isn’t statically typed and you want some of these benefits. What you could do is:</p>
+<p>And we’ve done it! You can download and use these languages today. When using
+other languages with static types, I always felt that they existed merely as
+busywork and I essentially had to shove them down the compiler’s throat in
+order to get it to accept my program, and I feel the opposite way about these
+languages. In other words, types are friends, not food! They can help you
+design your program, write that program, and even debug it if necessary.</p>
+<p>One aspect of programming that always bothered me was my perception of the
+compiler (or interpreter) as some sort of gatekeeper whose job was to dismiss
+my program until it met some arbitrary standard. Even worse, I would find
+myself writing a program that passed but was subtly incorrect, and I would
+iterate on this process, writing a series of subtly incorrect programs without
+any guidance from my tools. Discovering typed holes and the style of
+programming they enable has shown me a different approach, where I can open up
+a dialogue with my language and collaborate on writing a program whose
+correctness I am more confident of.</p>
+<p>That’s all I have to say about typed holes, but there’s recently been
+interesting work on untyped holes that I would like to mention briefly. Suppose
+you like the idea of holes but not the idea of types, or you work in a language
+that isn’t statically typed and you want some of these benefits. What you could
+do is:</p>
 <ol type="1">
 <li>Write a program with gaps where you’re unsure what should happen (we’ll call this a <em>sketch</em>)</li>
 <li>Write some test cases that the correct program should satisfy</li>
@@ -403,10 +493,26 @@
 <li>???</li>
 <li>Profit!!!</li>
 </ol>
-<p>The solver churns through the space of all prossible programs and picks the one that passes the tests, giving us the correct program we wanted!</p>
-<p>This sounds great in theory, so why aren’t we doing this yet? There is (predictably) a catch, which is that this is still a research topic for now. You can read <a href="https://people.csail.mit.edu/asolar/papers/thesis.pdf">Armando Solar-Lezama’s PhD thesis on this</a>, and systems like <a href="http://comcom.csail.mit.edu/comcom/#Synquid">Synquid</a> and <a href="https://github.com/webyrd/Barliman">Barliman</a> demonstrate the current state of the art. I think it’s especially interesting that Synquid has both typed and untyped holes, which suggests to me that it is the most promising approach.</p>
-<p>I’ll leave you with some resources about typed holes, particularly Conor McBride’s presentations at <a href="https://www.youtube.com/watch?v=3U3lV5VPmOU">YOW! Lambda Jam</a> and <a href="https://skillsmatter.com/skillscasts/8893-is-a-type-a-lifebuoy-or-a-lamp">Haskell eXchange</a> that are rich with insight. There’s also <a href="https://www.shimweasel.com/2015/02/17/typed-holes-for-beginners">a tutorial by Mark Wotton</a>, and finally <a href="http://hazel.org/">Hazel</a>, which is a live functional programming environment with typed holes!</p>
-<p>I hope I’ve encouraged you to try this style of programming for yourself. There’s never been a better time to do it.</p>
+<p>The solver churns through the space of all prossible programs and picks the one
+that passes the tests, giving us the correct program we wanted!</p>
+<p>This sounds great in theory, so why aren’t we doing this yet? There is
+(predictably) a catch, which is that this is still a research topic for now.
+You can read <a href="https://people.csail.mit.edu/asolar/papers/thesis.pdf">Armando Solar-Lezama’s PhD thesis on
+this</a>, and systems like
+<a href="http://comcom.csail.mit.edu/comcom/#Synquid">Synquid</a> and
+<a href="https://github.com/webyrd/Barliman">Barliman</a> demonstrate the current state of
+the art. I think it’s especially interesting that Synquid has both typed and
+untyped holes, which suggests to me that it is the most promising approach.</p>
+<p>I’ll leave you with some resources about typed holes, particularly Conor
+McBride’s presentations at <a href="https://www.youtube.com/watch?v=3U3lV5VPmOU">YOW! Lambda
+Jam</a> and <a href="https://skillsmatter.com/skillscasts/8893-is-a-type-a-lifebuoy-or-a-lamp">Haskell
+eXchange</a>
+that are rich with insight. There’s also <a href="https://www.shimweasel.com/2015/02/17/typed-holes-for-beginners">a tutorial by Mark
+Wotton</a>, and
+finally <a href="http://hazel.org/">Hazel</a>, which is a live functional programming
+environment with typed holes!</p>
+<p>I hope I’ve encouraged you to try this style of programming for yourself.
+There’s never been a better time to do it.</p>
 
         </div>
         <div id="footer">
