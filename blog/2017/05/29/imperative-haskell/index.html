@@ -45,75 +45,75 @@ I would like to cover that are difficult within that time limit.</em></p>
 1</a> (which has now
 been replaced by two smaller courses) and attempting to do all the exercises in
 Haskell when I bumped up against an uncomfortable truth. Haskell’s ‘quicksort’:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>qsort []     <span class="ot">=</span> []</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>qsort (x<span class="op">:</span>xs) <span class="ot">=</span> lt <span class="op">++</span> [x] <span class="op">++</span> gt</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> lt <span class="ot">=</span> qsort [e <span class="op">|</span> e <span class="ot">&lt;-</span> xs, e <span class="op">&lt;</span>  x]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>          gt <span class="ot">=</span> qsort [e <span class="op">|</span> e <span class="ot">&lt;-</span> xs, e <span class="op">&gt;=</span> x]</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">qsort</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>     </span><span class="ot">=</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
+</span><span class="va">qsort</span><span> </span><span class="ot">(</span><span class="va">x</span><span class="ot">:</span><span class="va">xs</span><span class="ot">)</span><span> </span><span class="ot">=</span><span> </span><span class="va">lt</span><span> </span><span class="op">++</span><span> </span><span class="ot">[</span><span class="va">x</span><span class="ot">]</span><span> </span><span class="op">++</span><span> </span><span class="va">gt</span><span>
+    </span><span class="kw">where</span><span> </span><span class="va">lt</span><span> </span><span class="ot">=</span><span> </span><span class="va">qsort</span><span> </span><span class="ot">[</span><span class="va">e</span><span> </span><span class="ot">|</span><span> </span><span class="va">e</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">xs</span><span class="ot">,</span><span> </span><span class="va">e</span><span> </span><span class="op">&lt;</span><span>  </span><span class="va">x</span><span class="ot">]</span><span>
+          </span><span class="va">gt</span><span> </span><span class="ot">=</span><span> </span><span class="va">qsort</span><span> </span><span class="ot">[</span><span class="va">e</span><span> </span><span class="ot">|</span><span> </span><span class="va">e</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">xs</span><span class="ot">,</span><span> </span><span class="va">e</span><span> </span><span class="op">&gt;=</span><span> </span><span class="va">x</span><span class="ot">]</span></code></pre></div>
 <p>isn’t a true quicksort! Specifically, it doesn’t sort the elements in place,
 and the assignment I was working on involved counting the number of
 comparisons, so I couldn’t get away with my fake quicksort. With my tail
 between my legs, I gave up on my pure Haskell approach and implemented a
 solution in Python:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sys.setrecursionlimit(<span class="dv">10000</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> partition_first(array, l, r):</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> array[l]</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    i <span class="op">=</span> l <span class="op">+</span> <span class="dv">1</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(l<span class="op">+</span><span class="dv">1</span>, r):</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> array[j] <span class="op">&lt;</span> p:</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>            array[j], array[i] <span class="op">=</span> array[i], array[j]</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>            i <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    array[l], array[i<span class="op">-</span><span class="dv">1</span>] <span class="op">=</span> array[i<span class="op">-</span><span class="dv">1</span>], array[l]</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (i<span class="op">-</span><span class="dv">1</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> partition_last(array, l, r):</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    array[r<span class="op">-</span><span class="dv">1</span>], array[l] <span class="op">=</span> array[l], array[r<span class="op">-</span><span class="dv">1</span>]</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> partition_first(array, l, r)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> partition_median(array, l, r):</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    p_idx <span class="op">=</span> choose_median(array, l, r)</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    array[p_idx], array[l] <span class="op">=</span> array[l], array[p_idx]</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> partition_first(array, l, r)</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> choose_median(array, l, r):</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    head <span class="op">=</span> array[l]</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    last <span class="op">=</span> array[r<span class="op">-</span><span class="dv">1</span>]</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    length <span class="op">=</span> r<span class="op">-</span>l</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> length <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        mid_idx <span class="op">=</span> l <span class="op">+</span> (length<span class="op">//</span><span class="dv">2</span>) <span class="op">-</span> <span class="dv">1</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        mid_idx <span class="op">=</span> l <span class="op">+</span> (length<span class="op">//</span><span class="dv">2</span>)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    mid <span class="op">=</span> array[mid_idx]</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    options <span class="op">=</span> [(l, head), (mid_idx, mid), (r<span class="op">-</span><span class="dv">1</span>, last)]</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    options.remove(<span class="bu">max</span>(options, key<span class="op">=</span><span class="kw">lambda</span> v: v[<span class="dv">1</span>]))</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    options.remove(<span class="bu">min</span>(options, key<span class="op">=</span><span class="kw">lambda</span> v: v[<span class="dv">1</span>]))</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> options[<span class="dv">0</span>][<span class="dv">0</span>]</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> quicksort(array, start, end, partition):</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> comparisons</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> end<span class="op">&lt;=</span>start: <span class="cf">return</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>        p_idx <span class="op">=</span> partition(array, start, end)</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>        comparisons <span class="op">+=</span> (end<span class="op">-</span>start<span class="op">-</span><span class="dv">1</span>)</span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>        quicksort(array, start, p_idx, partition)</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>        quicksort(array, p_idx<span class="op">+</span><span class="dv">1</span>, end, partition)</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>comparisons <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>inp1 <span class="op">=</span> contents.copy()</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>quicksort(inp1, <span class="dv">0</span>, <span class="bu">len</span>(inp1), partition_first)</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>comparisons <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>inp2 <span class="op">=</span> contents.copy()</span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>quicksort(inp2, <span class="dv">0</span>, <span class="bu">len</span>(inp2), partition_last)</span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>comparisons <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>inp3 <span class="op">=</span> contents.copy()</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>quicksort(inp3, <span class="dv">0</span>, <span class="bu">len</span>(inp3), partition_median)</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.setrecursionlimit(<span class="dv">10000</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> partition_first(array, l, r):</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> array[l]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    i <span class="op">=</span> l <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(l<span class="op">+</span><span class="dv">1</span>, r):</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> array[j] <span class="op">&lt;</span> p:</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            array[j], array[i] <span class="op">=</span> array[i], array[j]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>            i <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    array[l], array[i<span class="op">-</span><span class="dv">1</span>] <span class="op">=</span> array[i<span class="op">-</span><span class="dv">1</span>], array[l]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (i<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> partition_last(array, l, r):</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    array[r<span class="op">-</span><span class="dv">1</span>], array[l] <span class="op">=</span> array[l], array[r<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> partition_first(array, l, r)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> partition_median(array, l, r):</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    p_idx <span class="op">=</span> choose_median(array, l, r)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    array[p_idx], array[l] <span class="op">=</span> array[l], array[p_idx]</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> partition_first(array, l, r)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> choose_median(array, l, r):</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    head <span class="op">=</span> array[l]</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    last <span class="op">=</span> array[r<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    length <span class="op">=</span> r<span class="op">-</span>l</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> length <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        mid_idx <span class="op">=</span> l <span class="op">+</span> (length<span class="op">//</span><span class="dv">2</span>) <span class="op">-</span> <span class="dv">1</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        mid_idx <span class="op">=</span> l <span class="op">+</span> (length<span class="op">//</span><span class="dv">2</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    mid <span class="op">=</span> array[mid_idx]</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    options <span class="op">=</span> [(l, head), (mid_idx, mid), (r<span class="op">-</span><span class="dv">1</span>, last)]</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    options.remove(<span class="bu">max</span>(options, key<span class="op">=</span><span class="kw">lambda</span> v: v[<span class="dv">1</span>]))</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    options.remove(<span class="bu">min</span>(options, key<span class="op">=</span><span class="kw">lambda</span> v: v[<span class="dv">1</span>]))</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> options[<span class="dv">0</span>][<span class="dv">0</span>]</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> quicksort(array, start, end, partition):</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> comparisons</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> end<span class="op">&lt;=</span>start: <span class="cf">return</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>        p_idx <span class="op">=</span> partition(array, start, end)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>        comparisons <span class="op">+=</span> (end<span class="op">-</span>start<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>        quicksort(array, start, p_idx, partition)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>        quicksort(array, p_idx<span class="op">+</span><span class="dv">1</span>, end, partition)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>comparisons <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>inp1 <span class="op">=</span> contents.copy()</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>quicksort(inp1, <span class="dv">0</span>, <span class="bu">len</span>(inp1), partition_first)</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>comparisons <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>inp2 <span class="op">=</span> contents.copy()</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>quicksort(inp2, <span class="dv">0</span>, <span class="bu">len</span>(inp2), partition_last)</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>comparisons <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>inp3 <span class="op">=</span> contents.copy()</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>quicksort(inp3, <span class="dv">0</span>, <span class="bu">len</span>(inp3), partition_median)</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparisons)</span></code></pre></div>
 <p>This implementation is not particularly Pythonic: note the recursion limit and
 the use of a global variable. I actually forgot to reset the variable to 0
 between iterations, which was fun to track down. But it works!</p>
@@ -145,68 +145,68 @@ descriptions for <code>Control.Monad.ST</code>:</p>
 <p>Code utilising these libraries can look very familiar to people used to
 imperative languages, e.g. past me. Here’s the above quicksort rewritten in
 Haskell:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE RankNTypes #-}</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.STRef</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Vector</span> (fromList, toList, freeze, thaw)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, write, swap)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Vector</span> <span class="kw">as</span> <span class="dt">V</span> (<span class="dt">Vector</span>, length)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.List</span> (sortOn)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span> (read)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>vector <span class="ot">=</span> fromList contents</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>partitionFirst array l r <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    p <span class="ot">&lt;-</span> <span class="fu">read</span> array l</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> newSTRef (l<span class="op">+</span><span class="dv">1</span>)</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    forM_ [l<span class="op">+</span><span class="dv">1</span><span class="op">..</span>(r<span class="op">-</span><span class="dv">1</span>)] <span class="op">$</span> \j <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        arrayJ <span class="ot">&lt;-</span> <span class="fu">read</span> array j</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        i'     <span class="ot">&lt;-</span> readSTRef i</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        when (arrayJ <span class="op">&lt;</span> p) <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>            swap array i' j</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>            modifySTRef' i (<span class="op">+</span><span class="dv">1</span>)</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    i' <span class="ot">&lt;-</span> readSTRef i</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    swap array (i'<span class="op">-</span><span class="dv">1</span>) l</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> (i'<span class="op">-</span><span class="dv">1</span>)</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>partitionLast array l r <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    swap array (r<span class="op">-</span><span class="dv">1</span>) l</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    partitionFirst array l r</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>partitionMedian array l r <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    p <span class="ot">&lt;-</span> chooseMedian array l r</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    swap array p l</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    partitionFirst array l r</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>chooseMedian array l r <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    h <span class="ot">&lt;-</span> <span class="fu">read</span> array l</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>    t <span class="ot">&lt;-</span> <span class="fu">read</span> array (r<span class="op">-</span><span class="dv">1</span>)</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> len <span class="ot">=</span> r<span class="op">-</span>l</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> mid <span class="ot">=</span> <span class="kw">if</span> (len <span class="ot">`mod`</span> <span class="dv">2</span>) <span class="op">==</span> <span class="dv">0</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>        <span class="kw">then</span> l <span class="op">+</span> (len <span class="ot">`div`</span> <span class="dv">2</span>) <span class="op">-</span> <span class="dv">1</span></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>        <span class="kw">else</span> l <span class="op">+</span> (len <span class="ot">`div`</span> <span class="dv">2</span>)</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">read</span> array mid</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> options <span class="ot">=</span> sortOn <span class="fu">snd</span> [(l, h), (mid, m), (r<span class="op">-</span><span class="dv">1</span>, t)]</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> (<span class="fu">fst</span> (options <span class="op">!!</span> <span class="dv">1</span>))</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>quicksort array start end partition comparisons <span class="ot">=</span> when (start <span class="op">&lt;</span> end) <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> partition array start end</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    modifySTRef' comparisons (<span class="op">+</span> (end<span class="op">-</span>start<span class="op">-</span><span class="dv">1</span>))</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    quicksort array start i   partition comparisons</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    quicksort array (i<span class="op">+</span><span class="dv">1</span>) end partition comparisons</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="ot">quicksort' ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> <span class="dt">V.Vector</span> a <span class="ot">-&gt;</span> (<span class="kw">forall</span> s a<span class="op">.</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> <span class="dt">STVector</span> s a <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>quicksort' vector partition <span class="ot">=</span> runST <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>    array  <span class="ot">&lt;-</span> thaw vector</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>    comps  <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>    quicksort array <span class="dv">0</span> (V.length vector) partition comps</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>    readSTRef comps</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>quicksort' vector partitionFirst</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>quicksort' vector partitionLast</span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>quicksort' vector partitionMedian</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="pp">{-# LANGUAGE RankNTypes #-}</span><span>
+
+</span><span class="kw">import</span><span> </span><span class="dt">Control.Monad.ST</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Data.STRef</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Data.Vector</span><span> </span><span class="ot">(</span><span class="va">fromList</span><span class="ot">,</span><span> </span><span class="va">toList</span><span class="ot">,</span><span> </span><span class="va">freeze</span><span class="ot">,</span><span> </span><span class="va">thaw</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Control.Monad</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Data.Vector.Mutable</span><span> </span><span class="ot">(</span><span class="dt">STVector</span><span class="ot">,</span><span> </span><span class="va">read</span><span class="ot">,</span><span> </span><span class="va">write</span><span class="ot">,</span><span> </span><span class="va">swap</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Data.Vector</span><span> </span><span class="kw">as</span><span> </span><span class="dt">V</span><span> </span><span class="ot">(</span><span class="dt">Vector</span><span class="ot">,</span><span> </span><span class="va">length</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Data.List</span><span> </span><span class="ot">(</span><span class="va">sortOn</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span> </span><span class="ot">(</span><span class="va">read</span><span class="ot">)</span><span>
+
+</span><span class="va">vector</span><span> </span><span class="ot">=</span><span> </span><span class="va">fromList</span><span> </span><span class="va">contents</span><span>
+
+</span><span class="va">partitionFirst</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">p</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span>
+    </span><span class="va">i</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">newSTRef</span><span> </span><span class="ot">(</span><span class="va">l</span><span class="op">+</span><span class="dv">1</span><span class="ot">)</span><span>
+    </span><span class="va">forM_</span><span> </span><span class="ot">[</span><span class="va">l</span><span class="op">+</span><span class="dv">1</span><span class="ot">..</span><span class="ot">(</span><span class="va">r</span><span class="op">-</span><span class="dv">1</span><span class="ot">)</span><span class="ot">]</span><span> </span><span class="op">$</span><span> </span><span class="ot">\</span><span class="va">j</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="kw">do</span><span>
+        </span><span class="va">arrayJ</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">array</span><span> </span><span class="va">j</span><span>
+        </span><span class="va">i'</span><span>     </span><span class="ot">&lt;-</span><span> </span><span class="va">readSTRef</span><span> </span><span class="va">i</span><span>
+        </span><span class="va">when</span><span> </span><span class="ot">(</span><span class="va">arrayJ</span><span> </span><span class="op">&lt;</span><span> </span><span class="va">p</span><span class="ot">)</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
+            </span><span class="va">swap</span><span> </span><span class="va">array</span><span> </span><span class="va">i'</span><span> </span><span class="va">j</span><span>
+            </span><span class="va">modifySTRef'</span><span> </span><span class="va">i</span><span> </span><span class="ot">(</span><span class="op">+</span><span class="dv">1</span><span class="ot">)</span><span>
+    </span><span class="va">i'</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">readSTRef</span><span> </span><span class="va">i</span><span>
+    </span><span class="va">swap</span><span> </span><span class="va">array</span><span> </span><span class="ot">(</span><span class="va">i'</span><span class="op">-</span><span class="dv">1</span><span class="ot">)</span><span> </span><span class="va">l</span><span>
+    </span><span class="va">return</span><span> </span><span class="ot">(</span><span class="va">i'</span><span class="op">-</span><span class="dv">1</span><span class="ot">)</span><span>
+
+</span><span class="va">partitionLast</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">swap</span><span> </span><span class="va">array</span><span> </span><span class="ot">(</span><span class="va">r</span><span class="op">-</span><span class="dv">1</span><span class="ot">)</span><span> </span><span class="va">l</span><span>
+    </span><span class="va">partitionFirst</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span>
+
+</span><span class="va">partitionMedian</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">p</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">chooseMedian</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span>
+    </span><span class="va">swap</span><span> </span><span class="va">array</span><span> </span><span class="va">p</span><span> </span><span class="va">l</span><span>
+    </span><span class="va">partitionFirst</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span>
+
+</span><span class="va">chooseMedian</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span> </span><span class="va">r</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">h</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">array</span><span> </span><span class="va">l</span><span>
+    </span><span class="va">t</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">array</span><span> </span><span class="ot">(</span><span class="va">r</span><span class="op">-</span><span class="dv">1</span><span class="ot">)</span><span>
+    </span><span class="kw">let</span><span> </span><span class="va">len</span><span> </span><span class="ot">=</span><span> </span><span class="va">r</span><span class="op">-</span><span class="va">l</span><span>
+    </span><span class="kw">let</span><span> </span><span class="va">mid</span><span> </span><span class="ot">=</span><span> </span><span class="kw">if</span><span> </span><span class="ot">(</span><span class="va">len</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">2</span><span class="ot">)</span><span> </span><span class="op">==</span><span> </span><span class="dv">0</span><span>
+        </span><span class="kw">then</span><span> </span><span class="va">l</span><span> </span><span class="op">+</span><span> </span><span class="ot">(</span><span class="va">len</span><span> </span><span class="ot">`</span><span class="va">div</span><span class="ot">`</span><span> </span><span class="dv">2</span><span class="ot">)</span><span> </span><span class="op">-</span><span> </span><span class="dv">1</span><span>
+        </span><span class="kw">else</span><span> </span><span class="va">l</span><span> </span><span class="op">+</span><span> </span><span class="ot">(</span><span class="va">len</span><span> </span><span class="ot">`</span><span class="va">div</span><span class="ot">`</span><span> </span><span class="dv">2</span><span class="ot">)</span><span>
+    </span><span class="va">m</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">array</span><span> </span><span class="va">mid</span><span>
+    </span><span class="kw">let</span><span> </span><span class="va">options</span><span> </span><span class="ot">=</span><span> </span><span class="va">sortOn</span><span> </span><span class="va">snd</span><span> </span><span class="ot">[</span><span class="ot">(</span><span class="va">l</span><span class="ot">,</span><span> </span><span class="va">h</span><span class="ot">)</span><span class="ot">,</span><span> </span><span class="ot">(</span><span class="va">mid</span><span class="ot">,</span><span> </span><span class="va">m</span><span class="ot">)</span><span class="ot">,</span><span> </span><span class="ot">(</span><span class="va">r</span><span class="op">-</span><span class="dv">1</span><span class="ot">,</span><span> </span><span class="va">t</span><span class="ot">)</span><span class="ot">]</span><span>
+    </span><span class="va">return</span><span> </span><span class="ot">(</span><span class="va">fst</span><span> </span><span class="ot">(</span><span class="va">options</span><span> </span><span class="op">!!</span><span> </span><span class="dv">1</span><span class="ot">)</span><span class="ot">)</span><span>
+
+</span><span class="va">quicksort</span><span> </span><span class="va">array</span><span> </span><span class="va">start</span><span> </span><span class="va">end</span><span> </span><span class="va">partition</span><span> </span><span class="va">comparisons</span><span> </span><span class="ot">=</span><span> </span><span class="va">when</span><span> </span><span class="ot">(</span><span class="va">start</span><span> </span><span class="op">&lt;</span><span> </span><span class="va">end</span><span class="ot">)</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">i</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">partition</span><span> </span><span class="va">array</span><span> </span><span class="va">start</span><span> </span><span class="va">end</span><span>
+    </span><span class="va">modifySTRef'</span><span> </span><span class="va">comparisons</span><span> </span><span class="ot">(</span><span class="op">+</span><span> </span><span class="ot">(</span><span class="va">end</span><span class="op">-</span><span class="va">start</span><span class="op">-</span><span class="dv">1</span><span class="ot">)</span><span class="ot">)</span><span>
+    </span><span class="va">quicksort</span><span> </span><span class="va">array</span><span> </span><span class="va">start</span><span> </span><span class="va">i</span><span>   </span><span class="va">partition</span><span> </span><span class="va">comparisons</span><span>
+    </span><span class="va">quicksort</span><span> </span><span class="va">array</span><span> </span><span class="ot">(</span><span class="va">i</span><span class="op">+</span><span class="dv">1</span><span class="ot">)</span><span> </span><span class="va">end</span><span> </span><span class="va">partition</span><span> </span><span class="va">comparisons</span><span>
+
+</span><span class="va">quicksort'</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Ord</span><span> </span><span class="va">a</span><span> </span><span class="ot">=&gt;</span><span> </span><span class="dt">V.Vector</span><span> </span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">(</span><span class="kw">forall</span><span> </span><span class="va">s</span><span> </span><span class="va">a</span><span class="op">.</span><span> </span><span class="ot">(</span><span class="dt">Ord</span><span> </span><span class="va">a</span><span class="ot">)</span><span> </span><span class="ot">=&gt;</span><span> </span><span class="dt">STVector</span><span> </span><span class="va">s</span><span> </span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">ST</span><span> </span><span class="va">s</span><span> </span><span class="dt">Int</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span>
+</span><span class="va">quicksort'</span><span> </span><span class="va">vector</span><span> </span><span class="va">partition</span><span> </span><span class="ot">=</span><span> </span><span class="va">runST</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">array</span><span>  </span><span class="ot">&lt;-</span><span> </span><span class="va">thaw</span><span> </span><span class="va">vector</span><span>
+    </span><span class="va">comps</span><span>  </span><span class="ot">&lt;-</span><span> </span><span class="va">newSTRef</span><span> </span><span class="dv">0</span><span>
+    </span><span class="va">quicksort</span><span> </span><span class="va">array</span><span> </span><span class="dv">0</span><span> </span><span class="ot">(</span><span class="va">V.length</span><span> </span><span class="va">vector</span><span class="ot">)</span><span> </span><span class="va">partition</span><span> </span><span class="va">comps</span><span>
+    </span><span class="va">readSTRef</span><span> </span><span class="va">comps</span><span>
+
+</span><span class="va">quicksort'</span><span> </span><span class="va">vector</span><span> </span><span class="va">partitionFirst</span><span>
+</span><span class="va">quicksort'</span><span> </span><span class="va">vector</span><span> </span><span class="va">partitionLast</span><span>
+</span><span class="va">quicksort'</span><span> </span><span class="va">vector</span><span> </span><span class="va">partitionMedian</span></code></pre></div>
 <p>This is roughly the same length as the Python implementation, and even improves
 on it in some ways: no recursion limit fiddling and no global variables.</p>
 <p>If we can write Haskell that resembles Python, and Python is executable
@@ -215,109 +215,109 @@ Haskell? Let’s take a look at another problem.</p>
 <p>I needed to calculate the size of the strongly connected components of a graph
 for another assignment, and I decided to use Tarjan’s Strongly Connected
 Components algorithm. The pseudocode for that (as taken from Wikipedia) is:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode noweb"><code class="sourceCode noweb"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a> algorithm tarjan is</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  input: graph G = (V, E)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  output: set of strongly connected components (sets of vertices)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  index := 0</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  S := empty array</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  for each v in V do</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    if (v.index is undefined) then</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>      strongconnect(v)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    end if</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  end for</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  function strongconnect(v)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    // Set the depth index for v to the smallest unused index</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    v.index := index</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    v.lowlink := index</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    index := index + 1</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    S.push(v)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    v.onStack := true</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    // Consider successors of v</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    for each (v, w) in E do</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>      if (w.index is undefined) then</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        // Successor w has not yet been visited; recurse on it</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        strongconnect(w)</span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        v.lowlink  := min(v.lowlink, w.lowlink)</span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>      else if (w.onStack) then</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        // Successor w is in stack S and hence in the current SCC</span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        // Note: The next line may look odd - but is correct.</span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>        // It says w.index not w.lowlink; that is deliberate and from the original paper</span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>        v.lowlink  := min(v.lowlink, w.index)</span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>      end if</span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    end for</span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    // If v is a root node, pop the stack and generate an SCC</span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    if (v.lowlink = v.index) then</span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>      start a new strongly connected component</span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>      repeat</span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>        w := S.pop()</span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>        w.onStack := false</span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>        add w to current strongly connected component</span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>      while (w != v)</span>
-<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>      output the current strongly connected component</span>
-<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    end if</span>
-<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>  end function</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode noweb"><code class="sourceCode noweb"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a> algorithm tarjan is</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  input: graph G = (V, E)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  output: set of strongly connected components (sets of vertices)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  index := 0</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  S := empty array</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  for each v in V do</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    if (v.index is undefined) then</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      strongconnect(v)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    end if</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  end for</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  function strongconnect(v)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    // Set the depth index for v to the smallest unused index</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    v.index := index</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    v.lowlink := index</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    index := index + 1</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    S.push(v)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    v.onStack := true</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    // Consider successors of v</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    for each (v, w) in E do</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>      if (w.index is undefined) then</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        // Successor w has not yet been visited; recurse on it</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        strongconnect(w)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        v.lowlink  := min(v.lowlink, w.lowlink)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>      else if (w.onStack) then</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        // Successor w is in stack S and hence in the current SCC</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        // Note: The next line may look odd - but is correct.</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        // It says w.index not w.lowlink; that is deliberate and from the original paper</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        v.lowlink  := min(v.lowlink, w.index)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>      end if</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    end for</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    // If v is a root node, pop the stack and generate an SCC</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    if (v.lowlink = v.index) then</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>      start a new strongly connected component</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>      repeat</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        w := S.pop()</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>        w.onStack := false</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>        add w to current strongly connected component</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>      while (w != v)</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>      output the current strongly connected component</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    end if</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  end function</span></code></pre></div>
 <p>and here’s what that looks like in Haskell:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Array</span> <span class="kw">as</span> <span class="dt">A</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Graph</span> <span class="kw">as</span> <span class="dt">G</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span>       (forM_, when)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad.ST</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.STRef</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Vector.Mutable</span> (<span class="dt">STVector</span>, read, replicate, write)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span> <span class="kw">hiding</span>      (read, replicate)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>tarjan graph <span class="ot">=</span> runST <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">index</span>    <span class="ot">&lt;-</span> newSTRef <span class="dv">0</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    stack    <span class="ot">&lt;-</span> newSTRef []</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    stackSet <span class="ot">&lt;-</span> <span class="fu">replicate</span> size <span class="dt">False</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    indices  <span class="ot">&lt;-</span> <span class="fu">replicate</span> size <span class="dt">Nothing</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    lowlinks <span class="ot">&lt;-</span> <span class="fu">replicate</span> size <span class="dt">Nothing</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    output   <span class="ot">&lt;-</span> newSTRef []</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    forM_ (G.vertices graph) <span class="op">$</span> \v <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        vIndex <span class="ot">&lt;-</span> <span class="fu">read</span> indices v</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        when (vIndex <span class="op">==</span> <span class="dt">Nothing</span>) <span class="op">$</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>            strongConnect v graph <span class="fu">index</span> stack stackSet indices lowlinks output</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">reverse</span> <span class="op">&lt;$&gt;</span> readSTRef output</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> size <span class="ot">=</span> <span class="fu">snd</span> (A.bounds graph) <span class="op">+</span> <span class="dv">1</span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>strongConnect v graph <span class="fu">index</span> stack stackSet indices lowlinks output <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> readSTRef <span class="fu">index</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    write indices  v (<span class="dt">Just</span> i)</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    write lowlinks v (<span class="dt">Just</span> i)</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    modifySTRef' <span class="fu">index</span> (<span class="op">+</span><span class="dv">1</span>)</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    push v</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    forM_ (graph <span class="op">A.!</span> v) <span class="op">$</span> \w <span class="ot">-&gt;</span> <span class="fu">read</span> indices w <span class="op">&gt;&gt;=</span> \found <span class="ot">-&gt;</span> <span class="kw">case</span> found <span class="kw">of</span></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>            strongConnect w graph <span class="fu">index</span> stack stackSet indices lowlinks output</span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>            write lowlinks v <span class="op">=&lt;&lt;</span> (<span class="fu">min</span> <span class="op">&lt;$&gt;</span> <span class="fu">read</span> lowlinks v <span class="op">&lt;*&gt;</span> <span class="fu">read</span> lowlinks w)</span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span>{}  <span class="ot">-&gt;</span> <span class="fu">read</span> stackSet w <span class="op">&gt;&gt;=</span> \wOnStack <span class="ot">-&gt;</span> when wOnStack <span class="op">$</span></span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>            write lowlinks v <span class="op">=&lt;&lt;</span> (<span class="fu">min</span> <span class="op">&lt;$&gt;</span> <span class="fu">read</span> lowlinks v <span class="op">&lt;*&gt;</span> <span class="fu">read</span> indices  w)</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    vLowLink <span class="ot">&lt;-</span> <span class="fu">read</span> lowlinks v</span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>    vIndex   <span class="ot">&lt;-</span> <span class="fu">read</span> indices  v</span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    when (vLowLink <span class="op">==</span> vIndex) <span class="op">$</span> modifySTRef' output <span class="op">.</span> (<span class="op">:</span>) <span class="op">=&lt;&lt;</span> addSCC v []</span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>        addSCC v scc <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>            w <span class="ot">&lt;-</span> pop</span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>            <span class="kw">let</span> scc' <span class="ot">=</span> w<span class="op">:</span>scc</span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> w <span class="op">==</span> v <span class="kw">then</span> <span class="fu">return</span> scc' <span class="kw">else</span> addSCC v scc'</span>
-<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>        push e <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>            modifySTRef' stack (e<span class="op">:</span>)</span>
-<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>            write stackSet e <span class="dt">True</span></span>
-<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>        pop <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>            e <span class="ot">&lt;-</span> <span class="fu">head</span> <span class="op">&lt;$&gt;</span> readSTRef stack</span>
-<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>            modifySTRef' stack <span class="fu">tail</span></span>
-<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>            write stackSet e <span class="dt">False</span></span>
-<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>            <span class="fu">return</span> e</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Data.Array</span><span> </span><span class="kw">as</span><span> </span><span class="dt">A</span><span>
+</span><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Data.Graph</span><span> </span><span class="kw">as</span><span> </span><span class="dt">G</span><span>
+
+</span><span class="kw">import</span><span> </span><span class="dt">Control.Monad</span><span>       </span><span class="ot">(</span><span class="va">forM_</span><span class="ot">,</span><span> </span><span class="va">when</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Control.Monad.ST</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Data.STRef</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Data.Vector.Mutable</span><span> </span><span class="ot">(</span><span class="dt">STVector</span><span class="ot">,</span><span> </span><span class="va">read</span><span class="ot">,</span><span> </span><span class="va">replicate</span><span class="ot">,</span><span> </span><span class="va">write</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span>      </span><span class="ot">(</span><span class="va">read</span><span class="ot">,</span><span> </span><span class="va">replicate</span><span class="ot">)</span><span>
+
+</span><span class="va">tarjan</span><span> </span><span class="va">graph</span><span> </span><span class="ot">=</span><span> </span><span class="va">runST</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">index</span><span>    </span><span class="ot">&lt;-</span><span> </span><span class="va">newSTRef</span><span> </span><span class="dv">0</span><span>
+    </span><span class="va">stack</span><span>    </span><span class="ot">&lt;-</span><span> </span><span class="va">newSTRef</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
+    </span><span class="va">stackSet</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">replicate</span><span> </span><span class="va">size</span><span> </span><span class="dt">False</span><span>
+    </span><span class="va">indices</span><span>  </span><span class="ot">&lt;-</span><span> </span><span class="va">replicate</span><span> </span><span class="va">size</span><span> </span><span class="dt">Nothing</span><span>
+    </span><span class="va">lowlinks</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">replicate</span><span> </span><span class="va">size</span><span> </span><span class="dt">Nothing</span><span>
+    </span><span class="va">output</span><span>   </span><span class="ot">&lt;-</span><span> </span><span class="va">newSTRef</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
+
+    </span><span class="va">forM_</span><span> </span><span class="ot">(</span><span class="va">G.vertices</span><span> </span><span class="va">graph</span><span class="ot">)</span><span> </span><span class="op">$</span><span> </span><span class="ot">\</span><span class="va">v</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="kw">do</span><span>
+        </span><span class="va">vIndex</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">indices</span><span> </span><span class="va">v</span><span>
+        </span><span class="va">when</span><span> </span><span class="ot">(</span><span class="va">vIndex</span><span> </span><span class="op">==</span><span> </span><span class="dt">Nothing</span><span class="ot">)</span><span> </span><span class="op">$</span><span>
+            </span><span class="va">strongConnect</span><span> </span><span class="va">v</span><span> </span><span class="va">graph</span><span> </span><span class="va">index</span><span> </span><span class="va">stack</span><span> </span><span class="va">stackSet</span><span> </span><span class="va">indices</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">output</span><span>
+
+    </span><span class="va">reverse</span><span> </span><span class="op">&lt;$&gt;</span><span> </span><span class="va">readSTRef</span><span> </span><span class="va">output</span><span>
+    </span><span class="kw">where</span><span> </span><span class="va">size</span><span> </span><span class="ot">=</span><span> </span><span class="va">snd</span><span> </span><span class="ot">(</span><span class="va">A.bounds</span><span> </span><span class="va">graph</span><span class="ot">)</span><span> </span><span class="op">+</span><span> </span><span class="dv">1</span><span>
+
+</span><span class="va">strongConnect</span><span> </span><span class="va">v</span><span> </span><span class="va">graph</span><span> </span><span class="va">index</span><span> </span><span class="va">stack</span><span> </span><span class="va">stackSet</span><span> </span><span class="va">indices</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">output</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">i</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">readSTRef</span><span> </span><span class="va">index</span><span>
+    </span><span class="va">write</span><span> </span><span class="va">indices</span><span>  </span><span class="va">v</span><span> </span><span class="ot">(</span><span class="dt">Just</span><span> </span><span class="va">i</span><span class="ot">)</span><span>
+    </span><span class="va">write</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">v</span><span> </span><span class="ot">(</span><span class="dt">Just</span><span> </span><span class="va">i</span><span class="ot">)</span><span>
+    </span><span class="va">modifySTRef'</span><span> </span><span class="va">index</span><span> </span><span class="ot">(</span><span class="op">+</span><span class="dv">1</span><span class="ot">)</span><span>
+    </span><span class="va">push</span><span> </span><span class="va">v</span><span>
+
+    </span><span class="va">forM_</span><span> </span><span class="ot">(</span><span class="va">graph</span><span> </span><span class="op">A.!</span><span> </span><span class="va">v</span><span class="ot">)</span><span> </span><span class="op">$</span><span> </span><span class="ot">\</span><span class="va">w</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">read</span><span> </span><span class="va">indices</span><span> </span><span class="va">w</span><span> </span><span class="op">&gt;&gt;=</span><span> </span><span class="ot">\</span><span class="va">found</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="kw">case</span><span> </span><span class="va">found</span><span> </span><span class="kw">of</span><span>
+        </span><span class="dt">Nothing</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="kw">do</span><span>
+            </span><span class="va">strongConnect</span><span> </span><span class="va">w</span><span> </span><span class="va">graph</span><span> </span><span class="va">index</span><span> </span><span class="va">stack</span><span> </span><span class="va">stackSet</span><span> </span><span class="va">indices</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">output</span><span>
+            </span><span class="va">write</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">v</span><span> </span><span class="op">=&lt;&lt;</span><span> </span><span class="ot">(</span><span class="va">min</span><span> </span><span class="op">&lt;$&gt;</span><span> </span><span class="va">read</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">v</span><span> </span><span class="op">&lt;*&gt;</span><span> </span><span class="va">read</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">w</span><span class="ot">)</span><span>
+        </span><span class="dt">Just</span><span class="ot">{</span><span class="ot">}</span><span>  </span><span class="ot">-&gt;</span><span> </span><span class="va">read</span><span> </span><span class="va">stackSet</span><span> </span><span class="va">w</span><span> </span><span class="op">&gt;&gt;=</span><span> </span><span class="ot">\</span><span class="va">wOnStack</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">when</span><span> </span><span class="va">wOnStack</span><span> </span><span class="op">$</span><span>
+            </span><span class="va">write</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">v</span><span> </span><span class="op">=&lt;&lt;</span><span> </span><span class="ot">(</span><span class="va">min</span><span> </span><span class="op">&lt;$&gt;</span><span> </span><span class="va">read</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">v</span><span> </span><span class="op">&lt;*&gt;</span><span> </span><span class="va">read</span><span> </span><span class="va">indices</span><span>  </span><span class="va">w</span><span class="ot">)</span><span>
+
+    </span><span class="va">vLowLink</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">lowlinks</span><span> </span><span class="va">v</span><span>
+    </span><span class="va">vIndex</span><span>   </span><span class="ot">&lt;-</span><span> </span><span class="va">read</span><span> </span><span class="va">indices</span><span>  </span><span class="va">v</span><span>
+    </span><span class="va">when</span><span> </span><span class="ot">(</span><span class="va">vLowLink</span><span> </span><span class="op">==</span><span> </span><span class="va">vIndex</span><span class="ot">)</span><span> </span><span class="op">$</span><span> </span><span class="va">modifySTRef'</span><span> </span><span class="va">output</span><span> </span><span class="op">.</span><span> </span><span class="ot">(</span><span class="ot">:</span><span class="ot">)</span><span> </span><span class="op">=&lt;&lt;</span><span> </span><span class="va">addSCC</span><span> </span><span class="va">v</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
+    </span><span class="kw">where</span><span>
+        </span><span class="va">addSCC</span><span> </span><span class="va">v</span><span> </span><span class="va">scc</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+            </span><span class="va">w</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">pop</span><span>
+            </span><span class="kw">let</span><span> </span><span class="va">scc'</span><span> </span><span class="ot">=</span><span> </span><span class="va">w</span><span class="ot">:</span><span class="va">scc</span><span>
+            </span><span class="kw">if</span><span> </span><span class="va">w</span><span> </span><span class="op">==</span><span> </span><span class="va">v</span><span> </span><span class="kw">then</span><span> </span><span class="va">return</span><span> </span><span class="va">scc'</span><span> </span><span class="kw">else</span><span> </span><span class="va">addSCC</span><span> </span><span class="va">v</span><span> </span><span class="va">scc'</span><span>
+
+        </span><span class="va">push</span><span> </span><span class="va">e</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+            </span><span class="va">modifySTRef'</span><span> </span><span class="va">stack</span><span> </span><span class="ot">(</span><span class="va">e</span><span class="ot">:</span><span class="ot">)</span><span>
+            </span><span class="va">write</span><span> </span><span class="va">stackSet</span><span> </span><span class="va">e</span><span> </span><span class="dt">True</span><span>
+
+        </span><span class="va">pop</span><span> </span><span class="ot">=</span><span> </span><span class="kw">do</span><span>
+            </span><span class="va">e</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">head</span><span> </span><span class="op">&lt;$&gt;</span><span> </span><span class="va">readSTRef</span><span> </span><span class="va">stack</span><span>
+            </span><span class="va">modifySTRef'</span><span> </span><span class="va">stack</span><span> </span><span class="va">tail</span><span>
+            </span><span class="va">write</span><span> </span><span class="va">stackSet</span><span> </span><span class="va">e</span><span> </span><span class="dt">False</span><span>
+            </span><span class="va">return</span><span> </span><span class="va">e</span></code></pre></div>
 <p>Aside from explicitly declaring our variables and passing them around, I think
 this looks pretty close.</p>
 <p>How do we square this with Haskell’s reputation for purity and referential

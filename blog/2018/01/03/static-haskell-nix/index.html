@@ -61,50 +61,50 @@ hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environ
 <code>cabal</code> is more familiar with.</p>
 <p>Let’s put it through its paces by building a simple Scotty web app:</p>
 <p><em>blank-me-up.cabal</em></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>name<span class="op">:</span>                blank<span class="op">-</span>me<span class="op">-</span>up</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>version<span class="op">:</span>             <span class="fl">0.1</span><span class="op">.</span><span class="fl">0.0</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>license<span class="op">:</span>             <span class="dt">BSD3</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>build<span class="op">-</span><span class="kw">type</span><span class="op">:</span>          <span class="dt">Simple</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>cabal<span class="op">-</span>version<span class="op">:</span>       <span class="op">&gt;=</span><span class="fl">1.10</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>executable blank<span class="op">-</span>me<span class="op">-</span>up</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  main<span class="op">-</span>is<span class="op">:</span>             Main.hs</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  build<span class="op">-</span>depends<span class="op">:</span>       base <span class="op">&gt;=</span><span class="fl">4.9</span> <span class="op">&amp;&amp;</span> <span class="op">&lt;</span><span class="dv">5</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                     , scotty</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  default<span class="op">-</span>language<span class="op">:</span>    <span class="dt">Haskell2010</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">name</span><span class="ot">:</span><span>                </span><span class="va">blank</span><span class="op">-</span><span class="va">me</span><span class="op">-</span><span class="va">up</span><span>
+</span><span class="va">version</span><span class="ot">:</span><span>             </span><span class="dv">0.1</span><span class="op">.</span><span class="dv">0.0</span><span>
+</span><span class="va">license</span><span class="ot">:</span><span>             </span><span class="dt">BSD3</span><span>
+</span><span class="va">build</span><span class="op">-</span><span class="kw">type</span><span class="ot">:</span><span>          </span><span class="dt">Simple</span><span>
+</span><span class="va">cabal</span><span class="op">-</span><span class="va">version</span><span class="ot">:</span><span>       </span><span class="op">&gt;=</span><span class="dv">1.10</span><span>
+
+</span><span class="va">executable</span><span> </span><span class="va">blank</span><span class="op">-</span><span class="va">me</span><span class="op">-</span><span class="va">up</span><span>
+  </span><span class="va">main</span><span class="op">-</span><span class="va">is</span><span class="ot">:</span><span>             </span><span class="va">Main.hs</span><span>
+  </span><span class="va">build</span><span class="op">-</span><span class="va">depends</span><span class="ot">:</span><span>       </span><span class="va">base</span><span> </span><span class="op">&gt;=</span><span class="dv">4.9</span><span> </span><span class="op">&amp;&amp;</span><span> </span><span class="op">&lt;</span><span class="dv">5</span><span>
+                     </span><span class="ot">,</span><span> </span><span class="va">scotty</span><span>
+  </span><span class="kw">default</span><span class="op">-</span><span class="va">language</span><span class="ot">:</span><span>    </span><span class="dt">Haskell2010</span></code></pre></div>
 <p><em>Main.hs</em></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a> <span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Web.Scotty</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Monoid</span> (mconcat)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> scotty <span class="dv">3000</span> <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    get <span class="st">&quot;/:word&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        beam <span class="ot">&lt;-</span> param <span class="st">&quot;word&quot;</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        html <span class="op">$</span> <span class="fu">mconcat</span> [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span> </span><span class="pp">{-# LANGUAGE OverloadedStrings #-}</span><span>
+
+</span><span class="kw">import</span><span> </span><span class="dt">Web.Scotty</span><span>
+
+</span><span class="kw">import</span><span> </span><span class="dt">Data.Monoid</span><span> </span><span class="ot">(</span><span class="va">mconcat</span><span class="ot">)</span><span>
+
+</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">scotty</span><span> </span><span class="dv">3000</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
+    </span><span class="va">get</span><span> </span><span class="st">&quot;/:word&quot;</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
+        </span><span class="va">beam</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">param</span><span> </span><span class="st">&quot;word&quot;</span><span>
+        </span><span class="va">html</span><span> </span><span class="op">$</span><span> </span><span class="va">mconcat</span><span> </span><span class="ot">[</span><span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span><span class="ot">,</span><span> </span><span class="va">beam</span><span class="ot">,</span><span> </span><span class="st">&quot; me up!&lt;/h1&gt;&quot;</span><span class="ot">]</span></code></pre></div>
 <p>We create <code>static.nix</code>:</p>
 <p><em>static.nix</em></p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{};</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.buildFHSUserEnv <span class="op">{</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;fhs&quot;</span><span class="op">;</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">targetPkgs</span> <span class="op">=</span> <span class="va">pkgs</span><span class="op">:</span> <span class="op">[</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.haskellPackages.ghcWithPackages <span class="op">(</span><span class="va">p</span><span class="op">:</span> <span class="kw">with</span> p<span class="op">;</span> <span class="op">[</span> cabal-install <span class="op">]))</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    pkgs.gmp5.static</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    pkgs.glibc.static</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.static</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.dev</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">];</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{};</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.buildFHSUserEnv <span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;fhs&quot;</span><span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">targetPkgs</span> <span class="op">=</span> <span class="va">pkgs</span><span class="op">:</span> <span class="op">[</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.haskellPackages.ghcWithPackages <span class="op">(</span><span class="va">p</span><span class="op">:</span> <span class="kw">with</span> p<span class="op">;</span> <span class="op">[</span> cabal-install <span class="op">]))</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    pkgs.gmp5.static</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    pkgs.glibc.static</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.static</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.dev</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">];</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This defines a chroot where statically linked versions of <code>gmp</code>, <code>glibc</code>, and
 <code>zlib</code> are available, as well as <code>zlib.h</code>. We enter this environment by running</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> <span class="va">$(</span><span class="ex">nix-build</span> static.nix<span class="va">)</span>/bin/fhs</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> <span class="va">$(</span><span class="ex">nix-build</span> static.nix<span class="va">)</span>/bin/fhs</span></code></pre></div>
 <p>and then we can run the commands above with only slight modifications:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal update</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal install <span class="at">--only-dependencies</span> <span class="at">--extra-include-dirs</span><span class="op">=</span>/usr/include <span class="at">--extra-lib-dirs</span><span class="op">=</span>/usr/lib</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal configure <span class="at">--disable-executable-dynamic</span> <span class="at">--disable-shared</span> <span class="at">--ghc-option</span><span class="op">=</span>-optl=-pthread <span class="at">--ghc-option</span><span class="op">=</span>-optl=-static <span class="at">--ghc-option</span><span class="op">=</span>-optl=-L/usr/lib</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal build</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal update</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal install <span class="at">--only-dependencies</span> <span class="at">--extra-include-dirs</span><span class="op">=</span>/usr/include <span class="at">--extra-lib-dirs</span><span class="op">=</span>/usr/lib</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal configure <span class="at">--disable-executable-dynamic</span> <span class="at">--disable-shared</span> <span class="at">--ghc-option</span><span class="op">=</span>-optl=-pthread <span class="at">--ghc-option</span><span class="op">=</span>-optl=-static <span class="at">--ghc-option</span><span class="op">=</span>-optl=-L/usr/lib</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal build</span></code></pre></div>
 <p>The difference is the extra options passed to the linker. After the last
 command, I get a whole bunch of warnings about</p>
 <pre><code>&quot;Using '&lt;function&gt;' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking&quot;</code></pre>
@@ -113,8 +113,8 @@ executables to a machine that might be running a different version of <code>glib
 A more robust solution is to link against e.g. <code>musl</code> instead of <code>glibc</code>, as
 Niklas Hambüchen has done <a href="https://github.com/nh2/static-haskell-nix">here</a>.
 You can confirm that the executable has been statically linked by running</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ldd dist/build/blank-me-up/blank-me-up</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>        <span class="ex">not</span> a dynamic executable</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ldd dist/build/blank-me-up/blank-me-up</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>        <span class="ex">not</span> a dynamic executable</span></code></pre></div>
 <p>I’ve made this project available
 <a href="https://github.com/vaibhavsagar/experiments/tree/master/static-haskell-nix">here</a>
 if you’d like to tweak it. Since this was relatively straightforward, I think
@@ -122,18 +122,18 @@ it might be possible to do this without <code>buildFHSUserEnv</code>. Maybe I wi
 that next.</p>
 <p>Happy static linking!</p>
 <p><strong>Edit 1:</strong> This turned out to be fairly easy. I took the output of</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal2nix <span class="at">--shell</span> . <span class="op">&gt;</span> default.nix</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal2nix <span class="at">--shell</span> . <span class="op">&gt;</span> default.nix</span></code></pre></div>
 <p>and changed <code>enableSharedExecutables</code>, <code>enableSharedLibraries</code>, and
 <code>configureFlags</code> as follows:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>enableSharedExecutables = <span class="cn">false</span>;</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>enableSharedLibraries = <span class="cn">false</span>;</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>configureFlags = <span class="op">[</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.gmp6.override <span class="op">{</span> <span class="va">withStatic</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="op">}</span><span class="sc">}</span><span class="st">/lib&quot;</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.zlib.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.glibc.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">]</span>;</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>enableSharedExecutables = <span class="cn">false</span>;</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>enableSharedLibraries = <span class="cn">false</span>;</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>configureFlags = <span class="op">[</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.gmp6.override <span class="op">{</span> <span class="va">withStatic</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="op">}</span><span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.zlib.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.glibc.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">]</span>;</span></code></pre></div>
 <p>This is also available in the linked repository, and you can pin <code>nixpkgs</code> as
 follows to get my exact build:</p>
 <pre><code>$ nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/08d245eb31a3de0ad73719372190ce84c1bf3aee.tar.gz default.nix</code></pre>
