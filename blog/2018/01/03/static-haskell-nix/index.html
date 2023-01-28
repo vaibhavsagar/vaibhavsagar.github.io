@@ -85,18 +85,18 @@ hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environ
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        html <span class="op">$</span> <span class="fu">mconcat</span> [<span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span>, beam, <span class="st">&quot; me up!&lt;/h1&gt;&quot;</span>]</span></code></pre></div>
 <p>We create <code>static.nix</code>:</p>
 <p><em>static.nix</em></p>
-<pre class="nix"><code>let
-  pkgs = import &lt;nixpkgs&gt; {};
-in pkgs.buildFHSUserEnv {
-  name = &quot;fhs&quot;;
-  targetPkgs = pkgs: [
-    (pkgs.haskellPackages.ghcWithPackages (p: with p; [ cabal-install ]))
-    pkgs.gmp5.static
-    pkgs.glibc.static
-    pkgs.zlib.static
-    pkgs.zlib.dev
-  ];
-}</code></pre>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{};</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.buildFHSUserEnv <span class="op">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;fhs&quot;</span><span class="op">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">targetPkgs</span> <span class="op">=</span> <span class="va">pkgs</span><span class="op">:</span> <span class="op">[</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.haskellPackages.ghcWithPackages <span class="op">(</span><span class="va">p</span><span class="op">:</span> <span class="kw">with</span> p<span class="op">;</span> <span class="op">[</span> cabal-install <span class="op">]))</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    pkgs.gmp5.static</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    pkgs.glibc.static</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.static</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.dev</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">];</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This defines a chroot where statically linked versions of <code>gmp</code>, <code>glibc</code>, and
 <code>zlib</code> are available, as well as <code>zlib.h</code>. We enter this environment by running</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> <span class="va">$(</span><span class="ex">nix-build</span> static.nix<span class="va">)</span>/bin/fhs</span></code></pre></div>
@@ -125,15 +125,15 @@ that next.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal2nix <span class="at">--shell</span> . <span class="op">&gt;</span> default.nix</span></code></pre></div>
 <p>and changed <code>enableSharedExecutables</code>, <code>enableSharedLibraries</code>, and
 <code>configureFlags</code> as follows:</p>
-<pre class="nix"><code>enableSharedExecutables = false;
-enableSharedLibraries = false;
-configureFlags = [
-  &quot;--ghc-option=-optl=-static&quot;
-  &quot;--ghc-option=-optl=-pthread&quot;
-  &quot;--ghc-option=-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib&quot;
-  &quot;--ghc-option=-optl=-L${pkgs.zlib.static}/lib&quot;
-  &quot;--ghc-option=-optl=-L${pkgs.glibc.static}/lib&quot;
-];</code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>enableSharedExecutables = <span class="cn">false</span>;</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>enableSharedLibraries = <span class="cn">false</span>;</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>configureFlags = <span class="op">[</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.gmp6.override <span class="op">{</span> <span class="va">withStatic</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="op">}</span><span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.zlib.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.glibc.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">]</span>;</span></code></pre></div>
 <p>This is also available in the linked repository, and you can pin <code>nixpkgs</code> as
 follows to get my exact build:</p>
 <pre><code>$ nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/08d245eb31a3de0ad73719372190ce84c1bf3aee.tar.gz default.nix</code></pre>

@@ -69,20 +69,20 @@ reference to Nixpkgs:</p>
 <summary style="cursor: pointer">
 Changing Nixpkgs
 </summary>
-<pre class="nix"><code>let
-  nixpkgs-src = builtins.fetchTarball {
-    url = &quot;https://github.com/NixOS/nixpkgs/tarball/8795d39ce70f04e3fd609422d522e5b2594f3a70&quot;;
-    sha256 = &quot;01w7q0nqydippj0ygbg77byb770snhc5rnqzc6isws58642l8z4s&quot;;
-  };
-in
-{ compiler ? &quot;ghc901&quot;
-, jupyterlabAppDir ? null
-, nixpkgs ? import nixpkgs-src {}
-, packages ? (_: [])
-, pythonPackages ? (_: [])
-, rtsopts ? &quot;-M3g -N2&quot;
-, systemPackages ? (_: [])
-}:</code></pre>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixpkgs-src</span> <span class="op">=</span> <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/NixOS/nixpkgs/tarball/8795d39ce70f04e3fd609422d522e5b2594f3a70&quot;</span><span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;01w7q0nqydippj0ygbg77byb770snhc5rnqzc6isws58642l8z4s&quot;</span><span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">compiler</span> <span class="op">?</span> <span class="st">&quot;ghc901&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">jupyterlabAppDir</span> <span class="op">?</span> <span class="cn">null</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">nixpkgs</span> <span class="op">?</span> <span class="bu">import</span> nixpkgs<span class="op">-</span>src <span class="op">{}</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">packages</span> <span class="op">?</span> <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="op">[])</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">pythonPackages</span> <span class="op">?</span> <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="op">[])</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">rtsopts</span> <span class="op">?</span> <span class="st">&quot;-M3g -N2&quot;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">systemPackages</span> <span class="op">?</span> <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="op">[])</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>:</span></code></pre></div>
 </details>
 <p>Then it’s possible to build this and see how many packages need changes:</p>
 <pre class="shell"><code>$ nix-build release-9.0.nix --keep-going 2&gt;&amp;1 | wc -l</code></pre>
@@ -93,20 +93,20 @@ in the package set by default, or any number of other changes. Here’s what I e
 <summary style="cursor: pointer">
 Package set overrides
 </summary>
-<pre class="nix"><code>      cryptohash-md5    = nixpkgs.haskell.lib.doJailbreak super.cryptohash-md5;
-      cryptohash-sha1   = nixpkgs.haskell.lib.doJailbreak super.cryptohash-sha1;
-      basement          = super.basement_0_0_12;
-      foundation        = super.foundation_0_0_26_1;
-      memory            = nixpkgs.haskell.lib.appendPatch super.memory (nixpkgs.fetchpatch {
-        url = &quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/c89c1e27af8f180b3be476e102147557f922b224/patches/memory-0.15.0.patch&quot;;
-        sha256 = &quot;0mkjbrzi05h1xds8rf5wfky176hrl03q0d7ipklp9x4ls3yyqj5x&quot;;
-      });
-      cryptonite        = nixpkgs.haskell.lib.appendPatch super.cryptonite (nixpkgs.fetchpatch {
-        url = &quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/6a65307bbdc73c5eb4165a67ee97c7b9faa818e1/patches/cryptonite-0.28.patch&quot;;
-        sha256 = &quot;1wq9hw16qj2yqy7lyqbi7106lhk199hvnkj5xr7h0ip854gjsr5j&quot;;
-      });
-      profunctors       = self.callCabal2nix &quot;profunctors&quot; profunctors-src {}; # `profunctors-src` is defined above
-      mono-traversable  = nixpkgs.haskell.lib.dontCheck super.mono-traversable;</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>      cryptohash<span class="op">-</span>md5    = nixpkgs.haskell.lib.doJailbreak super.cryptohash<span class="op">-</span>md5;</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>      cryptohash<span class="op">-</span>sha1   = nixpkgs.haskell.lib.doJailbreak super.cryptohash<span class="op">-</span>sha1;</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>      basement          = super.basement_0_0_12;</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      foundation        = super.foundation_0_0_26_1;</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      memory            = nixpkgs.haskell.lib.appendPatch super.memory <span class="op">(</span>nixpkgs.fetchpatch <span class="op">{</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/c89c1e27af8f180b3be476e102147557f922b224/patches/memory-0.15.0.patch&quot;</span><span class="op">;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;0mkjbrzi05h1xds8rf5wfky176hrl03q0d7ipklp9x4ls3yyqj5x&quot;</span><span class="op">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">})</span>;</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      cryptonite        = nixpkgs.haskell.lib.appendPatch super.cryptonite <span class="op">(</span>nixpkgs.fetchpatch <span class="op">{</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/6a65307bbdc73c5eb4165a67ee97c7b9faa818e1/patches/cryptonite-0.28.patch&quot;</span><span class="op">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;1wq9hw16qj2yqy7lyqbi7106lhk199hvnkj5xr7h0ip854gjsr5j&quot;</span><span class="op">;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      <span class="op">})</span>;</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      profunctors       = self.callCabal2nix <span class="st">&quot;profunctors&quot;</span> profunctors<span class="op">-</span>src <span class="op">{}</span>; <span class="co"># `profunctors-src` is defined above</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      mono<span class="op">-</span>traversable  = nixpkgs.haskell.lib.dontCheck super.mono<span class="op">-</span>traversable;</span></code></pre></div>
 </details>
 <p>After every few changes, I like to rerun <code>nix-build</code> and watch the number go
 down. It’s also possible to build an individual package, e.g. to build
@@ -417,24 +417,24 @@ which we need to write a little Nix. Here’s the <code>default.nix</code> I use
 <summary style="cursor: pointer">
 <code>default.nix</code>
 </summary>
-<pre class="nix"><code>let
-  # ./updater versions.json reflex-platform
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
-in (import reflex-platform { system = builtins.currentSystem; }).project ({ pkgs, ... }: {
-  useWarp = true;
-  withHoogle = false;
-  packages = {
-    small-viz = ./.;
-  };
-  shells = {
-    ghc = [&quot;small-viz&quot;];
-    ghcjs = [&quot;small-viz&quot;];
-  };
-})</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">reflex-platform</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.reflex<span class="op">-</span>platform<span class="op">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">(</span><span class="bu">import</span> reflex<span class="op">-</span>platform <span class="op">{</span> <span class="va">system</span> <span class="op">=</span> <span class="bu">builtins</span>.currentSystem<span class="op">;</span> <span class="op">})</span>.project <span class="op">({</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="op">{</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">useWarp</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">withHoogle</span> <span class="op">=</span> <span class="cn">false</span><span class="op">;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">packages</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">small-viz</span> <span class="op">=</span> <span class="ss">./.</span><span class="op">;</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">shells</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="va">ghc</span> <span class="op">=</span> <span class="op">[</span><span class="st">&quot;small-viz&quot;</span><span class="op">];</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">ghcjs</span> <span class="op">=</span> <span class="op">[</span><span class="st">&quot;small-viz&quot;</span><span class="op">];</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/348b759019bc19aec9833a6b5f042c1d2f5e9b13#file-default-nix">revision</a>)</em></p>
 <p>This sets up our project to build with both GHC and GHCJS, because we want to
@@ -730,30 +730,30 @@ write a <code>glitch.nix</code> file to simplify this process:</p>
 <summary style="cursor: pointer">
 <code>glitch.nix</code>
 </summary>
-<pre class="nix"><code>let
-  # ./updater versions.json reflex-platform
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
-  pkgs = (import reflex-platform {}).nixpkgs;
-  project = import ./default.nix;
-  html = pkgs.writeText &quot;index.html&quot; &#39;&#39;
-    &lt;!DOCTYPE html&gt;
-    &lt;html&gt;
-      &lt;head&gt;
-        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;
-      &lt;/head&gt;
-      &lt;body&gt;
-      &lt;/body&gt;
-    &lt;/html&gt;
-  &#39;&#39;;
-in pkgs.runCommand &quot;glitch&quot; {} &#39;&#39;
-  mkdir -p $out
-  cp ${html} $out/index.html
-  cp ${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js $out/all.js
-&#39;&#39;</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">reflex-platform</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.reflex<span class="op">-</span>platform<span class="op">;</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="op">(</span><span class="bu">import</span> reflex<span class="op">-</span>platform <span class="op">{})</span>.nixpkgs<span class="op">;</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">project</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./default.nix</span><span class="op">;</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">html</span> <span class="op">=</span> pkgs.writeText <span class="st">&quot;index.html&quot;</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;!DOCTYPE html&gt;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;html&gt;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;head&gt;</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="st">        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/head&gt;</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;body&gt;</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/body&gt;</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;/html&gt;</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.runCommand <span class="st">&quot;glitch&quot;</span> <span class="op">{}</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="st">  mkdir -p $out</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="st">  cp </span><span class="sc">${</span>html<span class="sc">}</span><span class="st"> $out/index.html</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="st">  cp </span><span class="sc">${</span>project.ghcjs.small<span class="op">-</span>viz<span class="sc">}</span><span class="st">/bin/small-viz.jsexe/all.js $out/all.js</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;&#39;</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/a0127badaee44f316156121153c0e4bc41af9460#file-glitch-nix">revision</a>)</em></p>
 <p>And then produce the files we need to copy over with:</p>
@@ -772,36 +772,36 @@ that I found when I was looking into this to update <code>glitch.nix</code>:</p>
 <summary style="cursor: pointer">
 <code>glitch.nix</code>
 </summary>
-<pre class="nix"><code>let
-  # ./updater versions.json reflex-platform
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
-  pkgs = (import reflex-platform {}).nixpkgs;
-  project = import ./default.nix;
-  html = pkgs.writeText &quot;index.html&quot; &#39;&#39;
-    &lt;!DOCTYPE html&gt;
-    &lt;html&gt;
-      &lt;head&gt;
-        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;
-      &lt;/head&gt;
-      &lt;body&gt;
-      &lt;/body&gt;
-    &lt;/html&gt;
-  &#39;&#39;;
-in pkgs.runCommand &quot;glitch&quot; {} &#39;&#39;
-  mkdir -p $out
-  cp ${html} $out/index.html
-  ${pkgs.closurecompiler}/bin/closure-compiler \
-    --externs=${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js.externs \
-    --jscomp_off=checkVars \
-    --js_output_file=&quot;$out/all.js&quot; \
-    -O ADVANCED \
-    -W QUIET \
-    ${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js
-&#39;&#39;</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">reflex-platform</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.reflex<span class="op">-</span>platform<span class="op">;</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="op">(</span><span class="bu">import</span> reflex<span class="op">-</span>platform <span class="op">{})</span>.nixpkgs<span class="op">;</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">project</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./default.nix</span><span class="op">;</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">html</span> <span class="op">=</span> pkgs.writeText <span class="st">&quot;index.html&quot;</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;!DOCTYPE html&gt;</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;html&gt;</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;head&gt;</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="st">        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/head&gt;</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;body&gt;</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/body&gt;</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;/html&gt;</span></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.runCommand <span class="st">&quot;glitch&quot;</span> <span class="op">{}</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="st">  mkdir -p $out</span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a><span class="st">  cp </span><span class="sc">${</span>html<span class="sc">}</span><span class="st"> $out/index.html</span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="st">  </span><span class="sc">${</span>pkgs.closurecompiler<span class="sc">}</span><span class="st">/bin/closure-compiler \</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a><span class="st">    --externs=</span><span class="sc">${</span>project.ghcjs.small<span class="op">-</span>viz<span class="sc">}</span><span class="st">/bin/small-viz.jsexe/all.js.externs \</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a><span class="st">    --jscomp_off=checkVars \</span></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="st">    --js_output_file=&quot;$out/all.js&quot; \</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a><span class="st">    -O ADVANCED \</span></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a><span class="st">    -W QUIET \</span></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a><span class="st">    </span><span class="sc">${</span>project.ghcjs.small<span class="op">-</span>viz<span class="sc">}</span><span class="st">/bin/small-viz.jsexe/all.js</span></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;&#39;</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/aac5fe1258ccfc8c9b8ca685b9db1a4f538ae183#file-glitch-nix">revision</a>)</em></p>
 <p>And this brings the size down to under 2MB.</p>
@@ -1085,49 +1085,49 @@ this is fine. <a href="https://github.com/vaibhavsagar/nixos-config/commit/e49e9
 files</a>.</p>
 <p>We’ll only be making changes to <code>configuration.nix</code>, which for me looks like
 this (after all commented-out lines have been removed):</p>
-<pre class="nix"><code>{ config, pkgs, ... }:
-
-{
-  imports =
-    [
-      ./packet.nix
-    ];
-
-  boot.loader.grub.enable = true;
-  boot.loader.grub.version = 2;
-
-  system.stateVersion = &quot;19.03&quot;;
-
-}</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">imports</span> <span class="op">=</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>      <span class="ss">./packet.nix</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">];</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">boot</span>.<span class="va">loader</span>.<span class="va">grub</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">boot</span>.<span class="va">loader</span>.<span class="va">grub</span>.<span class="va">version</span> <span class="op">=</span> <span class="dv">2</span><span class="op">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="va">system</span>.<span class="va">stateVersion</span> <span class="op">=</span> <span class="st">&quot;19.03&quot;</span><span class="op">;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h4 id="building-a-system-closure">Building a system closure</h4>
 <p>The Nix expression to build a whole system is pretty straightforward (as
 described in the Typeclasses article):</p>
-<pre class="nix"><code>let
-  nixos = import &lt;nixpkgs/nixos&gt; {
-    configuration = import ./configuration.nix;
-  };
-in
-  nixos.system</code></pre>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixos</span> <span class="op">=</span> <span class="bu">import</span> &lt;<span class="ss">nixpkgs/nixos</span>&gt; <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">configuration</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./configuration.nix</span><span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  nixos.system</span></code></pre></div>
 <p>but this doesn’t provide any way of pinning <code>nixpkgs</code>. Another way (<a href="http://www.haskellforall.com/2018/08/nixos-in-production.html#pinning-nixpkgs">as
 described by Gabriella
 Gonzalez</a>),
 is to explicitly depend on a particular revision of <code>nixpkgs</code>:</p>
-<pre class="nix"><code>let
-  nixpkgs = builtins.fetchTarball {
-    url = &quot;https://github.com/NixOS/nixpkgs/archive/b74b1cdb2fecc31ff7a127c5bc89771f887c93bb.tar.gz&quot;;
-    sha256 = &quot;0ncr4g29220amqm4riaa1xf4jz55v2nmh9fi16f1gzhww1gplk8h&quot;;
-  };
-
-in
-  import &quot;${nixpkgs}/nixos&quot; {
-    configuration = {
-      imports = [
-        /etc/nixos/configuration.nix
-      ];
-    };
-
-    system = &quot;x86_64-linux&quot;;
-  }</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixpkgs</span> <span class="op">=</span> <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/NixOS/nixpkgs/archive/b74b1cdb2fecc31ff7a127c5bc89771f887c93bb.tar.gz&quot;</span><span class="op">;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;0ncr4g29220amqm4riaa1xf4jz55v2nmh9fi16f1gzhww1gplk8h&quot;</span><span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="bu">import</span> <span class="st">&quot;</span><span class="sc">${</span>nixpkgs<span class="sc">}</span><span class="st">/nixos&quot;</span> <span class="op">{</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">configuration</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">imports</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="ss">/etc/nixos/configuration.nix</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>      <span class="op">];</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="va">system</span> <span class="op">=</span> <span class="st">&quot;x86_64-linux&quot;</span><span class="op">;</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span></code></pre></div>
 <p>but the downside there is that there’s no automated way to update the revision
 of <code>nixpkgs</code>. I have <a href="/blog/2018/05/27/quick-easy-nixpkgs-pinning/">my own approach to pinning
 <code>nixpkgs</code></a>,
@@ -1144,17 +1144,17 @@ where I have a <code>versions.json</code> that stores version information:</p>
 <p>and a script that uses <code>jq</code> to update this file. My (slightly more complex)
 expression then looks like this:</p>
 <p><em>default.nix</em></p>
-<pre class="nix"><code>let
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  nixpkgs = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).nixpkgs;
-  nixos = import &quot;${nixpkgs}/nixos&quot; {
-    configuration = import ./configuration.nix;
-  };
-in
-  nixos.system</code></pre>
+<div class="sourceCode" id="cb7"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixpkgs</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.nixpkgs<span class="op">;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixos</span> <span class="op">=</span> <span class="bu">import</span> <span class="st">&quot;</span><span class="sc">${</span>nixpkgs<span class="sc">}</span><span class="st">/nixos&quot;</span> <span class="op">{</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">configuration</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./configuration.nix</span><span class="op">;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  nixos.system</span></code></pre></div>
 <p>and this allows me to both be explicit about <code>nixpkgs</code> as well as easily update it
 when necessary. <a href="https://github.com/vaibhavsagar/nixos-config/commit/5126d9dba971d6480aeec43c4263c5a7f7b1f1b5">Here’s the commit that adds those
 files</a>.</p>
@@ -1205,33 +1205,33 @@ application consists of two files:</p>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  default-language:    Haskell2010</span></code></pre></div>
 <p>and the Nix service is one file:</p>
 <p><em>service.nix</em></p>
-<pre class="nix"><code>{ config, lib, pkgs, ... }:
-
-let
-  blank-me-up = pkgs.haskellPackages.callCabal2nix &quot;blank-me-up&quot; ../app {};
-  cfg = config.services.blank-me-up;
-in {
-  options.services.blank-me-up.enable = lib.mkEnableOption &quot;Blank Me Up&quot;;
-  options.services.blank-me-up.port = lib.mkOption {
-    default = 3000;
-    type = lib.types.int;
-  };
-
-  config = lib.mkIf cfg.enable {
-    networking.firewall.allowedTCPPorts = [ cfg.port ];
-
-    systemd.services.blank-me-up = {
-      description = &quot;Blank Me Up&quot;;
-      after = [ &quot;network.target&quot; ];
-      wantedBy = [ &quot;multi-user.target&quot; ];
-      serviceConfig = {
-        ExecStart = &quot;${blank-me-up}/bin/blank-me-up ${toString cfg.port}&quot;;
-        Restart = &quot;always&quot;;
-        KillMode = &quot;process&quot;;
-      };
-    };
-  };
-}</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">lib</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">blank-me-up</span> <span class="op">=</span> pkgs.haskellPackages.callCabal2nix <span class="st">&quot;blank-me-up&quot;</span> <span class="ss">../app</span> <span class="op">{};</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">cfg</span> <span class="op">=</span> config.services.blank<span class="op">-</span>me<span class="op">-</span>up<span class="op">;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">port</span> <span class="op">=</span> lib.mkOption <span class="op">{</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">default</span> <span class="op">=</span> <span class="dv">3000</span><span class="op">;</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="va">type</span> <span class="op">=</span> lib.types.int<span class="op">;</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="va">config</span> <span class="op">=</span> lib.mkIf cfg.enable <span class="op">{</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="va">networking</span>.<span class="va">firewall</span>.<span class="va">allowedTCPPorts</span> <span class="op">=</span> <span class="op">[</span> cfg.port <span class="op">];</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">systemd</span>.<span class="va">services</span>.<span class="va">blank-me-up</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">after</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;network.target&quot;</span> <span class="op">];</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">wantedBy</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;multi-user.target&quot;</span> <span class="op">];</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">serviceConfig</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">ExecStart</span> <span class="op">=</span> <span class="st">&quot;</span><span class="sc">${</span>blank<span class="op">-</span>me<span class="op">-</span>up<span class="sc">}</span><span class="st">/bin/blank-me-up </span><span class="sc">${</span><span class="bu">toString</span> cfg.port<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">Restart</span> <span class="op">=</span> <span class="st">&quot;always&quot;</span><span class="op">;</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">KillMode</span> <span class="op">=</span> <span class="st">&quot;process&quot;</span><span class="op">;</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>For more information about what’s happening in <code>service.nix</code>, see <a href="/blog/2019/07/04/functional-devops/#service-configuration">the relevant
 section of my Functional DevOps
 post</a>.</p>
@@ -1239,24 +1239,23 @@ post</a>.</p>
 files</a>.</p>
 <p>Enabling the service is as easy as adding two lines to <code>configuration.nix</code>:</p>
 <p><em>configuration.nix</em></p>
-<pre class="nix"><code>{ config, pkgs, ... }:
-
-{
-  imports =
-    [
-      ./packet.nix
-      ./deploy/nix/service.nix        #1
-    ];
-
-  boot.loader.grub.enable = true;
-  boot.loader.grub.version = 2;
-
-  services.blank-me-up.enable = true; #2
-
-  system.stateVersion = &quot;19.03&quot;;
-
-}
-</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">imports</span> <span class="op">=</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>      <span class="ss">./packet.nix</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>      <span class="ss">./deploy/nix/service.nix</span>        <span class="co">#1</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">];</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">boot</span>.<span class="va">loader</span>.<span class="va">grub</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">boot</span>.<span class="va">loader</span>.<span class="va">grub</span>.<span class="va">version</span> <span class="op">=</span> <span class="dv">2</span><span class="op">;</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="co">#2</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="va">system</span>.<span class="va">stateVersion</span> <span class="op">=</span> <span class="st">&quot;19.03&quot;</span><span class="op">;</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p><a href="https://github.com/vaibhavsagar/nixos-config/commit/07b163f3c0fe728078bb357841e57c7020bdd4d3">Here’s the commit that makes that change</a>.</p>
 <h4 id="deploying-the-service">Deploying the service</h4>
 <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ./deploy.sh</span>
@@ -1354,58 +1353,58 @@ this isn’t quite true in the case of broken services.<a href="#fnref1" class="
 </div>
 
 <p>Today I learned how to turn an IHaskell Nix expression into a Docker image. Here is an example:</p>
-<pre class="nix"><code># default.nix
-let
-  pkgs = {
-    ihaskell = builtins.fetchTarball {
-      url = &quot;https://github.com/gibiansky/IHaskell/tarball/93bfa3a7a434c1dfe6873c2105c43856c282e183&quot;;
-      sha256 = &quot;1cvqqmpvz7s3d7zclmkm5igx36clrbdiafs47i9rik3rdzw0gr3d&quot;;
-    };
-    nixpkgs = builtins.fetchTarball {
-      url = &quot;https://github.com/NixOS/nixpkgs-channels/tarball/9ca57dc9171ca4547abf076a8987ed73c46f2e15&quot;;
-      sha256 = &quot;18d01cw6s6k9fnac3vq0k6inybqalkz4ak88pw67q4wqzq9rc07l&quot;;
-    };
-  };
-  nixpkgs = import pkgs.nixpkgs {};
-  NB_USER = &quot;jovyan&quot;;
-  NB_UID = &quot;1000&quot;;
-  dockerEtc = nixpkgs.runCommand &quot;docker-etc&quot; {} &#39;&#39;
-    mkdir -p $out/etc/pam.d
-
-    echo &quot;root:x:0:0::/root:/bin/sh&quot; &gt; $out/etc/passwd
-    echo &quot;${NB_USER}:x:1000:1000::/home/${NB_USER}:&quot; &gt;&gt; $out/etc/passwd
-    echo &quot;root:!x:::::::&quot; &gt; $out/etc/shadow
-    echo &quot;${NB_USER}:!:::::::&quot; &gt;&gt; $out/etc/shadow
-
-    echo &quot;root:x:0:&quot; &gt; $out/etc/group
-    echo &quot;${NB_USER}:x:1000:&quot; &gt;&gt; $out/etc/group
-    echo &quot;root:x::&quot; &gt; $out/etc/gshadow
-    echo &quot;${NB_USER}:!::&quot; &gt;&gt; $out/etc/gshadow
-  &#39;&#39;;
-  ihaskell = import &quot;${pkgs.ihaskell}/release.nix&quot; {
-    inherit nixpkgs;
-    compiler = &quot;ghc864&quot;;
-    packages = self: with self; [];
-  };
-in nixpkgs.dockerTools.buildLayeredImage {
-    name = &quot;ihaskell-nix&quot;;
-    tag = &quot;latest&quot;;
-    contents =  [
-      dockerEtc
-      ihaskell
-      nixpkgs.bashInteractive
-    ];
-    config = {
-      Cmd = [&quot;ihaskell-notebook&quot; &quot;--ip=0.0.0.0&quot;];
-      User = NB_USER;
-      WorkingDir = &quot;/home/${NB_USER}&quot;;
-    };
-    extraCommands = &#39;&#39;
-      mkdir -m 1777 ./tmp
-      mkdir -m 777 -p ./home/${NB_USER}
-    &#39;&#39;;
-    maxLayers = 100;
-};</code></pre>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># default.nix</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">ihaskell</span> <span class="op">=</span> <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/gibiansky/IHaskell/tarball/93bfa3a7a434c1dfe6873c2105c43856c282e183&quot;</span><span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;1cvqqmpvz7s3d7zclmkm5igx36clrbdiafs47i9rik3rdzw0gr3d&quot;</span><span class="op">;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">nixpkgs</span> <span class="op">=</span> <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/NixOS/nixpkgs-channels/tarball/9ca57dc9171ca4547abf076a8987ed73c46f2e15&quot;</span><span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;18d01cw6s6k9fnac3vq0k6inybqalkz4ak88pw67q4wqzq9rc07l&quot;</span><span class="op">;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixpkgs</span> <span class="op">=</span> <span class="bu">import</span> pkgs.nixpkgs <span class="op">{};</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">NB_USER</span> <span class="op">=</span> <span class="st">&quot;jovyan&quot;</span><span class="op">;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="va">NB_UID</span> <span class="op">=</span> <span class="st">&quot;1000&quot;</span><span class="op">;</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="va">dockerEtc</span> <span class="op">=</span> nixpkgs.runCommand <span class="st">&quot;docker-etc&quot;</span> <span class="op">{}</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="st">    mkdir -p $out/etc/pam.d</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;root:x:0:0::/root:/bin/sh&quot; &gt; $out/etc/passwd</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;</span><span class="sc">${</span>NB_USER<span class="sc">}</span><span class="st">:x:1000:1000::/home/</span><span class="sc">${</span>NB_USER<span class="sc">}</span><span class="st">:&quot; &gt;&gt; $out/etc/passwd</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;root:!x:::::::&quot; &gt; $out/etc/shadow</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;</span><span class="sc">${</span>NB_USER<span class="sc">}</span><span class="st">:!:::::::&quot; &gt;&gt; $out/etc/shadow</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;root:x:0:&quot; &gt; $out/etc/group</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;</span><span class="sc">${</span>NB_USER<span class="sc">}</span><span class="st">:x:1000:&quot; &gt;&gt; $out/etc/group</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;root:x::&quot; &gt; $out/etc/gshadow</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="st">    echo &quot;</span><span class="sc">${</span>NB_USER<span class="sc">}</span><span class="st">:!::&quot; &gt;&gt; $out/etc/gshadow</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="va">ihaskell</span> <span class="op">=</span> <span class="bu">import</span> <span class="st">&quot;</span><span class="sc">${</span>pkgs.ihaskell<span class="sc">}</span><span class="st">/release.nix&quot;</span> <span class="op">{</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> nixpkgs<span class="op">;</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    <span class="va">compiler</span> <span class="op">=</span> <span class="st">&quot;ghc864&quot;</span><span class="op">;</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="va">packages</span> <span class="op">=</span> <span class="va">self</span><span class="op">:</span> <span class="kw">with</span> self<span class="op">;</span> <span class="op">[];</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> nixpkgs.dockerTools.buildLayeredImage <span class="op">{</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;ihaskell-nix&quot;</span><span class="op">;</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="va">tag</span> <span class="op">=</span> <span class="st">&quot;latest&quot;</span><span class="op">;</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="va">contents</span> <span class="op">=</span>  <span class="op">[</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>      dockerEtc</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>      ihaskell</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>      nixpkgs.bashInteractive</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    <span class="op">];</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    <span class="va">config</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>      <span class="va">Cmd</span> <span class="op">=</span> <span class="op">[</span><span class="st">&quot;ihaskell-notebook&quot;</span> <span class="st">&quot;--ip=0.0.0.0&quot;</span><span class="op">];</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>      <span class="va">User</span> <span class="op">=</span> NB_USER<span class="op">;</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>      <span class="va">WorkingDir</span> <span class="op">=</span> <span class="st">&quot;/home/</span><span class="sc">${</span>NB_USER<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    <span class="va">extraCommands</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a><span class="st">      mkdir -m 1777 ./tmp</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="st">      mkdir -m 777 -p ./home/</span><span class="sc">${</span>NB_USER<span class="sc">}</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    <span class="va">maxLayers</span> <span class="op">=</span> <span class="dv">100</span><span class="op">;</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code></pre></div>
 <p>This is how to use it:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker load <span class="op">&lt;</span> <span class="va">$(</span><span class="ex">nix-build</span> default.nix<span class="va">)</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker run <span class="at">-p8888:8888</span> <span class="at">-it</span> ihaskell-nix:latest</span></code></pre></div>
@@ -1540,32 +1539,32 @@ called <code>nix</code> to store our <code>.nix</code> files and begin:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd nix</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal2nix ../app/ <span class="at">--shell</span> <span class="op">&gt;</span> default.nix</span></code></pre></div>
 <p><code>default.nix</code> might look something like</p>
-<pre class="nix"><code>{ nixpkgs ? import &lt;nixpkgs&gt; {}, compiler ? &quot;default&quot; }:
-
-let
-
-  inherit (nixpkgs) pkgs;
-
-  f = { mkDerivation, base, scotty, stdenv }:
-      mkDerivation {
-        pname = &quot;blank-me-up&quot;;
-        version = &quot;0.1.0.0&quot;;
-        src = ../app;
-        isLibrary = false;
-        isExecutable = true;
-        executableHaskellDepends = [ base scotty ];
-        license = stdenv.lib.licenses.bsd3;
-      };
-
-  haskellPackages = if compiler == &quot;default&quot;
-                       then pkgs.haskellPackages
-                       else pkgs.haskell.packages.${compiler};
-
-  drv = haskellPackages.callPackage f {};
-
-in
-
-  if pkgs.lib.inNixShell then drv.env else drv</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">nixpkgs</span> <span class="op">?</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{},</span> <span class="va">compiler</span> <span class="op">?</span> <span class="st">&quot;default&quot;</span> <span class="op">}</span>:</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">inherit</span> (<span class="va">nixpkgs</span>) <span class="va">pkgs</span>;</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">f</span> <span class="op">=</span> <span class="op">{</span> <span class="va">mkDerivation</span><span class="op">,</span> <span class="va">base</span><span class="op">,</span> <span class="va">scotty</span><span class="op">,</span> <span class="va">stdenv</span> <span class="op">}</span>:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      mkDerivation <span class="op">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">pname</span> <span class="op">=</span> <span class="st">&quot;blank-me-up&quot;</span><span class="op">;</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">version</span> <span class="op">=</span> <span class="st">&quot;0.1.0.0&quot;</span><span class="op">;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">src</span> <span class="op">=</span> <span class="ss">../app</span><span class="op">;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">isLibrary</span> <span class="op">=</span> <span class="cn">false</span><span class="op">;</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">isExecutable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">executableHaskellDepends</span> <span class="op">=</span> <span class="op">[</span> base scotty <span class="op">];</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">license</span> <span class="op">=</span> stdenv.lib.licenses.bsd3<span class="op">;</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="va">haskellPackages</span> <span class="op">=</span> <span class="kw">if</span> compiler == <span class="st">&quot;default&quot;</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                       <span class="kw">then</span> pkgs.haskellPackages</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>                       <span class="kw">else</span> pkgs.haskell.packages.$<span class="op">{</span><span class="va">compiler</span><span class="op">};</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="va">drv</span> <span class="op">=</span> haskellPackages.callPackage f <span class="op">{};</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">if</span> pkgs.lib.inNixShell <span class="kw">then</span> drv.env <span class="kw">else</span> drv</span></code></pre></div>
 <p>Now we can build our project by running <code>nix-build</code>, which tries to build
 <code>default.nix</code> in the current directory if no arguments are provided:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-build</span>
@@ -1623,28 +1622,28 @@ service file so that <code>systemd</code> can manage our app. I don’t know of 
 that automatically generate this so I always find myself copying and pasting
 from an existing service file. Here’s one I prepared earlier.</p>
 <p><em>nix/service.nix</em></p>
-<pre class="nix"><code>{ config, lib, pkgs, ... }:                                               #1
-
-let                                                                       #2
-  blank-me-up = pkgs.callPackage ./default.nix {};                        #3
-in {
-  options.services.blank-me-up.enable = lib.mkEnableOption &quot;Blank Me Up&quot;; #4
-
-  config = lib.mkIf config.services.blank-me-up.enable {                  #5
-    networking.firewall.allowedTCPPorts = [ 3000 ];                       #6
-
-    systemd.services.blank-me-up = {                                      #7
-      description = &quot;Blank Me Up&quot;;
-      after = [ &quot;network.target&quot; ];
-      wantedBy = [ &quot;multi-user.target&quot; ];
-      serviceConfig = {
-        ExecStart = &quot;${blank-me-up}/bin/blank-me-up&quot;;
-        Restart = &quot;always&quot;;
-        KillMode = &quot;process&quot;;
-      };
-    };
-  };
-}</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">lib</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:                                               <span class="co">#1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span>                                                                       <span class="co">#2</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">blank-me-up</span> <span class="op">=</span> pkgs.callPackage <span class="ss">./default.nix</span> <span class="op">{};</span>                        <span class="co">#3</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span> <span class="co">#4</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">config</span> <span class="op">=</span> lib.mkIf config.services.blank<span class="op">-</span>me<span class="op">-</span>up.enable <span class="op">{</span>                  <span class="co">#5</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">networking</span>.<span class="va">firewall</span>.<span class="va">allowedTCPPorts</span> <span class="op">=</span> <span class="op">[</span> <span class="dv">3000</span> <span class="op">];</span>                       <span class="co">#6</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="va">systemd</span>.<span class="va">services</span>.<span class="va">blank-me-up</span> <span class="op">=</span> <span class="op">{</span>                                      <span class="co">#7</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">after</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;network.target&quot;</span> <span class="op">];</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">wantedBy</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;multi-user.target&quot;</span> <span class="op">];</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">serviceConfig</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">ExecStart</span> <span class="op">=</span> <span class="st">&quot;</span><span class="sc">${</span>blank<span class="op">-</span>me<span class="op">-</span>up<span class="sc">}</span><span class="st">/bin/blank-me-up&quot;</span><span class="op">;</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">Restart</span> <span class="op">=</span> <span class="st">&quot;always&quot;</span><span class="op">;</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">KillMode</span> <span class="op">=</span> <span class="st">&quot;process&quot;</span><span class="op">;</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This isn’t intended to be a Nix language tutorial, but there are a few
 interesting things that I want to point out. For a more comprehensive overview
 of the language, see
@@ -1663,10 +1662,10 @@ Another way to think of this is as a form of dependency injection.</li>
 <p>It would be useful to look at the systemd service file that gets generated
 from this configuration. To do this, we’ll need one more file:</p>
 <p><em>ops/webserver.nix</em></p>
-<pre class="nix"><code>{ ... }: {
-  imports = [ ../nix/service.nix ];
-  services.blank-me-up.enable = true;
-}</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="op">...</span> <span class="op">}</span>: <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">imports</span> <span class="op">=</span> <span class="op">[</span> <span class="ss">../nix/service.nix</span> <span class="op">];</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This is a function that imports the above configuration and enables the
 <code>blank-me-up</code> service. With this in place, we can do</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-instantiate <span class="at">--eval</span> <span class="at">-E</span> <span class="st">&#39;(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text&#39;</span></span></code></pre></div>
@@ -1703,29 +1702,29 @@ turn it into a binary and a <code>systemd</code> service file. Let’s deploy th
 <p>We also have to set up VirtualBox, which I’ll be using as my deploy target. If
 you’re using NixOS this is as simple as adding the following line to
 <code>configuration.nix</code>:</p>
-<pre class="nix"><code>virtualisation.virtualbox.host.enable = true;</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>virtualisation.virtualbox.host.enable = <span class="cn">true</span>;</span></code></pre></div>
 <p>and running <code>sudo nixos-rebuild switch</code>. If you’re using another Linux distro,
 install VirtualBox and set up a host-only network called <code>vboxnet0</code>.</p>
 <p>We’ll be using the <a href="https://nixos.org/nixops/manual/#idm140737318606176">instructions from the
 manual</a> as our starting
 point. Create two files:</p>
 <p><em>ops/trivial.nix</em></p>
-<pre class="nix"><code>{
-  network.description = &quot;Web server&quot;;
-  network.enableRollback = true;
-
-  webserver = import ./webserver.nix;
-}</code></pre>
+<div class="sourceCode" id="cb19"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">network</span>.<span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Web server&quot;</span><span class="op">;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">network</span>.<span class="va">enableRollback</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">webserver</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./webserver.nix</span><span class="op">;</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p><em>ops/trivial-vbox.nix</em></p>
-<pre class="nix"><code>{
-  webserver =
-    { config, pkgs, ... }:
-    { deployment.targetEnv = &quot;virtualbox&quot;;
-      deployment.virtualbox.headless = true; # don&#39;t show a display
-      deployment.virtualbox.memorySize = 1024; # megabytes
-      deployment.virtualbox.vcpu = 2; # number of cpus
-    };
-}</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">webserver</span> <span class="op">=</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="va">deployment</span>.<span class="va">targetEnv</span> <span class="op">=</span> <span class="st">&quot;virtualbox&quot;</span><span class="op">;</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">deployment</span>.<span class="va">virtualbox</span>.<span class="va">headless</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="co"># don&#39;t show a display</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">deployment</span>.<span class="va">virtualbox</span>.<span class="va">memorySize</span> <span class="op">=</span> <span class="dv">1024</span><span class="op">;</span> <span class="co"># megabytes</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">deployment</span>.<span class="va">virtualbox</span>.<span class="va">vcpu</span> <span class="op">=</span> <span class="dv">2</span><span class="op">;</span> <span class="co"># number of cpus</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>We should now be able to create a new deployment:</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd ops</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops create trivial.nix trivial-vbox.nix <span class="at">-d</span> trivial</span></code></pre></div>
@@ -1757,29 +1756,29 @@ this in the past when the development team hasn’t been able to prioritise
 fixing a production issue.</p>
 <p>Our new expression looks like this:</p>
 <p><em>nix/patched.nix</em></p>
-<pre class="nix"><code>args@{ nixpkgs ? import &lt;nixpkgs&gt; {}, compiler ? &quot;default&quot; }:
-
-(import ./default.nix args).overrideAttrs (old: {
-  postPatch = let
-    oldImport = &#39;&#39;
-      import Web.Scotty
-    &#39;&#39;;
-    newImport = &#39;&#39;
-      import Web.Scotty
-      import System.Environment (getArgs)
-    &#39;&#39;;
-    oldMain = &#39;&#39;
-      main = scotty 3000 $ do
-    &#39;&#39;;
-    newMain = &#39;&#39;
-      main = getArgs &gt;&gt;= \(port:_) -&gt; scotty (read port) $ do
-    &#39;&#39;;
-  in &#39;&#39;
-    substituteInPlace Main.hs --replace &#39;${oldImport}&#39; &#39;${newImport}&#39;
-    substituteInPlace Main.hs --replace &#39;${oldMain}&#39;   &#39;${newMain}&#39;
-    cat Main.hs
-  &#39;&#39;;
-})</code></pre>
+<div class="sourceCode" id="cb25"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>args@<span class="op">{</span> <span class="va">nixpkgs</span> <span class="op">?</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{},</span> <span class="va">compiler</span> <span class="op">?</span> <span class="st">&quot;default&quot;</span> <span class="op">}</span>:</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="op">(</span><span class="bu">import</span> <span class="ss">./default.nix</span> args<span class="op">)</span>.overrideAttrs <span class="op">(</span><span class="va">old</span><span class="op">:</span> <span class="op">{</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">postPatch</span> <span class="op">=</span> <span class="kw">let</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">oldImport</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="st">      import Web.Scotty</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">newImport</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="st">      import Web.Scotty</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="st">      import System.Environment (getArgs)</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">oldMain</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="st">      main = scotty 3000 $ do</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    <span class="va">newMain</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="st">      main = getArgs &gt;&gt;= \(port:_) -&gt; scotty (read port) $ do</span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">in</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="st">    substituteInPlace Main.hs --replace &#39;</span><span class="sc">${</span>oldImport<span class="sc">}</span><span class="st">&#39; &#39;</span><span class="sc">${</span>newImport<span class="sc">}</span><span class="st">&#39;</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a><span class="st">    substituteInPlace Main.hs --replace &#39;</span><span class="sc">${</span>oldMain<span class="sc">}</span><span class="st">&#39;   &#39;</span><span class="sc">${</span>newMain<span class="sc">}</span><span class="st">&#39;</span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="st">    cat Main.hs</span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
 <p>I’ve added that <code>cat Main.hs</code> at the end to</p>
 <ul>
 <li>confirm that the file was correctly patched</li>
@@ -1787,43 +1786,43 @@ fixing a production issue.</p>
 </ul>
 <p>We can create a new service definition to use this expression:</p>
 <p><em>nix/service-patched.nix</em></p>
-<pre class="nix"><code>{ config, lib, pkgs, ... }:
-
-let
-  blank-me-up = pkgs.callPackage ./patched.nix { nixpkgs = pkgs; };
-  cfg = config.services.blank-me-up;
-in {
-  options.services.blank-me-up.enable = lib.mkEnableOption &quot;Blank Me Up&quot;;
-  options.services.blank-me-up.port = lib.mkOption {
-    default = 3000;
-    type = lib.types.int;
-  };
-
-  config = lib.mkIf cfg.enable {
-    networking.firewall.allowedTCPPorts = [ cfg.port ];
-
-    systemd.services.blank-me-up = {
-      description = &quot;Blank Me Up&quot;;
-      after = [ &quot;network.target&quot; ];
-      wantedBy = [ &quot;multi-user.target&quot; ];
-      serviceConfig = {
-        ExecStart = &quot;${blank-me-up}/bin/blank-me-up ${toString cfg.port}&quot;;
-        Restart = &quot;always&quot;;
-        KillMode = &quot;process&quot;;
-      };
-    };
-  };
-}</code></pre>
+<div class="sourceCode" id="cb26"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">lib</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">blank-me-up</span> <span class="op">=</span> pkgs.callPackage <span class="ss">./patched.nix</span> <span class="op">{</span> <span class="va">nixpkgs</span> <span class="op">=</span> pkgs<span class="op">;</span> <span class="op">};</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">cfg</span> <span class="op">=</span> config.services.blank<span class="op">-</span>me<span class="op">-</span>up<span class="op">;</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">port</span> <span class="op">=</span> lib.mkOption <span class="op">{</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">default</span> <span class="op">=</span> <span class="dv">3000</span><span class="op">;</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="va">type</span> <span class="op">=</span> lib.types.int<span class="op">;</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="va">config</span> <span class="op">=</span> lib.mkIf cfg.enable <span class="op">{</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>    <span class="va">networking</span>.<span class="va">firewall</span>.<span class="va">allowedTCPPorts</span> <span class="op">=</span> <span class="op">[</span> cfg.port <span class="op">];</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">systemd</span>.<span class="va">services</span>.<span class="va">blank-me-up</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">after</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;network.target&quot;</span> <span class="op">];</span></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">wantedBy</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;multi-user.target&quot;</span> <span class="op">];</span></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">serviceConfig</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">ExecStart</span> <span class="op">=</span> <span class="st">&quot;</span><span class="sc">${</span>blank<span class="op">-</span>me<span class="op">-</span>up<span class="sc">}</span><span class="st">/bin/blank-me-up </span><span class="sc">${</span><span class="bu">toString</span> cfg.port<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">Restart</span> <span class="op">=</span> <span class="st">&quot;always&quot;</span><span class="op">;</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">KillMode</span> <span class="op">=</span> <span class="st">&quot;process&quot;</span><span class="op">;</span></span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>We make sure to pass the configured port in on startup and open the firewall
 appropriately.</p>
 <h3 id="deploying-again">Deploying (Again)</h3>
 <p>We update <code>webserver.nix</code> to use the patched service and specify a different
 port:</p>
-<pre class="nix"><code>{ ... }: {
-  imports = [ ../nix/service-patched.nix ];
-  services.blank-me-up.enable = true;
-  services.blank-me-up.port = 3001;
-}</code></pre>
+<div class="sourceCode" id="cb27"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="op">...</span> <span class="op">}</span>: <span class="op">{</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">imports</span> <span class="op">=</span> <span class="op">[</span> <span class="ss">../nix/service-patched.nix</span> <span class="op">];</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">port</span> <span class="op">=</span> <span class="dv">3001</span><span class="op">;</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>And we can deploy again!</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops deploy <span class="at">-d</span> trivial</span></code></pre></div>
 <p>The service should now be running on <code>http://&lt;ip&gt;:3001</code> instead of

@@ -110,24 +110,24 @@ which we need to write a little Nix. Here’s the <code>default.nix</code> I use
 <summary style="cursor: pointer">
 <code>default.nix</code>
 </summary>
-<pre class="nix"><code>let
-  # ./updater versions.json reflex-platform
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
-in (import reflex-platform { system = builtins.currentSystem; }).project ({ pkgs, ... }: {
-  useWarp = true;
-  withHoogle = false;
-  packages = {
-    small-viz = ./.;
-  };
-  shells = {
-    ghc = [&quot;small-viz&quot;];
-    ghcjs = [&quot;small-viz&quot;];
-  };
-})</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">reflex-platform</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.reflex<span class="op">-</span>platform<span class="op">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">(</span><span class="bu">import</span> reflex<span class="op">-</span>platform <span class="op">{</span> <span class="va">system</span> <span class="op">=</span> <span class="bu">builtins</span>.currentSystem<span class="op">;</span> <span class="op">})</span>.project <span class="op">({</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="op">{</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">useWarp</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">withHoogle</span> <span class="op">=</span> <span class="cn">false</span><span class="op">;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">packages</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">small-viz</span> <span class="op">=</span> <span class="ss">./.</span><span class="op">;</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">shells</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="va">ghc</span> <span class="op">=</span> <span class="op">[</span><span class="st">&quot;small-viz&quot;</span><span class="op">];</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">ghcjs</span> <span class="op">=</span> <span class="op">[</span><span class="st">&quot;small-viz&quot;</span><span class="op">];</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/348b759019bc19aec9833a6b5f042c1d2f5e9b13#file-default-nix">revision</a>)</em></p>
 <p>This sets up our project to build with both GHC and GHCJS, because we want to
@@ -423,30 +423,30 @@ write a <code>glitch.nix</code> file to simplify this process:</p>
 <summary style="cursor: pointer">
 <code>glitch.nix</code>
 </summary>
-<pre class="nix"><code>let
-  # ./updater versions.json reflex-platform
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
-  pkgs = (import reflex-platform {}).nixpkgs;
-  project = import ./default.nix;
-  html = pkgs.writeText &quot;index.html&quot; ''
-    &lt;!DOCTYPE html&gt;
-    &lt;html&gt;
-      &lt;head&gt;
-        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;
-      &lt;/head&gt;
-      &lt;body&gt;
-      &lt;/body&gt;
-    &lt;/html&gt;
-  '';
-in pkgs.runCommand &quot;glitch&quot; {} ''
-  mkdir -p $out
-  cp ${html} $out/index.html
-  cp ${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js $out/all.js
-''</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">reflex-platform</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.reflex<span class="op">-</span>platform<span class="op">;</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="op">(</span><span class="bu">import</span> reflex<span class="op">-</span>platform <span class="op">{})</span>.nixpkgs<span class="op">;</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">project</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./default.nix</span><span class="op">;</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">html</span> <span class="op">=</span> pkgs.writeText <span class="st">&quot;index.html&quot;</span> <span class="st">''</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;!DOCTYPE html&gt;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;html&gt;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;head&gt;</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="st">        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/head&gt;</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;body&gt;</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/body&gt;</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;/html&gt;</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="st">  ''</span><span class="op">;</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.runCommand <span class="st">&quot;glitch&quot;</span> <span class="op">{}</span> <span class="st">''</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="st">  mkdir -p $out</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="st">  cp </span><span class="sc">${</span>html<span class="sc">}</span><span class="st"> $out/index.html</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="st">  cp </span><span class="sc">${</span>project.ghcjs.small<span class="op">-</span>viz<span class="sc">}</span><span class="st">/bin/small-viz.jsexe/all.js $out/all.js</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="st">''</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/a0127badaee44f316156121153c0e4bc41af9460#file-glitch-nix">revision</a>)</em></p>
 <p>And then produce the files we need to copy over with:</p>
@@ -465,36 +465,36 @@ that I found when I was looking into this to update <code>glitch.nix</code>:</p>
 <summary style="cursor: pointer">
 <code>glitch.nix</code>
 </summary>
-<pre class="nix"><code>let
-  # ./updater versions.json reflex-platform
-  fetcher = { owner, repo, rev, sha256, ... }: builtins.fetchTarball {
-    inherit sha256;
-    url = &quot;https://github.com/${owner}/${repo}/tarball/${rev}&quot;;
-  };
-  reflex-platform = fetcher (builtins.fromJSON (builtins.readFile ./versions.json)).reflex-platform;
-  pkgs = (import reflex-platform {}).nixpkgs;
-  project = import ./default.nix;
-  html = pkgs.writeText &quot;index.html&quot; ''
-    &lt;!DOCTYPE html&gt;
-    &lt;html&gt;
-      &lt;head&gt;
-        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;
-      &lt;/head&gt;
-      &lt;body&gt;
-      &lt;/body&gt;
-    &lt;/html&gt;
-  '';
-in pkgs.runCommand &quot;glitch&quot; {} ''
-  mkdir -p $out
-  cp ${html} $out/index.html
-  ${pkgs.closurecompiler}/bin/closure-compiler \
-    --externs=${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js.externs \
-    --jscomp_off=checkVars \
-    --js_output_file=&quot;$out/all.js&quot; \
-    -O ADVANCED \
-    -W QUIET \
-    ${project.ghcjs.small-viz}/bin/small-viz.jsexe/all.js
-''</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ./updater versions.json reflex-platform</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">reflex-platform</span> <span class="op">=</span> fetcher <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">))</span>.reflex<span class="op">-</span>platform<span class="op">;</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="op">(</span><span class="bu">import</span> reflex<span class="op">-</span>platform <span class="op">{})</span>.nixpkgs<span class="op">;</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">project</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./default.nix</span><span class="op">;</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">html</span> <span class="op">=</span> pkgs.writeText <span class="st">&quot;index.html&quot;</span> <span class="st">''</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;!DOCTYPE html&gt;</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;html&gt;</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;head&gt;</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="st">        &lt;script language=&quot;javascript&quot; src=&quot;all.js&quot;&gt;&lt;/script&gt;</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/head&gt;</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;body&gt;</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="st">      &lt;/body&gt;</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;/html&gt;</span></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="st">  ''</span><span class="op">;</span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.runCommand <span class="st">&quot;glitch&quot;</span> <span class="op">{}</span> <span class="st">''</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="st">  mkdir -p $out</span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a><span class="st">  cp </span><span class="sc">${</span>html<span class="sc">}</span><span class="st"> $out/index.html</span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="st">  </span><span class="sc">${</span>pkgs.closurecompiler<span class="sc">}</span><span class="st">/bin/closure-compiler \</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a><span class="st">    --externs=</span><span class="sc">${</span>project.ghcjs.small<span class="op">-</span>viz<span class="sc">}</span><span class="st">/bin/small-viz.jsexe/all.js.externs \</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a><span class="st">    --jscomp_off=checkVars \</span></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="st">    --js_output_file=&quot;$out/all.js&quot; \</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a><span class="st">    -O ADVANCED \</span></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a><span class="st">    -W QUIET \</span></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a><span class="st">    </span><span class="sc">${</span>project.ghcjs.small<span class="op">-</span>viz<span class="sc">}</span><span class="st">/bin/small-viz.jsexe/all.js</span></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a><span class="st">''</span></span></code></pre></div>
 </details>
 <p><em>(<a href="https://gist.github.com/vaibhavsagar/24b1754b8a269fd8c54a89cb73e64fa8/aac5fe1258ccfc8c9b8ca685b9db1a4f538ae183#file-glitch-nix">revision</a>)</em></p>
 <p>And this brings the size down to under 2MB.</p>

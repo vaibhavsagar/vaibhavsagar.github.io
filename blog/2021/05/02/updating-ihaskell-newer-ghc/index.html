@@ -78,20 +78,20 @@ reference to Nixpkgs:</p>
 <summary style="cursor: pointer">
 Changing Nixpkgs
 </summary>
-<pre class="nix"><code>let
-  nixpkgs-src = builtins.fetchTarball {
-    url = &quot;https://github.com/NixOS/nixpkgs/tarball/8795d39ce70f04e3fd609422d522e5b2594f3a70&quot;;
-    sha256 = &quot;01w7q0nqydippj0ygbg77byb770snhc5rnqzc6isws58642l8z4s&quot;;
-  };
-in
-{ compiler ? &quot;ghc901&quot;
-, jupyterlabAppDir ? null
-, nixpkgs ? import nixpkgs-src {}
-, packages ? (_: [])
-, pythonPackages ? (_: [])
-, rtsopts ? &quot;-M3g -N2&quot;
-, systemPackages ? (_: [])
-}:</code></pre>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">nixpkgs-src</span> <span class="op">=</span> <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/NixOS/nixpkgs/tarball/8795d39ce70f04e3fd609422d522e5b2594f3a70&quot;</span><span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;01w7q0nqydippj0ygbg77byb770snhc5rnqzc6isws58642l8z4s&quot;</span><span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">compiler</span> <span class="op">?</span> <span class="st">&quot;ghc901&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">jupyterlabAppDir</span> <span class="op">?</span> <span class="cn">null</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">nixpkgs</span> <span class="op">?</span> <span class="bu">import</span> nixpkgs<span class="op">-</span>src <span class="op">{}</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">packages</span> <span class="op">?</span> <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="op">[])</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">pythonPackages</span> <span class="op">?</span> <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="op">[])</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">rtsopts</span> <span class="op">?</span> <span class="st">&quot;-M3g -N2&quot;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">,</span> <span class="va">systemPackages</span> <span class="op">?</span> <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="op">[])</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>:</span></code></pre></div>
 </details>
 <p>Then it’s possible to build this and see how many packages need changes:</p>
 <pre class="shell"><code>$ nix-build release-9.0.nix --keep-going 2&gt;&amp;1 | wc -l</code></pre>
@@ -102,20 +102,20 @@ in the package set by default, or any number of other changes. Here’s what I e
 <summary style="cursor: pointer">
 Package set overrides
 </summary>
-<pre class="nix"><code>      cryptohash-md5    = nixpkgs.haskell.lib.doJailbreak super.cryptohash-md5;
-      cryptohash-sha1   = nixpkgs.haskell.lib.doJailbreak super.cryptohash-sha1;
-      basement          = super.basement_0_0_12;
-      foundation        = super.foundation_0_0_26_1;
-      memory            = nixpkgs.haskell.lib.appendPatch super.memory (nixpkgs.fetchpatch {
-        url = &quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/c89c1e27af8f180b3be476e102147557f922b224/patches/memory-0.15.0.patch&quot;;
-        sha256 = &quot;0mkjbrzi05h1xds8rf5wfky176hrl03q0d7ipklp9x4ls3yyqj5x&quot;;
-      });
-      cryptonite        = nixpkgs.haskell.lib.appendPatch super.cryptonite (nixpkgs.fetchpatch {
-        url = &quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/6a65307bbdc73c5eb4165a67ee97c7b9faa818e1/patches/cryptonite-0.28.patch&quot;;
-        sha256 = &quot;1wq9hw16qj2yqy7lyqbi7106lhk199hvnkj5xr7h0ip854gjsr5j&quot;;
-      });
-      profunctors       = self.callCabal2nix &quot;profunctors&quot; profunctors-src {}; # `profunctors-src` is defined above
-      mono-traversable  = nixpkgs.haskell.lib.dontCheck super.mono-traversable;</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>      cryptohash<span class="op">-</span>md5    = nixpkgs.haskell.lib.doJailbreak super.cryptohash<span class="op">-</span>md5;</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>      cryptohash<span class="op">-</span>sha1   = nixpkgs.haskell.lib.doJailbreak super.cryptohash<span class="op">-</span>sha1;</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>      basement          = super.basement_0_0_12;</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      foundation        = super.foundation_0_0_26_1;</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      memory            = nixpkgs.haskell.lib.appendPatch super.memory <span class="op">(</span>nixpkgs.fetchpatch <span class="op">{</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/c89c1e27af8f180b3be476e102147557f922b224/patches/memory-0.15.0.patch&quot;</span><span class="op">;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;0mkjbrzi05h1xds8rf5wfky176hrl03q0d7ipklp9x4ls3yyqj5x&quot;</span><span class="op">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">})</span>;</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      cryptonite        = nixpkgs.haskell.lib.appendPatch super.cryptonite <span class="op">(</span>nixpkgs.fetchpatch <span class="op">{</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://gitlab.haskell.org/ghc/head.hackage/-/raw/6a65307bbdc73c5eb4165a67ee97c7b9faa818e1/patches/cryptonite-0.28.patch&quot;</span><span class="op">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">sha256</span> <span class="op">=</span> <span class="st">&quot;1wq9hw16qj2yqy7lyqbi7106lhk199hvnkj5xr7h0ip854gjsr5j&quot;</span><span class="op">;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      <span class="op">})</span>;</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      profunctors       = self.callCabal2nix <span class="st">&quot;profunctors&quot;</span> profunctors<span class="op">-</span>src <span class="op">{}</span>; <span class="co"># `profunctors-src` is defined above</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      mono<span class="op">-</span>traversable  = nixpkgs.haskell.lib.dontCheck super.mono<span class="op">-</span>traversable;</span></code></pre></div>
 </details>
 <p>After every few changes, I like to rerun <code>nix-build</code> and watch the number go
 down. It’s also possible to build an individual package, e.g. to build
