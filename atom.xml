@@ -8,8 +8,134 @@
         <name>Vaibhav Sagar</name>
         <email>vaibhavsagar@gmail.com</email>
     </author>
-    <updated>2021-05-02T00:00:00Z</updated>
+    <updated>2023-01-29T00:00:00Z</updated>
     <entry>
+    <title>Using `ghc-syntax-highlighter` with Hakyll</title>
+    <link href="https://vaibhavsagar.com/blog/2023/01/29/ghc-syntax-hakyll/" />
+    <id>https://vaibhavsagar.com/blog/2023/01/29/ghc-syntax-hakyll/index.html</id>
+    <published>2023-01-29</published>
+    <updated>2023-01-29T00:00:00Z</updated>
+    <summary type="html"><div class="info">
+    Posted on 29 January 2023
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged &#39;haskell&#39;." href="/blog/tags/haskell/index.html">haskell</a>, <a title="All pages tagged &#39;programming&#39;." href="/blog/tags/programming/index.html">programming</a>
+    
+</div>
+
+<p>In 2018, <a href="https://markkarpov.com/post/announcing-ghc-syntax-highlighter.html">Mark Karpov announced
+<code>ghc-syntax-highlighter</code></a>,
+a project which uses GHC’s own lexer to tokenise Haskell source code for the
+best possible syntax highlighting. I thought this was extremely cool, and
+really wanted to use it for this blog. Unfortunately, this is what the post had
+to say about <code>pandoc</code>, which Hakyll uses to process Markdown:</p>
+<blockquote>
+<p><a href="https://hackage.haskell.org/package/skylighting"><code>skylighting</code></a> is what
+Pandoc uses btw. And from what I can tell it’s hardcoded to use only that
+library for highlighting, so some creativity may be necessary to get it work.</p>
+</blockquote>
+<p>I briefly looked into this and reached the same conclusion (and as of this
+writing <a href="https://github.com/jgm/pandoc/blob/5f31a01d77f5fea46e2deca51165d5af8fc99677/src/Text/Pandoc/Highlighting.hs#L76-L106">it is still the
+case</a>)
+so, as a deeply uncreative individual, I sighed deeply and resigned myself to never knowing this particular joy.</p>
+<p>Until, just a few days ago, I read <a href="https://tony-zorman.com/posts/2023-01-21-pygmentising-hakyll.html">this lovely blog post by Tony Zorman about
+customising Hakyll’s syntax
+highlighting</a>
+which included this gem of a sentence in the very first paragraph:</p>
+<blockquote>
+<p>Using <code>pygmentize</code> as an example, I will show you how you can swap out
+pandoc’s native syntax highlighting with pretty much any third party tool that
+can output HTML.</p>
+</blockquote>
+<p>And in fact this is an accurate description of what follows. This sounds like
+exactly what I want to do, and between this and Mark’s
+<a href="https://hackage.haskell.org/package/mmark-ext"><code>mmark-ext</code></a> (which <a href="https://hackage.haskell.org/package/mmark-ext-0.2.1.5/docs/Text-MMark-Extension-GhcSyntaxHighlighter.html">implements
+<code>ghc-syntax-highlighter</code> support as an extension for
+<code>mmark</code></a>)
+I was able to successfully follow the instructions to get
+<code>ghc-syntax-highlighter</code> working with my blog. Let me walk you through what
+I did.</p>
+<p>Here are the language extensions I will be using:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="pp">{-# LANGUAGE LambdaCase        #-}</span><span>
+</span><span class="pp">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span class="pp">{-# LANGUAGE ViewPatterns      #-}</span></code></pre></div>
+<p>and these additional imports:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span>           </span><span class="dt">GHC.SyntaxHighlighter</span><span> </span><span class="ot">(</span><span class="dt">Token</span><span class="ot">(</span><span class="ot">..</span><span class="ot">)</span><span class="ot">,</span><span> </span><span class="va">tokenizeHaskell</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span>           </span><span class="dt">Text.Blaze.Html.Renderer.Text</span><span> </span><span class="ot">(</span><span class="va">renderHtml</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span>           </span><span class="dt">Text.Pandoc.Definition</span><span> </span><span class="ot">(</span><span class="dt">Block</span><span> </span><span class="ot">(</span><span class="dt">CodeBlock</span><span class="ot">,</span><span> </span><span class="dt">RawBlock</span><span class="ot">)</span><span class="ot">,</span><span> </span><span class="dt">Pandoc</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span>           </span><span class="dt">Text.Pandoc.Walk</span><span> </span><span class="ot">(</span><span class="va">walk</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Text.Blaze.Html5</span><span> </span><span class="kw">as</span><span> </span><span class="dt">H</span><span>
+</span><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Text.Blaze.Html5.Attributes</span><span> </span><span class="kw">as</span><span> </span><span class="dt">A</span></code></pre></div>
+<p>I chose to use <a href="https://hackage.haskell.org/package/blaze-html"><code>blaze-html</code></a>
+since it is already a transitive dependency of <code>pandoc</code> and using it has no
+impact on our dependency tree.</p>
+<p>Tony uses <code>walkM</code> since an external program (<code>pygmentize</code>) is involved, but
+since we are working with pure Haskell code we can get away with just <code>walk</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">ghcSyntaxHighlight</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Pandoc</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Pandoc</span><span>
+</span><span class="va">ghcSyntaxHighlight</span><span> </span><span class="ot">=</span><span> </span><span class="va">walk</span><span> </span><span class="op">$</span><span> </span><span class="ot">\</span><span class="ot">case</span><span>
+    </span><span class="dt">CodeBlock</span><span> </span><span class="ot">(</span><span class="ot">_</span><span class="ot">,</span><span> </span><span class="ot">(</span><span class="va">isHaskell</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">True</span><span class="ot">)</span><span class="ot">:</span><span class="ot">_</span><span class="ot">,</span><span> </span><span class="ot">_</span><span class="ot">)</span><span> </span><span class="ot">(</span><span class="va">tokenizeHaskell</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Just</span><span> </span><span class="va">tokens</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span>
+        </span><span class="dt">RawBlock</span><span> </span><span class="st">&quot;html&quot;</span><span> </span><span class="op">.</span><span> </span><span class="va">L.toStrict</span><span> </span><span class="op">.</span><span> </span><span class="va">renderHtml</span><span> </span><span class="op">$</span><span> </span><span class="va">formatHaskellTokens</span><span> </span><span class="va">tokens</span><span>
+    </span><span class="va">block</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">block</span><span>
+    </span><span class="kw">where</span><span> </span><span class="va">isHaskell</span><span> </span><span class="ot">=</span><span> </span><span class="ot">(</span><span class="op">==</span><span> </span><span class="st">&quot;haskell&quot;</span><span class="ot">)</span></code></pre></div>
+<p>This only matches Haskell code blocks which <code>tokenizeHaskell</code> is able to
+successfully tokenise and otherwise falls back on existing <code>pandoc</code> behaviour.</p>
+<p><code>formatHaskellTokens</code> generates markup very similarly to what <code>pandoc</code> already
+does:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">formatHaskellTokens</span><span> </span><span class="ot">::</span><span> </span><span class="ot">[</span><span class="ot">(</span><span class="dt">Token</span><span class="ot">,</span><span> </span><span class="dt">T.Text</span><span class="ot">)</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">H.Html</span><span>
+</span><span class="va">formatHaskellTokens</span><span> </span><span class="va">tokens</span><span> </span><span class="ot">=</span><span>
+    </span><span class="va">H.div</span><span> </span><span class="op">H.!</span><span> </span><span class="va">A.class_</span><span> </span><span class="st">&quot;sourceCode&quot;</span><span> </span><span class="op">$</span><span>
+        </span><span class="va">H.pre</span><span> </span><span class="op">H.!</span><span> </span><span class="va">A.class_</span><span> </span><span class="st">&quot;sourceCode haskell&quot;</span><span> </span><span class="op">$</span><span>
+            </span><span class="va">H.code</span><span> </span><span class="op">H.!</span><span> </span><span class="va">A.class_</span><span> </span><span class="st">&quot;sourceCode haskell&quot;</span><span> </span><span class="op">$</span><span>
+                </span><span class="va">mapM_</span><span> </span><span class="va">tokenToHtml</span><span> </span><span class="va">tokens</span></code></pre></div>
+<p><code>tokenizeHaskell</code> produces a list of pairs of the token type (<code>KeywordToken</code>,
+<code>VariableToken</code>, etc.) and the matched text, and the <code>tokenToHtml</code> (<a href="https://hackage.haskell.org/package/mmark-ext-0.2.1.5/docs/src/Text.MMark.Extension.GhcSyntaxHighlighter.html#tokenToHtml">adapted
+from
+<code>mmark-ext</code></a>)
+function creates a <code>span</code> element with the appropriate class name for our CSS
+to style:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">tokenToHtml</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="dt">Token</span><span class="ot">,</span><span> </span><span class="dt">T.Text</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">H.Html</span><span>
+</span><span class="va">tokenToHtml</span><span> </span><span class="ot">(</span><span class="va">tokenClass</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">className</span><span class="ot">,</span><span> </span><span class="va">text</span><span class="ot">)</span><span> </span><span class="ot">=</span><span>
+    </span><span class="va">H.span</span><span> </span><span class="op">H.!?</span><span> </span><span class="ot">(</span><span class="va">not</span><span> </span><span class="op">$</span><span> </span><span class="va">T.null</span><span> </span><span class="va">className</span><span class="ot">,</span><span> </span><span class="va">A.class_</span><span> </span><span class="ot">(</span><span class="va">H.toValue</span><span> </span><span class="va">className</span><span class="ot">)</span><span class="ot">)</span><span> </span><span class="op">$</span><span>
+        </span><span class="va">H.toHtml</span><span> </span><span class="va">text</span></code></pre></div>
+<p><code>tokenClass</code> (<a href="https://hackage.haskell.org/package/mmark-ext-0.2.1.5/docs/src/Text.MMark.Extension.GhcSyntaxHighlighter.html#tokenClass">also adapted from
+<code>mmark-ext</code></a>)
+outputs the appropriate class name for each token, and I made only minor
+changes for styling purposes:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">tokenClass</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Token</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">T.Text</span><span>
+</span><span class="va">tokenClass</span><span> </span><span class="ot">=</span><span> </span><span class="ot">\</span><span class="ot">case</span><span>
+  </span><span class="dt">KeywordTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;kw&quot;</span><span>
+  </span><span class="dt">PragmaTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;pp&quot;</span><span> </span><span class="co">-- Preprocessor</span><span>
+  </span><span class="dt">SymbolTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span><span> </span><span class="co">-- Other</span><span>
+  </span><span class="dt">VariableTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;va&quot;</span><span>
+  </span><span class="dt">ConstructorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dt&quot;</span><span> </span><span class="co">-- DataType</span><span>
+  </span><span class="dt">OperatorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;op&quot;</span><span>
+  </span><span class="dt">CharTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ch&quot;</span><span>
+  </span><span class="dt">StringTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;st&quot;</span><span>
+  </span><span class="dt">IntegerTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
+  </span><span class="dt">RationalTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
+  </span><span class="dt">CommentTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;co&quot;</span><span>
+  </span><span class="dt">SpaceTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;&quot;</span><span>
+  </span><span class="dt">OtherTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span></code></pre></div>
+<p>Finally we have to actually use <code>ghcSyntaxHighlight</code>, for which we define
+a replacement for <code>pandocCompiler</code> called (imaginatively)
+<code>customPandocCompiler</code> and use it everywhere:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">customPandocCompiler</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Compiler</span><span> </span><span class="ot">(</span><span class="dt">Item</span><span> </span><span class="dt">String</span><span class="ot">)</span><span>
+</span><span class="va">customPandocCompiler</span><span> </span><span class="ot">=</span><span>
+    </span><span class="va">pandocCompilerWithTransform</span><span>
+        </span><span class="va">defaultHakyllReaderOptions</span><span>
+        </span><span class="va">defaultHakyllWriterOptions</span><span>
+        </span><span class="va">ghcSyntaxHighlight</span></code></pre></div>
+<p>Again, since we are using pure functions, we can get away with
+<code>pandocCompilerWithTransform</code> instead of <code>pandocCompilerWithTransformM</code>.</p>
+<p>And we’re done! I also had to tweak my CSS slightly since <code>pandoc</code> was
+generating a <code>span</code> for each line of source code instead of each token like
+<code>ghc-syntax-highlighter</code> does. For the complete listing, see
+<a href="https://github.com/vaibhavsagar/website/blob/6415721a318fc8fb31f4aadb7cd40ab6aad4fbc4/site.hs">here</a>.</p>
+</summary>
+</entry>
+<entry>
     <title>Updating IHaskell to a Newer GHC</title>
     <link href="https://vaibhavsagar.com/blog/2021/05/02/updating-ihaskell-newer-ghc/" />
     <id>https://vaibhavsagar.com/blog/2021/05/02/updating-ihaskell-newer-ghc/index.html</id>
@@ -2702,503 +2828,6 @@ code can be gently massaged into something presentable.</p>
 <p><em>Thanks to
 <a href="https://joelburget.com/">Joel Burget</a>, <a href="http://www.matfournier.com/">Mat Fournier</a>, <a href="https://eskimor.gonimo.com/">Robert Klotzner</a>, <a href="https://github.com/L8D">Tenor</a>, <a href="http://www.tomharding.me/">Tom Harding</a>, and <a href="http://www.tylerweir.com/">Tyler Weir</a> for suggestions and
 feedback.</em></p>
-</summary>
-</entry>
-<entry>
-    <title>Moving Towards Dialogue</title>
-    <link href="https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/" />
-    <id>https://vaibhavsagar.com/blog/2018/11/03/moving-towards-dialogue/index.html</id>
-    <published>2018-11-03</published>
-    <updated>2018-11-03T00:00:00Z</updated>
-    <summary type="html"><div class="info">
-    Posted on  3 November 2018
-    
-</div>
-<div class="info">
-    
-        Tags: <a title="All pages tagged &#39;programming&#39;." href="/blog/tags/programming/index.html">programming</a>, <a title="All pages tagged &#39;haskell&#39;." href="/blog/tags/haskell/index.html">haskell</a>, <a title="All pages tagged &#39;idris&#39;." href="/blog/tags/idris/index.html">idris</a>
-    
-</div>
-
-<p><em>This blog post is essentially a transcript of <a href="https://www.youtube.com/watch?v=0oo8wIi2qBE">a 10-minute talk I gave at
-!!Con</a>, the slides for which are
-available <a href="/presentations/typed-holes/">here</a>.</em></p>
-<p>Let’s talk about typed holes. What’s a typed hole? A definition I like is <em>“a
-placeholder for an expression with a known type and an unknown value”</em>.</p>
-<p>Why are typed holes useful? Because they allow the language to help us write
-programs! To demonstrate, let’s look at some code in Python, a language that
-lacks this feature.</p>
-<p>Suppose I want to write a function that takes another function and a list and
-applies the function to each element of that list. A first stab might look like
-this:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): <span class="cf">return</span> []</span></code></pre></div>
-<p>This is obviously wrong: this function ignores its arguments and gives us an
-empty list each time. This is no good, but what’s worse is that Python will
-accept this definition without complaint. It doesn’t seem to know (or care).</p>
-<p>Let’s try again. I hear the way to do things with lists in Python is to use a
-list comprehension, so I make sure to use one of those this time:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): [f(e) <span class="cf">for</span> e <span class="kw">in</span> ls]</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>...</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> plusOne <span class="op">=</span> <span class="kw">lambda</span> i: i <span class="op">+</span> <span class="dv">1</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(<span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]))</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="va">None</span></span></code></pre></div>
-<p>But this definition is still wrong, because I forgot to put a <code>return</code>
-statement in! Again, Python will happily accept this.</p>
-<p>I’m getting a bit frustrated at this point, so I look at how <code>map</code> is actually
-implemented. It uses a generator comprehension instead of a list comprehension,
-which makes it more general somehow, so I make sure to use that, and I remember
-to put a <code>return</code> statement in this time:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls): <span class="cf">return</span> (f(e) <span class="cf">for</span> e <span class="kw">in</span> ls)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>...</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(<span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]))</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>generator <span class="bu">object</span> <span class="bu">map</span>.<span class="op">&lt;</span><span class="bu">locals</span><span class="op">&gt;</span>.<span class="op">&lt;</span>genexpr<span class="op">&gt;</span> at <span class="bn">0x7ffb92103ca8</span><span class="op">&gt;</span></span></code></pre></div>
-<p>And now instead of giving me something useful, this function gives me an
-address in memory, which seems especially pointless.</p>
-<p>I give up. This example seems contrived, but over the course of my relationship
-with Python, which is more than a decade long now, I’ve seen the same dynamic
-play out embarrassingly many times. How do I write programs that work? Surely
-this is a simple question with a straightforward answer.</p>
-<p>Indeed, the most common response I get when I ask this question is to write
-tests. That sounds reasonable, so let’s do that:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="kw">def</span> <span class="bu">map</span>(f, ls):</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>...     <span class="bu">print</span>(<span class="st">&quot;Where are your tests now?&quot;</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>...     <span class="cf">return</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>...</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="bu">map</span>(plusOne, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="op">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>Where are your tests now?</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="va">True</span></span></code></pre></div>
-<p>Okay, my test passes, so everything must be good, right?</p>
-<p>I contend that tests are necessary, but not sufficient. They are problematic
-for at least two reasons:</p>
-<ol type="1">
-<li>They are only as good as the specification they imply for how a program
-should behave. If that specification is incomplete or wrong, no amount of
-tests will guarantee software that works.</li>
-<li>The language doesn’t understand tests, by which I mean that it’s extremely
-difficult to automatically go from a failing test to the part of the code
-where the error lives. The programmer has to do the legwork of tracking down
-the bug based on essentially one bit of information in many cases.</li>
-</ol>
-<p>Fortunately, tests aren’t the only specification of how a program should
-behave. Types can also serve as specifications, and they have the advantage
-that they are extremely well integrated into the language in a way tests
-usually are not.</p>
-<p>What does this mean in practice? Let’s look at Haskell. Haskell is statically
-typed, which means it expects to know the types of all the expressions in your
-program at compile time. This is nothing special though, lots of other
-languages also claim to be statically typed. What is special about Haskell
-though is that it has type inference, which means that you don’t have to
-annotate expressions with their types most of the time because the compiler can
-figure it out. If you put these two features together, you get typed holes!</p>
-<p>Let’s try to write that same program in Haskell with typed holes. To start,
-let’s create a file called <code>Main.hs</code> with the following contents:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span> </span><span class="ot">(</span><span class="va">map</span><span class="ot">)</span><span>
-
-</span><span class="va">map</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">b</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">a</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">b</span><span class="ot">]</span><span>
-</span><span class="va">map</span><span> </span><span class="va">f</span><span> </span><span class="va">ls</span><span> </span><span class="ot">=</span><span> </span><span class="ot">_</span><span>
-
-</span><span class="va">plusOne</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span>
-</span><span class="va">plusOne</span><span> </span><span class="va">i</span><span> </span><span class="ot">=</span><span> </span><span class="va">i</span><span> </span><span class="op">+</span><span> </span><span class="dv">1</span><span>
-
-</span><span class="va">main</span><span> </span><span class="ot">::</span><span> </span><span class="dt">IO</span><span> </span><span class="ot">(</span><span class="ot">)</span><span>
-</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">print</span><span> </span><span class="ot">(</span><span class="ot">(</span><span class="va">map</span><span> </span><span class="va">plusOne</span><span> </span><span class="ot">[</span><span class="dv">1</span><span class="ot">,</span><span> </span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">]</span><span class="ot">)</span><span> </span><span class="op">==</span><span> </span><span class="ot">[</span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">,</span><span> </span><span class="dv">4</span><span class="ot">]</span><span class="ot">)</span></code></pre></div>
-<p>To automate the cycle of loading this file into GHCi every time we make a
-change, we’re going to use <a href="https://github.com/ndmitchell/ghcid"><code>ghcid</code></a>,
-which does essentially that and not much else. This is the result of running
-<code>ghcid Main.hs</code>:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Main.hs:4:12: error:</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    • Found hole: _ :: [b]</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>      Where: ‘b’ is a rigid type variable bound by</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>               the type signature for:</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>               at Main.hs:3:1-29</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    • In the expression: _</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>      In an equation for ‘map’: map f ls = _</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    • Relevant bindings include</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        ls :: [a] (bound at Main.hs:4:7)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        f :: a -&gt; b (bound at Main.hs:4:5)</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  |</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>4 | map f ls = _</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  |            ^</span></code></pre></div>
-<p>I’d suggest ignoring the middle and instead focusing on the top, which tells us
-the type of the hole, and the bottom, which tells us which bindings are in
-scope that we can use to fill in the hole.</p>
-<p>In this case we aren’t learning anything new, and we already know that the hole
-is of type <code>[b]</code>, but it’s useful to know that our view of the world agrees
-with GHC’s. Of the bindings available to us, <code>ls</code> looks like the most
-promising, and we can split it into one of two cases: an empty list, or some
-element and the rest of the list. We can put a typed hole on the right hand
-side of each case alternative:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span> </span><span class="ot">(</span><span class="va">map</span><span class="ot">)</span><span>
-
-</span><span class="va">map</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">b</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">a</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">b</span><span class="ot">]</span><span>
-</span><span class="va">map</span><span> </span><span class="va">f</span><span> </span><span class="va">ls</span><span> </span><span class="ot">=</span><span> </span><span class="kw">case</span><span> </span><span class="va">ls</span><span> </span><span class="kw">of</span><span>
-    </span><span class="ot">[</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">_1</span><span>
-    </span><span class="va">x</span><span class="ot">:</span><span class="va">xs</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">_2</span><span>
-
-</span><span class="va">plusOne</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span>
-</span><span class="va">plusOne</span><span> </span><span class="va">i</span><span> </span><span class="ot">=</span><span> </span><span class="va">i</span><span> </span><span class="op">+</span><span> </span><span class="dv">1</span><span>
-
-</span><span class="va">main</span><span> </span><span class="ot">::</span><span> </span><span class="dt">IO</span><span> </span><span class="ot">(</span><span class="ot">)</span><span>
-</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">print</span><span> </span><span class="ot">(</span><span class="ot">(</span><span class="va">map</span><span> </span><span class="va">plusOne</span><span> </span><span class="ot">[</span><span class="dv">1</span><span class="ot">,</span><span> </span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">]</span><span class="ot">)</span><span> </span><span class="op">==</span><span> </span><span class="ot">[</span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">,</span><span> </span><span class="dv">4</span><span class="ot">]</span><span class="ot">)</span></code></pre></div>
-<p>And our <code>ghcid</code> output changes:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Main.hs:5:11-12: error:</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    • Found hole: _1 :: [b]</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>      Where: ‘b’ is a rigid type variable bound by</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>               the type signature for:</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>               at Main.hs:3:1-29</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>      Or perhaps ‘_1’ is mis-spelled, or not in scope</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    • In the expression: _1</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      In a case alternative: [] -&gt; _1</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      In the expression:</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        case ls of</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          [] -&gt; _1</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>          x : xs -&gt; _2</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    • Relevant bindings include</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        ls :: [a] (bound at Main.hs:4:7)</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        f :: a -&gt; b (bound at Main.hs:4:5)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  |</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>5 |     [] -&gt; _1</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  |           ^^</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>Main.hs:6:13-14: error:</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    • Found hole: _2 :: [b]</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>      Where: ‘b’ is a rigid type variable bound by</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>               the type signature for:</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>               at Main.hs:3:1-29</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>      Or perhaps ‘_2’ is mis-spelled, or not in scope</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    • In the expression: _2</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>      In a case alternative: x : xs -&gt; _2</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>      In the expression:</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>        case ls of</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>          [] -&gt; _1</span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>          x : xs -&gt; _2</span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    • Relevant bindings include</span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>        xs :: [a] (bound at Main.hs:6:7)</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>        x :: a (bound at Main.hs:6:5)</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>        ls :: [a] (bound at Main.hs:4:7)</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>        f :: a -&gt; b (bound at Main.hs:4:5)</span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  |</span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>6 |     x:xs -&gt; _2</span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  |             ^^</span></code></pre></div>
-<p>We haven’t learned anything new about the types, but we can make progress
-another way. The only sensible thing to put on the right hand side when given
-an empty list is another empty list, and after splitting a list apart the most
-reasonable thing to do is to combine two other things into a new list:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span> </span><span class="ot">(</span><span class="va">map</span><span class="ot">)</span><span>
-
-</span><span class="va">map</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">b</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">a</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">b</span><span class="ot">]</span><span>
-</span><span class="va">map</span><span> </span><span class="va">f</span><span> </span><span class="va">ls</span><span> </span><span class="ot">=</span><span> </span><span class="kw">case</span><span> </span><span class="va">ls</span><span> </span><span class="kw">of</span><span>
-    </span><span class="ot">[</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
-    </span><span class="va">x</span><span class="ot">:</span><span class="va">xs</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">_1</span><span class="ot">:</span><span class="va">_2</span><span>
-
-</span><span class="va">plusOne</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span>
-</span><span class="va">plusOne</span><span> </span><span class="va">i</span><span> </span><span class="ot">=</span><span> </span><span class="va">i</span><span> </span><span class="op">+</span><span> </span><span class="dv">1</span><span>
-
-</span><span class="va">main</span><span> </span><span class="ot">::</span><span> </span><span class="dt">IO</span><span> </span><span class="ot">(</span><span class="ot">)</span><span>
-</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">print</span><span> </span><span class="ot">(</span><span class="ot">(</span><span class="va">map</span><span> </span><span class="va">plusOne</span><span> </span><span class="ot">[</span><span class="dv">1</span><span class="ot">,</span><span> </span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">]</span><span class="ot">)</span><span> </span><span class="op">==</span><span> </span><span class="ot">[</span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">,</span><span> </span><span class="dv">4</span><span class="ot">]</span><span class="ot">)</span></code></pre></div>
-<p>Now the output gets a little more interesting:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>Main.hs:6:13-14: error:</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    • Found hole: _1 :: b</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>      Where: ‘b’ is a rigid type variable bound by</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>               the type signature for:</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>               at Main.hs:3:1-29</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>      Or perhaps ‘_1’ is mis-spelled, or not in scope</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    • In the first argument of ‘(:)’, namely ‘_1’</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>      In the expression: _1 : _2</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>      In a case alternative: x : xs -&gt; _1 : _2</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    • Relevant bindings include</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        xs :: [a] (bound at Main.hs:6:7)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        x :: a (bound at Main.hs:6:5)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        ls :: [a] (bound at Main.hs:4:7)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        f :: a -&gt; b (bound at Main.hs:4:5)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  |</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>6 |     x:xs -&gt; _1:_2</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  |             ^^</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>Main.hs:6:16-17: error:</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    • Found hole: _2 :: [b]</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>      Where: ‘b’ is a rigid type variable bound by</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>               the type signature for:</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>                 map :: forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>               at Main.hs:3:1-29</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>      Or perhaps ‘_2’ is mis-spelled, or not in scope</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    • In the second argument of ‘(:)’, namely ‘_2’</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>      In the expression: _1 : _2</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>      In a case alternative: x : xs -&gt; _1 : _2</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    • Relevant bindings include</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>        xs :: [a] (bound at Main.hs:6:7)</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        x :: a (bound at Main.hs:6:5)</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>        ls :: [a] (bound at Main.hs:4:7)</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>        f :: a -&gt; b (bound at Main.hs:4:5)</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        map :: (a -&gt; b) -&gt; [a] -&gt; [b] (bound at Main.hs:4:1)</span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  |</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>6 |     x:xs -&gt; _1:_2</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  |                ^^</span></code></pre></div>
-<p>Our first hole is now of type <code>b</code>, and we see that it’s possible to get a value
-of this type by applying <code>f</code> to <code>x</code>. The second hole is still of type <code>[b]</code>,
-and we see that the most reasonable way to get a value of this type is to
-recurse, using <code>map</code> with <code>f</code> and <code>xs</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span> </span><span class="ot">(</span><span class="va">map</span><span class="ot">)</span><span>
-
-</span><span class="va">map</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">b</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">a</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">b</span><span class="ot">]</span><span>
-</span><span class="va">map</span><span> </span><span class="va">f</span><span> </span><span class="va">ls</span><span> </span><span class="ot">=</span><span> </span><span class="kw">case</span><span> </span><span class="va">ls</span><span> </span><span class="kw">of</span><span>
-    </span><span class="ot">[</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
-    </span><span class="va">x</span><span class="ot">:</span><span class="va">xs</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">f</span><span> </span><span class="va">x</span><span class="ot">:</span><span> </span><span class="va">map</span><span> </span><span class="va">f</span><span> </span><span class="va">xs</span><span>
-
-</span><span class="va">plusOne</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span>
-</span><span class="va">plusOne</span><span> </span><span class="va">i</span><span> </span><span class="ot">=</span><span> </span><span class="va">i</span><span> </span><span class="op">+</span><span> </span><span class="dv">1</span><span>
-
-</span><span class="va">main</span><span> </span><span class="ot">::</span><span> </span><span class="dt">IO</span><span> </span><span class="ot">(</span><span class="ot">)</span><span>
-</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">print</span><span> </span><span class="ot">(</span><span class="ot">(</span><span class="va">map</span><span> </span><span class="va">plusOne</span><span> </span><span class="ot">[</span><span class="dv">1</span><span class="ot">,</span><span> </span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">]</span><span class="ot">)</span><span> </span><span class="op">==</span><span> </span><span class="ot">[</span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">,</span><span> </span><span class="dv">4</span><span class="ot">]</span><span class="ot">)</span></code></pre></div>
-<p>And <code>ghcid</code> is satisfied:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>All good (1 module, at &lt;time&gt;)</span></code></pre></div>
-<p>It compiles! But does it work?</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> runhaskell Main.hs</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">True</span></span></code></pre></div>
-<p>Fantastic! We were able to ask the compiler for hints and get useful answers
-back. This is a gigantic improvement over anything I’m aware of in Python land.</p>
-<p>Unfortunately, there is a catch: this program is too easy to break. Let me
-demonstrate my favourite way:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span> </span><span class="dt">Prelude</span><span> </span><span class="kw">hiding</span><span> </span><span class="ot">(</span><span class="va">map</span><span class="ot">)</span><span>
-
-</span><span class="va">map</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="va">a</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">b</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">a</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="ot">[</span><span class="va">b</span><span class="ot">]</span><span>
-</span><span class="va">map</span><span> </span><span class="va">f</span><span> </span><span class="va">ls</span><span> </span><span class="ot">=</span><span> </span><span class="ot">[</span><span class="ot">]</span><span>
-
-</span><span class="va">plusOne</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Int</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Int</span><span>
-</span><span class="va">plusOne</span><span> </span><span class="va">i</span><span> </span><span class="ot">=</span><span> </span><span class="va">i</span><span> </span><span class="op">+</span><span> </span><span class="dv">1</span><span>
-
-</span><span class="va">main</span><span> </span><span class="ot">::</span><span> </span><span class="dt">IO</span><span> </span><span class="ot">(</span><span class="ot">)</span><span>
-</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">print</span><span> </span><span class="ot">(</span><span class="ot">(</span><span class="va">map</span><span> </span><span class="va">plusOne</span><span> </span><span class="ot">[</span><span class="dv">1</span><span class="ot">,</span><span> </span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">]</span><span class="ot">)</span><span> </span><span class="op">==</span><span> </span><span class="ot">[</span><span class="dv">2</span><span class="ot">,</span><span> </span><span class="dv">3</span><span class="ot">,</span><span> </span><span class="dv">4</span><span class="ot">]</span><span class="ot">)</span></code></pre></div>
-<p>The astute reader will notice that this is the Haskell equivalent of the
-obviously broken Python program we started with. Here is what <code>ghcid</code> has to
-say:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>All good (1 module, at &lt;time&gt;)</span></code></pre></div>
-<p>So what’s going on here? It turns out an empty list is a valid list of any
-type. Is it a list of Strings? Yup. Is it a list of Ints? Sure!</p>
-<p>One way of avoiding this class of incorrect program is to specify that the
-input and the output lists should be of the same length. It’s possible to do
-this in Haskell, but it is a lot of work. Can we do better?</p>
-<p>Enter Idris.</p>
-<p>Idris is a functional programming language with a more sophisticated type
-system than Haskell’s. Unfortunately it trades off some type inference to
-achieve this, so it’s not strictly better than Haskell in every way. It has
-excellent built-in editor support, and therefore has fancier typed holes!</p>
-<p>Let’s try to implement <code>map</code> again:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="kw">implementation</span> (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>Instead of implementing <code>map</code> on lists, we’ll use a more interesting type
-called <code>Vect</code> which is essentially a list that knows about its length. A <code>Vect</code>
-can either be <code>Nil</code> of length <code>0</code> or an element on the front of another <code>Vect</code>
-of some length <code>length</code> giving us a new <code>Vect</code> of length <code>length + 1</code>. I’ve
-also gone ahead defined equality on these <code>Vect</code>s because I use it in <code>main</code>.</p>
-<p>Loading the file into the Idris REPL gives us access to the editor integration:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> idris Main.idr</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>     <span class="ex">____</span>    __     _</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">/</span>  _/___/ /____<span class="er">(</span><span class="ex">_</span><span class="kw">)</span><span class="ex">____</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">/</span> // __  / ___/ / ___/     Version 1.3.0</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">_/</span> // /_/ / /  / <span class="er">(</span><span class="ex">__</span>  <span class="kw">)</span>      <span class="ex">http://www.idris-lang.org/</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a> <span class="ex">/___/\__,_/_/</span>  /_/____/       Type :<span class="pp">?</span> for help</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Idris</span> is free software with ABSOLUTELY NO WARRANTY.</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="ex">For</span> details type :warranty.</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="ex">Type</span> checking ./Main.idr</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="ex">Holes:</span> Main.map</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="ex">*Main</span><span class="op">&gt;</span></span></code></pre></div>
-<p>In vim, I can use <code>&lt;localleader&gt;d</code> with the cursor on <code>map</code> to fill in a
-skeleton definition:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">implementation</span> (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>map f x <span class="fu">=</span> <span class="ot">?map_rhs</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>Using <code>&lt;localleader&gt;t</code> with the cursor on the typed hole provides a type for
-us:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>  b : Type</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  a : Type</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  f : a -&gt; b</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  length : Nat</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  x : Vect length a</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>--------------------------------------</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>map_rhs : Vect length b</span></code></pre></div>
-<p>But we don’t need to go down this route. We can make Idris do a case-split for
-us with <code>&lt;localleader&gt;c</code> with the cursor on <code>x</code>:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="kw">implementation</span> (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>map f [] <span class="fu">=</span> <span class="ot">?map_rhs_1</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>map f (x <span class="ot">::</span> y) <span class="fu">=</span> <span class="ot">?map_rhs_2</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>Again, as with our Haskell example, the only sensible output when the input is
-an empty <code>Vect</code> is another empty <code>Vect</code>. We think so, but what does Idris
-think? It has a nifty feature called “proof search” that can search the space
-of all possible programs that fit and choose the first one. We can use this
-with <code>&lt;localleader&gt;o</code> (‘o’ is for obvious):</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="kw">implementation</span> (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>map f [] <span class="fu">=</span> []</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>map f (x <span class="ot">::</span> y) <span class="fu">=</span> <span class="ot">?map_rhs_2</span></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>And we get the result we expect. This works for the simple case, but does it
-work for the more complex one?</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="kw">implementation</span> (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>map f [] <span class="fu">=</span> []</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>map f (x <span class="ot">::</span> y) <span class="fu">=</span> f x <span class="ot">::</span> map f y</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>It does!</p>
-<p>What happens when we try to break this like we broke our Haskell program?</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode idris"><code class="sourceCode idris"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Vect</span> <span class="ot">:</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="kw">where</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nil</span>  <span class="ot">:</span> <span class="dt">Vect</span> <span class="dv">0</span> a</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">(::)</span> <span class="ot">:</span> a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> (<span class="dv">1</span> <span class="fu">+</span> length) a</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">implementation</span> (<span class="dt">Eq</span> a) <span class="ot">=&gt;</span> <span class="dt">Eq</span> (<span class="dt">Vect</span> l a) <span class="kw">where</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) []      []      <span class="fu">=</span> <span class="dt">True</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">==</span>) (x<span class="ot">::</span>xs) (y<span class="ot">::</span>ys) <span class="fu">=</span> x <span class="fu">==</span> y <span class="fu">&amp;&amp;</span> xs <span class="fu">==</span> ys</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="ot">:</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Vect</span> length a <span class="ot">-&gt;</span> <span class="dt">Vect</span> length b</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>map f [] <span class="fu">=</span> []</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>map f (x <span class="ot">::</span> y) <span class="fu">=</span> []</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plusOne</span> <span class="ot">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="fu">=</span> i <span class="fu">+</span> <span class="dv">1</span></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="ot">:</span> <span class="dt">IO</span> ()</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>main <span class="fu">=</span> printLn ((map plusOne [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]) <span class="fu">==</span> [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>])</span></code></pre></div>
-<p>This is what Idris has to say:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>*Main&gt; :r</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>Type checking ./Main.idr</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>Main.idr:11:18-19:</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>   |</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>11 | map f (x :: y) = []</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>   |                  ~~</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>When checking right hand side of Main.map with expected type</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>        Vect (1 + length) b</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>Type mismatch between</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>        Vect 0 a (Type of [])</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>and</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>        Vect (S length) b (Expected type)</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>Specifically:</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        Type mismatch between</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                0</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        and</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>                S length</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>Holes: Main.map</span></code></pre></div>
-<p>We get a useful and informative error message.</p>
-<p>And we’ve done it! You can download and use these languages today. When using
-other languages with static types, I always felt that they existed merely as
-busywork and I essentially had to shove them down the compiler’s throat in
-order to get it to accept my program, and I feel the opposite way about these
-languages. In other words, types are friends, not food! They can help you
-design your program, write that program, and even debug it if necessary.</p>
-<p>One aspect of programming that always bothered me was my perception of the
-compiler (or interpreter) as some sort of gatekeeper whose job was to dismiss
-my program until it met some arbitrary standard. Even worse, I would find
-myself writing a program that passed but was subtly incorrect, and I would
-iterate on this process, writing a series of subtly incorrect programs without
-any guidance from my tools. Discovering typed holes and the style of
-programming they enable has shown me a different approach, where I can open up
-a dialogue with my language and collaborate on writing a program whose
-correctness I am more confident of.</p>
-<p>That’s all I have to say about typed holes, but there’s recently been
-interesting work on untyped holes that I would like to mention briefly. Suppose
-you like the idea of holes but not the idea of types, or you work in a language
-that isn’t statically typed and you want some of these benefits. What you could
-do is:</p>
-<ol type="1">
-<li>Write a program with gaps where you’re unsure what should happen (we’ll call this a <em>sketch</em>)</li>
-<li>Write some test cases that the correct program should satisfy</li>
-<li>Feed both these things to a SAT/SMT solver (a clever program with a bag of tricks)</li>
-<li>???</li>
-<li>Profit!!!</li>
-</ol>
-<p>The solver churns through the space of all prossible programs and picks the one
-that passes the tests, giving us the correct program we wanted!</p>
-<p>This sounds great in theory, so why aren’t we doing this yet? There is
-(predictably) a catch, which is that this is still a research topic for now.
-You can read <a href="https://people.csail.mit.edu/asolar/papers/thesis.pdf">Armando Solar-Lezama’s PhD thesis on
-this</a>, and systems like
-<a href="http://comcom.csail.mit.edu/comcom/#Synquid">Synquid</a> and
-<a href="https://github.com/webyrd/Barliman">Barliman</a> demonstrate the current state of
-the art. I think it’s especially interesting that Synquid has both typed and
-untyped holes, which suggests to me that it is the most promising approach.</p>
-<p>I’ll leave you with some resources about typed holes, particularly Conor
-McBride’s presentations at <a href="https://www.youtube.com/watch?v=3U3lV5VPmOU">YOW! Lambda
-Jam</a> and <a href="https://skillsmatter.com/skillscasts/8893-is-a-type-a-lifebuoy-or-a-lamp">Haskell
-eXchange</a>
-that are rich with insight. There’s also <a href="https://www.shimweasel.com/2015/02/17/typed-holes-for-beginners">a tutorial by Mark
-Wotton</a>, and
-finally <a href="http://hazel.org/">Hazel</a>, which is a live functional programming
-environment with typed holes!</p>
-<p>I hope I’ve encouraged you to try this style of programming for yourself.
-There’s never been a better time to do it.</p>
 </summary>
 </entry>
 
