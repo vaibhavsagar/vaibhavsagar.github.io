@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Using `ghc-syntax-highlighter` with Hakyll - Vaibhav Sagar</title>
+        <link href="data:," rel="icon">
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../talks/">Talks</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Using `ghc-syntax-highlighter` with Hakyll</h1>
+
+            <div class="info">
+    Posted on 29 January 2023
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged 'haskell'." href="../../blog/tags/haskell/">haskell</a>, <a title="All pages tagged 'programming'." href="../../blog/tags/programming/">programming</a>
+    
+</div>
+
+<p>In 2018, <a href="https://markkarpov.com/post/announcing-ghc-syntax-highlighter.html">Mark Karpov announced
+<code>ghc-syntax-highlighter</code></a>,
+a project which uses GHC’s own lexer to tokenise Haskell source code for the
+best possible syntax highlighting. I thought this was extremely cool, and
+really wanted to use it for this blog. Unfortunately, this is what the post had
+to say about <code>pandoc</code>, which Hakyll uses to process Markdown:</p>
+<blockquote>
+<p><a href="https://hackage.haskell.org/package/skylighting"><code>skylighting</code></a> is what
+Pandoc uses btw. And from what I can tell it’s hardcoded to use only that
+library for highlighting, so some creativity may be necessary to get it work.</p>
+</blockquote>
+<p>I briefly looked into this and reached the same conclusion (and as of this
+writing <a href="https://github.com/jgm/pandoc/blob/5f31a01d77f5fea46e2deca51165d5af8fc99677/src/Text/Pandoc/Highlighting.hs#L76-L106">it is still the
+case</a>)
+so, as a deeply uncreative individual, I sighed deeply and resigned myself to never knowing this particular joy.</p>
+<p>Until, just a few days ago, I read <a href="https://tony-zorman.com/posts/2023-01-21-pygmentising-hakyll.html">this lovely blog post by Tony Zorman about
+customising Hakyll’s syntax
+highlighting</a>
+which included this gem of a sentence in the very first paragraph:</p>
+<blockquote>
+<p>Using <code>pygmentize</code> as an example, I will show you how you can swap out
+pandoc’s native syntax highlighting with pretty much any third party tool that
+can output HTML.</p>
+</blockquote>
+<p>And in fact this is an accurate description of what follows. This sounds like
+exactly what I want to do, and between this and Mark’s
+<a href="https://hackage.haskell.org/package/mmark-ext"><code>mmark-ext</code></a> (which <a href="https://hackage.haskell.org/package/mmark-ext-0.2.1.5/docs/Text-MMark-Extension-GhcSyntaxHighlighter.html">implements
+<code>ghc-syntax-highlighter</code> support as an extension for
+<code>mmark</code></a>)
+I was able to successfully follow the instructions to get
+<code>ghc-syntax-highlighter</code> working with my blog. Let me walk you through what
+I did.</p>
+<p>Here are the language extensions I will be using:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="pp">{-# LANGUAGE LambdaCase        #-}</span><span>
+</span><span class="pp">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span class="pp">{-# LANGUAGE ViewPatterns      #-}</span></code></pre></div>
+<p>and these additional imports:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import</span><span>           </span><span class="dt">GHC.SyntaxHighlighter</span><span> </span><span class="ot">(</span><span class="dt">Token</span><span class="ot">(</span><span class="ot">..</span><span class="ot">)</span><span class="ot">,</span><span> </span><span class="va">tokenizeHaskell</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span>           </span><span class="dt">Text.Blaze.Html.Renderer.Text</span><span> </span><span class="ot">(</span><span class="va">renderHtml</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span>           </span><span class="dt">Text.Pandoc.Definition</span><span> </span><span class="ot">(</span><span class="dt">Block</span><span> </span><span class="ot">(</span><span class="dt">CodeBlock</span><span class="ot">,</span><span> </span><span class="dt">RawBlock</span><span class="ot">)</span><span class="ot">,</span><span> </span><span class="dt">Pandoc</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span>           </span><span class="dt">Text.Pandoc.Walk</span><span> </span><span class="ot">(</span><span class="va">walk</span><span class="ot">)</span><span>
+</span><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Text.Blaze.Html5</span><span> </span><span class="kw">as</span><span> </span><span class="dt">H</span><span>
+</span><span class="kw">import</span><span> </span><span class="kw">qualified</span><span> </span><span class="dt">Text.Blaze.Html5.Attributes</span><span> </span><span class="kw">as</span><span> </span><span class="dt">A</span></code></pre></div>
+<p>I chose to use <a href="https://hackage.haskell.org/package/blaze-html"><code>blaze-html</code></a>
+since it is already a transitive dependency of <code>pandoc</code> and using it has no
+impact on our dependency tree.</p>
+<p>Tony uses <code>walkM</code> since an external program (<code>pygmentize</code>) is involved, but
+since we are working with pure Haskell code we can get away with just <code>walk</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">ghcSyntaxHighlight</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Pandoc</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Pandoc</span><span>
+</span><span class="va">ghcSyntaxHighlight</span><span> </span><span class="ot">=</span><span> </span><span class="va">walk</span><span> </span><span class="op">$</span><span> </span><span class="ot">\</span><span class="ot">case</span><span>
+    </span><span class="dt">CodeBlock</span><span> </span><span class="ot">(</span><span class="ot">_</span><span class="ot">,</span><span> </span><span class="ot">(</span><span class="va">isHaskell</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">True</span><span class="ot">)</span><span class="ot">:</span><span class="ot">_</span><span class="ot">,</span><span> </span><span class="ot">_</span><span class="ot">)</span><span> </span><span class="ot">(</span><span class="va">tokenizeHaskell</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">Just</span><span> </span><span class="va">tokens</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span>
+        </span><span class="dt">RawBlock</span><span> </span><span class="st">&quot;html&quot;</span><span> </span><span class="op">.</span><span> </span><span class="va">L.toStrict</span><span> </span><span class="op">.</span><span> </span><span class="va">renderHtml</span><span> </span><span class="op">$</span><span> </span><span class="va">formatHaskellTokens</span><span> </span><span class="va">tokens</span><span>
+    </span><span class="va">block</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">block</span><span>
+    </span><span class="kw">where</span><span> </span><span class="va">isHaskell</span><span> </span><span class="ot">=</span><span> </span><span class="ot">(</span><span class="op">==</span><span> </span><span class="st">&quot;haskell&quot;</span><span class="ot">)</span></code></pre></div>
+<p>This only matches Haskell code blocks which <code>tokenizeHaskell</code> is able to
+successfully tokenise and otherwise falls back on existing <code>pandoc</code> behaviour.</p>
+<p><code>formatHaskellTokens</code> generates markup very similarly to what <code>pandoc</code> already
+does:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">formatHaskellTokens</span><span> </span><span class="ot">::</span><span> </span><span class="ot">[</span><span class="ot">(</span><span class="dt">Token</span><span class="ot">,</span><span> </span><span class="dt">T.Text</span><span class="ot">)</span><span class="ot">]</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">H.Html</span><span>
+</span><span class="va">formatHaskellTokens</span><span> </span><span class="va">tokens</span><span> </span><span class="ot">=</span><span>
+    </span><span class="va">H.div</span><span> </span><span class="op">H.!</span><span> </span><span class="va">A.class_</span><span> </span><span class="st">&quot;sourceCode&quot;</span><span> </span><span class="op">$</span><span>
+        </span><span class="va">H.pre</span><span> </span><span class="op">H.!</span><span> </span><span class="va">A.class_</span><span> </span><span class="st">&quot;sourceCode haskell&quot;</span><span> </span><span class="op">$</span><span>
+            </span><span class="va">H.code</span><span> </span><span class="op">H.!</span><span> </span><span class="va">A.class_</span><span> </span><span class="st">&quot;sourceCode haskell&quot;</span><span> </span><span class="op">$</span><span>
+                </span><span class="va">mapM_</span><span> </span><span class="va">tokenToHtml</span><span> </span><span class="va">tokens</span></code></pre></div>
+<p><code>tokenizeHaskell</code> produces a list of pairs of the token type (<code>KeywordToken</code>,
+<code>VariableToken</code>, etc.) and the matched text, and the <code>tokenToHtml</code> (<a href="https://hackage.haskell.org/package/mmark-ext-0.2.1.5/docs/src/Text.MMark.Extension.GhcSyntaxHighlighter.html#tokenToHtml">adapted
+from
+<code>mmark-ext</code></a>)
+function creates a <code>span</code> element with the appropriate class name for our CSS
+to style:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">tokenToHtml</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="dt">Token</span><span class="ot">,</span><span> </span><span class="dt">T.Text</span><span class="ot">)</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">H.Html</span><span>
+</span><span class="va">tokenToHtml</span><span> </span><span class="ot">(</span><span class="va">tokenClass</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="va">className</span><span class="ot">,</span><span> </span><span class="va">text</span><span class="ot">)</span><span> </span><span class="ot">=</span><span>
+    </span><span class="va">H.span</span><span> </span><span class="op">H.!?</span><span> </span><span class="ot">(</span><span class="va">not</span><span> </span><span class="op">$</span><span> </span><span class="va">T.null</span><span> </span><span class="va">className</span><span class="ot">,</span><span> </span><span class="va">A.class_</span><span> </span><span class="ot">(</span><span class="va">H.toValue</span><span> </span><span class="va">className</span><span class="ot">)</span><span class="ot">)</span><span> </span><span class="op">$</span><span>
+        </span><span class="va">H.toHtml</span><span> </span><span class="va">text</span></code></pre></div>
+<p><code>tokenClass</code> (<a href="https://hackage.haskell.org/package/mmark-ext-0.2.1.5/docs/src/Text.MMark.Extension.GhcSyntaxHighlighter.html#tokenClass">also adapted from
+<code>mmark-ext</code></a>)
+outputs the appropriate class name for each token, and I made only minor
+changes for styling purposes:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">tokenClass</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Token</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">T.Text</span><span>
+</span><span class="va">tokenClass</span><span> </span><span class="ot">=</span><span> </span><span class="ot">\</span><span class="ot">case</span><span>
+  </span><span class="dt">KeywordTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;kw&quot;</span><span>
+  </span><span class="dt">PragmaTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;pp&quot;</span><span> </span><span class="co">-- Preprocessor</span><span>
+  </span><span class="dt">SymbolTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span><span> </span><span class="co">-- Other</span><span>
+  </span><span class="dt">VariableTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;va&quot;</span><span>
+  </span><span class="dt">ConstructorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dt&quot;</span><span> </span><span class="co">-- DataType</span><span>
+  </span><span class="dt">OperatorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;op&quot;</span><span>
+  </span><span class="dt">CharTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ch&quot;</span><span>
+  </span><span class="dt">StringTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;st&quot;</span><span>
+  </span><span class="dt">IntegerTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
+  </span><span class="dt">RationalTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
+  </span><span class="dt">CommentTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;co&quot;</span><span>
+  </span><span class="dt">SpaceTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;&quot;</span><span>
+  </span><span class="dt">OtherTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span></code></pre></div>
+<p>Finally we have to actually use <code>ghcSyntaxHighlight</code>, for which we define
+a replacement for <code>pandocCompiler</code> called (imaginatively)
+<code>customPandocCompiler</code> and use it everywhere:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">customPandocCompiler</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Compiler</span><span> </span><span class="ot">(</span><span class="dt">Item</span><span> </span><span class="dt">String</span><span class="ot">)</span><span>
+</span><span class="va">customPandocCompiler</span><span> </span><span class="ot">=</span><span>
+    </span><span class="va">pandocCompilerWithTransform</span><span>
+        </span><span class="va">defaultHakyllReaderOptions</span><span>
+        </span><span class="va">defaultHakyllWriterOptions</span><span>
+        </span><span class="va">ghcSyntaxHighlight</span></code></pre></div>
+<p>Again, since we are using pure functions, we can get away with
+<code>pandocCompilerWithTransform</code> instead of <code>pandocCompilerWithTransformM</code>.</p>
+<p>And we’re done! I also had to tweak my CSS slightly since <code>pandoc</code> was
+generating a <code>span</code> for each line of source code instead of each token like
+<code>ghc-syntax-highlighter</code> does. For the complete listing, see
+<a href="https://github.com/vaibhavsagar/website/blob/6415721a318fc8fb31f4aadb7cd40ab6aad4fbc4/site.hs">here</a>.</p>
+
+        </div>
+        <div id="footer">
+            <div class="rc-webring">
+                <a href="https://webring.recurse.com"><img src="https://webring.recurse.com/icon.svg" /> RC Webring</a>
+            </div>
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    </body>
+</html>
