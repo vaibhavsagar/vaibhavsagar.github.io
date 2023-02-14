@@ -114,19 +114,19 @@ outputs the appropriate class name for each token, and I made only minor
 changes for styling purposes:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">tokenClass</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Token</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">T.Text</span><span>
 </span><span class="va">tokenClass</span><span> </span><span class="ot">=</span><span> </span><span class="ot">\</span><span class="ot">case</span><span>
-  </span><span class="dt">KeywordTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;kw&quot;</span><span>
-  </span><span class="dt">PragmaTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;pp&quot;</span><span> </span><span class="co">-- Preprocessor</span><span>
-  </span><span class="dt">SymbolTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span><span> </span><span class="co">-- Other</span><span>
-  </span><span class="dt">VariableTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;va&quot;</span><span>
-  </span><span class="dt">ConstructorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dt&quot;</span><span> </span><span class="co">-- DataType</span><span>
-  </span><span class="dt">OperatorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;op&quot;</span><span>
-  </span><span class="dt">CharTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ch&quot;</span><span>
-  </span><span class="dt">StringTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;st&quot;</span><span>
-  </span><span class="dt">IntegerTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
-  </span><span class="dt">RationalTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
-  </span><span class="dt">CommentTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;co&quot;</span><span>
-  </span><span class="dt">SpaceTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;&quot;</span><span>
-  </span><span class="dt">OtherTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span></code></pre></div>
+    </span><span class="dt">KeywordTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;kw&quot;</span><span>
+    </span><span class="dt">PragmaTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;pp&quot;</span><span> </span><span class="co">-- Preprocessor</span><span>
+    </span><span class="dt">SymbolTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span><span> </span><span class="co">-- Other</span><span>
+    </span><span class="dt">VariableTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;va&quot;</span><span>
+    </span><span class="dt">ConstructorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dt&quot;</span><span> </span><span class="co">-- DataType</span><span>
+    </span><span class="dt">OperatorTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;op&quot;</span><span>
+    </span><span class="dt">CharTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ch&quot;</span><span>
+    </span><span class="dt">StringTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;st&quot;</span><span>
+    </span><span class="dt">IntegerTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
+    </span><span class="dt">RationalTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;dv&quot;</span><span> </span><span class="co">-- DecVal</span><span>
+    </span><span class="dt">CommentTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;co&quot;</span><span>
+    </span><span class="dt">SpaceTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;&quot;</span><span>
+    </span><span class="dt">OtherTok</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="st">&quot;ot&quot;</span></code></pre></div>
 <p>Finally we have to actually use <code>ghcSyntaxHighlight</code>, for which we define
 a replacement for <code>pandocCompiler</code> called (imaginatively)
 <code>customPandocCompiler</code> and use it everywhere:</p>
