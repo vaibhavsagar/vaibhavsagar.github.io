@@ -30,7 +30,7 @@
 </div>
 <div class="info">
     
-        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/">programming</a>, <a title="All pages tagged 'automation'." href="../../../../../blog/tags/automation/">automation</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/" rel="tag">programming</a>, <a title="All pages tagged 'automation'." href="../../../../../blog/tags/automation/" rel="tag">automation</a>
     
 </div>
 
@@ -52,20 +52,20 @@ newest version of <code>pandoc</code> installed. I used <code>stack</code> to do
 this.</p>
 <p>I already had a <code>Makefile</code>, so converting my source to Github-flavoured
 Markdown and HTML was as easy as <code>make readme</code> and <code>make html</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">all:</span><span class="dt">: pdf html readme</span></span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">all::</span><span class="dt"> pdf html readme</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dv">travis:</span><span class="dt">: html readme</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dv">travis::</span><span class="dt"> html readme</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dv">pdf:</span><span class="dt">: resume.md templates/header.tex</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dv">pdf::</span><span class="dt"> resume.md templates/header.tex</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>	pandoc resume.md -H templates/header.tex -o Vaibhav_Sagar_resume.pdf</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="dv">html:</span><span class="dt">: resume.md templates/header.css</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="dv">html::</span><span class="dt"> resume.md templates/header.css</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>	pandoc resume.md -s -H templates/header.css -o index.html</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="dv">readme:</span><span class="dt">: resume.md</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="dv">readme::</span><span class="dt"> resume.md</span></span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>	pandoc resume.md -t markdown_github -o readme.md</span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="dv">clean:</span><span class="dt">:</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="dv">clean::</span></span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>	rm Vaibhav_Sagar_resume.pdf</span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>	rm readme.md</span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>	rm index.html</span></code></pre></div>
