@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Low-effort Dependency Pinning with Nix Flakes - Vaibhav Sagar</title>
+        <link href="data:," rel="icon">
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../../../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../talks/">Talks</a>
+                <a href="../../../../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Low-effort Dependency Pinning with Nix Flakes</h1>
+
+            <div class="info">
+    Posted on  9 February 2024
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/" rel="tag">programming</a>, <a title="All pages tagged 'nix'." href="../../../../../blog/tags/nix/" rel="tag">nix</a>
+    
+</div>
+
+<p>Back in 2018 I wrote <a href="../../../../../blog/2018/05/27/quick-easy-nixpkgs-pinning/">a blog post about pinning
+<code>nixpkgs</code></a> which describes an
+approach I’ve used happily and successfully since then to manage dependencies
+(and not just <code>nixpkgs</code>) for small projects. In short, it involves</p>
+<ol type="1">
+<li><code>versions.json</code>, a JSON file storing dependency information</li>
+<li><code>updater</code>, an updater script</li>
+<li><code>pkgs.nix</code>, a Nix expression that makes each dependency available</li>
+</ol>
+<p>Here’s what each of those files might look like:</p>
+<details>
+<summary style="cursor: pointer">
+<code>versions.json</code>
+</summary>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;ihaskell&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;gibiansky&quot;</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;repo&quot;</span><span class="fu">:</span> <span class="st">&quot;IHaskell&quot;</span><span class="fu">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;branch&quot;</span><span class="fu">:</span> <span class="st">&quot;master&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;rev&quot;</span><span class="fu">:</span> <span class="st">&quot;575b2be1c25e8e7c5ed5048c8d7ead51bb9c67f0&quot;</span><span class="fu">,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;sha256&quot;</span><span class="fu">:</span> <span class="st">&quot;148sdawqln2ys0s1rapwj2bwjzfq027dz5h49pa034nmyizyqs4a&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;nixpkgs&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;owner&quot;</span><span class="fu">:</span> <span class="st">&quot;NixOS&quot;</span><span class="fu">,</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;repo&quot;</span><span class="fu">:</span> <span class="st">&quot;nixpkgs&quot;</span><span class="fu">,</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;branch&quot;</span><span class="fu">:</span> <span class="st">&quot;nixos-23.11&quot;</span><span class="fu">,</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;rev&quot;</span><span class="fu">:</span> <span class="st">&quot;9dd7699928e26c3c00d5d46811f1358524081062&quot;</span><span class="fu">,</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;sha256&quot;</span><span class="fu">:</span> <span class="st">&quot;0hmsw3qd3i13dp8jhr1d96xlpkmd78m8g6shw086f6sqhn2rrvv6&quot;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+</details>
+<details>
+<summary style="cursor: pointer">
+<code>updater</code>
+</summary>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#! /usr/bin/env nix-shell</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#! nix-shell -i bash</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#! nix-shell -p curl jq nix</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-eufo</span> pipefail</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="va">FILE</span><span class="op">=</span><span class="va">$1</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="va">PROJECT</span><span class="op">=</span><span class="va">$2</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="va">OWNER</span><span class="op">=</span><span class="va">$(</span><span class="ex">jq</span> <span class="at">-r</span> <span class="st">'.[$project].owner'</span> <span class="at">--arg</span> project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="va">REPO</span><span class="op">=</span><span class="va">$(</span><span class="ex">jq</span> <span class="at">-r</span> <span class="st">'.[$project].repo'</span> <span class="at">--arg</span> project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="va">DEFAULT_BRANCH</span><span class="op">=</span><span class="va">$(</span><span class="ex">jq</span> <span class="at">-r</span> <span class="st">'.[$project].branch // &quot;master&quot;'</span> <span class="at">--arg</span> project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="va">BRANCH</span><span class="op">=</span><span class="va">${3</span><span class="op">:-</span><span class="va">$DEFAULT_BRANCH}</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="va">REV</span><span class="op">=</span><span class="va">$(</span><span class="ex">curl</span> <span class="st">&quot;https://api.github.com/repos/</span><span class="va">$OWNER</span><span class="st">/</span><span class="va">$REPO</span><span class="st">/branches/</span><span class="va">$BRANCH</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">jq</span> <span class="at">-r</span> <span class="st">'.commit.sha'</span><span class="va">)</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="va">SHA256</span><span class="op">=</span><span class="va">$(</span><span class="ex">nix-prefetch-url</span> <span class="at">--unpack</span> <span class="st">&quot;https://github.com/</span><span class="va">$OWNER</span><span class="st">/</span><span class="va">$REPO</span><span class="st">/archive/</span><span class="va">$REV</span><span class="st">.tar.gz&quot;</span><span class="va">)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="va">TJQ</span><span class="op">=</span><span class="va">$(</span><span class="ex">jq</span> <span class="st">'.[$project] = {owner: $owner, repo: $repo, branch: $branch, rev: $rev, sha256: $sha256}'</span> <span class="dt">\</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--arg</span> project <span class="st">&quot;</span><span class="va">$PROJECT</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--arg</span> owner <span class="st">&quot;</span><span class="va">$OWNER</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--arg</span> repo <span class="st">&quot;</span><span class="va">$REPO</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--arg</span> branch <span class="st">&quot;</span><span class="va">$BRANCH</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--arg</span> rev <span class="st">&quot;</span><span class="va">$REV</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--arg</span> sha256 <span class="st">&quot;</span><span class="va">$SHA256</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="kw">[[</span> <span class="va">$?</span> <span class="ot">==</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">${TJQ}</span><span class="st">&quot;</span> <span class="op">&gt;|</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span></span></code></pre></div>
+</details>
+<details>
+<summary style="cursor: pointer">
+<code>pkgs.nix</code>
+</summary>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">versions</span> <span class="op">=</span> <span class="bu">builtins</span>.mapAttrs</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="va">_</span><span class="op">:</span> fetcher<span class="op">)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">));</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> versions</span></code></pre></div>
+</details>
+<p>This approach still works, but in the meantime <a href="https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake">Nix
+flakes</a>
+have become the primary way to manage dependencies in Nix projects. Although
+they’re still listed as an experimental feature, the same is also true of the
+<code>nix</code> command, and I don’t think either is going away in the foreseeable
+future.</p>
+<h2 id="the-fundamental-insight">The fundamental insight</h2>
+<p>It turns out that you can replace <code>pkgs.nix</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">fetcher</span> <span class="op">=</span> <span class="op">{</span> <span class="va">owner</span><span class="op">,</span> <span class="va">repo</span><span class="op">,</span> <span class="va">rev</span><span class="op">,</span> <span class="va">sha256</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>: <span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inherit</span> sha256<span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">url</span> <span class="op">=</span> <span class="st">&quot;https://github.com/</span><span class="sc">${</span>owner<span class="sc">}</span><span class="st">/</span><span class="sc">${</span>repo<span class="sc">}</span><span class="st">/tarball/</span><span class="sc">${</span>rev<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">versions</span> <span class="op">=</span> <span class="bu">builtins</span>.mapAttrs</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="va">_</span><span class="op">:</span> fetcher<span class="op">)</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./versions.json</span><span class="op">));</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> versions</span></code></pre></div>
+<p>using the relatively new <code>fetchTree</code> builtin:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">lock</span> <span class="op">=</span> <span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./flake.lock</span><span class="op">);</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">versions</span> <span class="op">=</span> <span class="bu">builtins</span>.mapAttrs</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="va">_</span><span class="op">:</span> <span class="va">node</span><span class="op">:</span> <span class="op">(</span><span class="bu">builtins</span>.fetchTree node.locked<span class="op">)</span>.outPath<span class="op">)</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    lock.nodes<span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> versions</span></code></pre></div>
+<p>following which you can replace <code>updater</code> with <a href="https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-update"><code>nix flake update</code></a>
+and <code>versions.json</code> with <code>flake.lock</code>.</p>
+<h2 id="flakes-griping">Flakes griping</h2>
+<p>I’ve done my best to avoid flakes for as long as possible, since there are
+a couple of UI/UX issues that bother me:</p>
+<h3 id="a-reliance-on-new-style-nix-commands">A reliance on new-style <code>nix</code> commands</h3>
+<p>I’m pretty comfortable with <code>nix-build</code> and <code>nix-shell</code>, and it’s an adjustment
+to use the newer <code>nix build</code> and <code>nix develop</code> commands since they don’t work
+exactly the same (e.g. not printing build logs by default, having to use <code>.#</code>
+for packages).</p>
+<h3 id="coupling-dependency-and-systems-concerns">Coupling dependency and systems concerns</h3>
+<p>The flakes position is that <code>system</code> is an impurity (which is reasonable
+enough) and so each output is parametrised by the system and there’s no
+built-in way to ignore or work around this. In practice I’ve seen most people
+use <a href="https://github.com/numtide/flake-utils"><code>flake-utils</code></a> and its provided
+<code>eachSystem</code> or <code>eachDefaultSystem</code> functions. For my purposes I haven’t run
+into any issues with <code>eachDefaultSystem</code> and if you are shaking your head at
+the screen thinking of all the ways this can go wrong then you probably don’t
+need to read this blog post. Unfortunately <code>eachDefaultSystem</code> doesn’t save you
+from having to supply <code>system</code> to <code>nixpkgs</code> everywhere you import it, which
+makes adapting existing non-flakes projects with multiple imports of <code>nixpkgs</code>
+tedious to migrate.</p>
+<h3 id="surprising-interactions-with-git">Surprising interactions with <code>git</code></h3>
+<p>Strange and confusing things can happen when you try to use a file that’s
+currently untracked by <code>git</code>. Often it will tell you it can’t find a particular
+file, even though it’s <em>right there</em>, but at other times things will appear to
+work but your language-specific build tool will complain. The obvious solution
+is to always <code>git add</code> everything you care about, but that has the same energy
+as “I would simply write code with no bugs at all times” and is equally
+non-actionable advice. The only hint you get is the message</p>
+<p><code>warning: Git tree '&lt;project root&gt;' is dirty</code></p>
+<p>as your build commences which is more often than not innocuous. I foresee
+myself running into this issue over and over again when using flakes.</p>
+<h2 id="why-bother-with-flakes">Why bother with flakes?</h2>
+<p>Although I’m still critical of certain aspects of flakes, they do provide one
+feature I was missing: the ability to manage and update dependencies without
+the use of
+<a href="https://nixos.org/manual/nix/stable/language/import-from-derivation">IFD</a>.
+I also get the impression that the vast majority of effort being put into Nix
+now is in and around the flakes ecosystem, e.g.
+<a href="https://flakehub.com/">FlakeHub</a> and <a href="https://github.com/DeterminateSystems/update-flake-lock">the <code>update-flake-lock</code> GitHub
+Action</a>. Keeping all
+this in mind, I think there is a way to ignore most of the stuff I don’t care
+about for now while getting rid of my primitive shell script in favour of
+robust and better-supported dependency management code that’s built into Nix.
+That way I can gradually integrate flakes more deeply, and if I’m wrong about
+it being the future I still have the option to go back to what I was using
+before (or adopt whatever the new hotness is).</p>
+<h2 id="a-minimal-flake">A minimal flake</h2>
+<p>The first hurdle to overcome is replacing <code>default.nix</code> with <code>flake.nix</code>. I’ve
+found that this is a good starting point for me:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">inputs</span>.<span class="va">nixpkgs</span>.<span class="va">url</span> <span class="op">=</span> <span class="st">&quot;github:NixOS/nixpkgs/release-23.11&quot;</span><span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">inputs</span>.<span class="va">flake-utils</span>.<span class="va">url</span> <span class="op">=</span> <span class="st">&quot;github:numtide/flake-utils&quot;</span><span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">inputs</span>.<span class="va">flake-compat</span>.<span class="va">url</span> <span class="op">=</span> <span class="st">&quot;github:edolstra/flake-compat&quot;</span><span class="op">;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">outputs</span> <span class="op">=</span> <span class="op">{</span><span class="va">nixpkgs</span><span class="op">,</span> <span class="va">flake-utils</span><span class="op">,</span> <span class="op">...}</span>:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    flake<span class="op">-</span>utils.lib.eachDefaultSystem <span class="op">(</span><span class="va">system</span><span class="op">:</span> <span class="kw">let</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">pkgs</span> <span class="op">=</span> <span class="bu">import</span> nixpkgs <span class="op">{</span> <span class="kw">inherit</span> system<span class="op">;</span> <span class="op">};</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># ...</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">defaultPackage</span> <span class="op">=</span> <span class="cn">null</span><span class="op">;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">devShell</span> <span class="op">=</span> <span class="cn">null</span><span class="op">;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">});</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>combined with this snippet in <code>default.nix</code> taken from the <a href="https://github.com/edolstra/flake-compat/blob/0f9255e01c2351cc7d116c072cb317785dd33b33/README.md#usage"><code>flake-compat</code>
+README</a>:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span><span class="bu">import</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">(</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> <span class="va">lock</span> <span class="op">=</span> <span class="bu">builtins</span>.fromJSON <span class="op">(</span><span class="bu">builtins</span>.readFile <span class="ss">./flake.lock</span><span class="op">);</span> <span class="kw">in</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">url</span> <span class="op">=</span> lock.nodes.flake<span class="op">-</span>compat.locked.url <span class="kw">or</span> <span class="st">&quot;https://github.com/edolstra/flake-compat/archive/</span><span class="sc">${</span>lock.nodes.flake<span class="op">-</span>compat.locked.rev<span class="sc">}</span><span class="st">.tar.gz&quot;</span><span class="op">;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">sha256</span> <span class="op">=</span> lock.nodes.flake<span class="op">-</span>compat.locked.narHash<span class="op">;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">)</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span> <span class="va">src</span> <span class="op">=</span> <span class="ss">./.</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span>.defaultNix</span></code></pre></div>
+<p>A couple of things are worth pointing out:</p>
+<ul>
+<li>I include <code>flake-compat</code> in my inputs but I don’t actually use it in
+<code>flake.nix</code>, it is declared solely so that it can be tracked in <code>flake.lock</code>.</li>
+<li>I could include more dependencies here, as long as <code>nix flake update</code> knows
+how to fetch them, which is already a huge improvement over my
+GitHub-specific <code>updater</code> script.</li>
+<li>If your input is a flake but you’re not using it in <code>flake.nix</code>, you probably
+want to set <code>inpugs.&lt;input&gt;.flake = false</code> so that it doesn’t pull in that
+flake’s dependencies too.</li>
+<li>The <code>default.nix</code> snippet doesn’t have the old Nix behaviour of doing the
+right thing when used with <code>nix-shell</code>, but I could probably recover this by
+including (or reimplementing)
+<a href="https://github.com/NixOS/nixpkgs/blob/9b5d456802b2322b36b69dca65b04095877495ad/lib/trivial.nix#L235-L240"><code>lib.inNixShell</code></a>
+and using it.</li>
+</ul>
+<h2 id="migrating-all-the-things">Migrating all the things</h2>
+<p>I recently went on a tear, moving a bunch of my repositories over to this workflow:</p>
+<ul>
+<li><a href="https://github.com/vaibhavsagar/resume/commit/a698b2df6e37c67bc05b57547d345883e76eb491"><code>resume</code></a></li>
+<li><a href="https://github.com/vaibhavsagar/notebooks/commit/daa4f593f2bcacdb318f57525887c853db838304"><code>notebooks</code></a></li>
+<li><a href="https://github.com/vaibhavsagar/website/commit/760a4b4c8f44347fbe3bb39203383c4a1b42178d"><code>website</code></a></li>
+</ul>
+<p>It was reasonably straightforward, except in the case of <code>notebooks</code>, where
+I have a bunch of expressions that each have their own overlays etc. that
+I wasn’t ready to unify just yet. This meant a lot of <code>{ system ? builtins.currentSystem }</code> which I could have done without. It’s an
+anti-pattern to import <code>nixpkgs</code> in multiple places anyway, so this is probably
+a sign that there is a better way to organise my expressions.</p>
+<h2 id="further-reading">Further reading</h2>
+<p>I was partly inspired to try this after reading Jade Lovelace’s <a href="https://jade.fyi/blog/flakes-arent-real/">excellent blog
+post</a> about Nix flakes. Thank you
+Jade!</p>
+
+        </div>
+        <div id="footer">
+            <div class="rc-webring">
+                <a href="https://webring.recurse.com"><img src="https://webring.recurse.com/icon.svg" /> RC Webring</a>
+            </div>
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    </body>
+</html>
