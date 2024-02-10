@@ -63,14 +63,15 @@ with this useful property are known as <em>perfect hash functions</em>. This req
 all possible inputs to be known in advance.</p>
 <h3 id="minimal-perfect-hashing-1"><em>Minimal</em> perfect hashing</h3>
 <p>Bringing it all together, a <em>minimal perfect hash</em> function is one that has no
-gaps in its outputs, i.e. it maps <span class="math display"><em>n</em></span> different inputs to <span class="math display"><em>n</em></span> consecutive
-integers, e.g. <span class="math inline">[0..<em>n</em>)</span> or <span class="math inline">[1..<em>n</em>]</span>. It’s important to note that <em>minimal</em>
-does not imply anything about the space or time complexity of these functions,
-e.g. it would be totally valid to have an internal hashtable that maps each
-input to a distinct integer without gaps and then use that to implement our
-hash function. In practice, however, we want these functions to be as efficient
-as possible to construct, store, and use, and this is an active area of
-research.</p>
+gaps in its outputs, i.e. it
+<a href="https://en.wikipedia.org/wiki/Bijection">bijectively</a> maps <span class="math display"><em>n</em></span> different
+inputs to <span class="math display"><em>n</em></span> consecutive integers, e.g. <span class="math inline">[0..<em>n</em>)</span> or <span class="math inline">[1..<em>n</em>]</span>. It’s important
+to note that <em>minimal</em> does not imply anything about the space or time
+complexity of these functions, e.g. it would be totally valid to have an
+internal hashtable that maps each input to a distinct integer without gaps and
+then use that to implement our hash function. In practice, however, we want
+these functions to be as efficient as possible to construct, store, and use,
+and this is an active area of research.</p>
 <p>You’d probably want to use a minimal perfect hash when</p>
 <ul>
 <li>all possible keys are known in advance</li>
@@ -112,22 +113,231 @@ and for the bitvectors I used the
 <a href="https://hackage.haskell.org/package/bv-little"><code>bv-little</code></a> package because
 <a href="https://github.com/recursion-ninja/bv-little/issues/3">past Vaibhav asked for <code>rank</code> and <code>select</code>
 support</a>.</p>
-<h3 id="pseudocode">Pseudocode</h3>
+<h3 id="construction">Construction</h3>
 <p>At a high level, this is what the construction algorithm looks like:</p>
 <ol type="1">
-<li>Repeat steps 2-4 until the maximum level is reached or we have no more keys</li>
+<li>Repeat the following steps until the maximum level is reached or we have no more keys:
+<ol type="1">
 <li>Hash each key to a number <span class="math inline"><em>i</em> ∈ [0..<em>n</em>)</span></li>
 <li>If <span class="math inline"><em>b</em><em>i</em><em>t</em><em>v</em><em>e</em><em>c</em><em>t</em><em>o</em><em>r</em>[<em>i</em>]</span> has not been set this iteration, set it to <span class="math inline">1</span>, otherwise unset it</li>
 <li>Remove all keys that have been set successfully</li>
+</ol></li>
 <li>If there are any leftover keys, store them separately</li>
 </ol>
-<h3 id="hashing-1">Hashing</h3>
+<h4 id="hashing-1">Hashing</h4>
 <p>As I mentioned previously, I used <code>hashWithSalt</code>:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">value</span><span> </span><span class="ot">=</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="va">currentLevel</span><span> </span><span class="va">key</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="ot">(</span><span class="va">gamma</span><span> </span><span class="ot">*</span><span> </span><span class="va">currentLength</span><span class="ot">)</span></code></pre></div>
 <p>The role of <code>gamma</code> is to control the amount of “slack” in the bitvector, since
 sometimes making it larger than strictly necessary can reduce the probability
 of collisions. More on this later.</p>
-<h3 id="populating-the-bitvector">Populating the bitvector</h3>
+<h4 id="populating-the-bitvector">Populating the bitvector</h4>
+<p>The approach is roughly as follows:</p>
+<ol type="1">
+<li>Initialise two bitvectors <span class="math inline"><em>B</em></span> and <span class="math inline"><em>C</em></span> with <span class="math inline">0</span>s</li>
+<li>When setting an index <span class="math inline"><em>i</em></span>:
+<ol type="1">
+<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 0</span> then set <span class="math inline"><em>B</em>[<em>i</em>] = 1</span></li>
+<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 1</span> then set <span class="math inline"><em>B</em>[<em>i</em>] = 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] = 1</span></li>
+<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 1</span> then do nothing</li>
+</ol></li>
+</ol>
+<p><span class="math inline"><em>B</em></span> is the bitarray we use for the hash function and <span class="math inline"><em>C</em></span> is only used to track
+collisions.</p>
+<h3 id="lookup">Lookup</h3>
+<p>To actually use our hash function, we can do the following:</p>
+<ol type="1">
+<li>For each level:
+<ol type="1">
+<li>Hash the key and check if the corresponding index is set</li>
+<li>If so, find the rank</li>
+<li>If not, increment the level count and repeat</li>
+</ol></li>
+<li>Otherwise check the leftovers</li>
+</ol>
+<h2 id="example">Example</h2>
+<p>Let’s look at a small example. The <a href="https://www.bonditocoogeewalk.com/">Bondi to Coogee
+walk</a> here in Sydney passes through the
+following beaches:</p>
+<ul>
+<li>Bondi</li>
+<li>Tamarama</li>
+<li>Bronte</li>
+<li>Clovelly</li>
+<li>Gordons Bay</li>
+<li>Coogee</li>
+</ul>
+<p>and we can use these as keys for a minimal perfect hash function.</p>
+<h3 id="construction-1">Construction</h3>
+<p>The results of the first iteration are</p>
+<details open>
+<summary style="cursor: pointer">
+Level 0
+</summary>
+<pre><code>┌─┐
+│0│ &lt;- [&quot;Clovelly&quot;,&quot;Bronte&quot;]
+├─┤
+│1│ &lt;- [&quot;Gordons Bay&quot;]
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Tamarama&quot;]
+├─┤
+│1│ &lt;- [&quot;Bondi&quot;]
+└─┘</code></pre>
+</details>
+<p>So far, so good.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 1
+</summary>
+<pre><code>┌─┐
+│0│
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+└─┘</code></pre>
+</details>
+<p>Hmm, that’s a little concerning.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 2
+</summary>
+<pre><code>┌─┐
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>This is not going well.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 3
+</summary>
+<pre><code>┌─┐
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>It’s like the algorithm is taunting me.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 4
+</summary>
+<pre><code>┌─┐
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>I tried this for another 20 levels, and all 4 keys keep colliding.</p>
+<p>If we take a step back, an easily-identifiable problem is that there are only
+4 possible slots for each key to fit into, which increases the likelihood of
+a collision. This is where the <code>gamma</code> parameter from earlier comes into play.
+We can try again with a <code>gamma</code> of <code>1.5</code>:</p>
+<details open>
+<summary style="cursor: pointer">
+Level 0
+</summary>
+<pre><code>┌─┐
+│1│ &lt;- [&quot;Bronte&quot;]
+├─┤
+│1│ &lt;- [&quot;Gordons Bay&quot;]
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│1│ &lt;- [&quot;Clovelly&quot;]
+├─┤
+│0│
+├─┤
+│1│ &lt;- [&quot;Bondi&quot;]
+└─┘</code></pre>
+</details>
+<p>Okay, this is already looking better.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 1
+</summary>
+<pre><code>┌─┐
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>Maybe I spoke too soon?</p>
+<details open>
+<summary style="cursor: pointer">
+Level 2
+</summary>
+<pre><code>┌─┐
+│1│ &lt;- [&quot;Tamarama&quot;]
+├─┤
+│1│ &lt;- [&quot;Coogee&quot;]
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>Phew.</p>
+<h3 id="lookup-1">Lookup</h3>
+<p>Suppose we wanted to hash <code>Coogee</code>. This is what the final bitarrays look like:</p>
+<details open>
+<summary style="cursor: pointer">
+Bitarrays
+</summary>
+<pre><code> 0 1 2 3 4 5 6 7 8
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│1│1│0│0│0│0│1│0│1│ b0
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘
+         ^------------ hashWithSalt 0 &quot;Coogee&quot; `mod` 9
+┌─┬─┬─┐
+│0│0│0│ b1
+└─┴─┴─┘
+ ^-------------------- hashWithSalt 1 &quot;Coogee&quot; `mod` 3
+┌─┬─┬─┐
+│1│1│0│ b2
+└─┴─┴─┘
+   ^------------------ hashWithSalt 2 &quot;Coogee&quot; `mod` 3</code></pre>
+</details>
+<p>We try each bitarray in sequence until we find a <span class="math inline">1</span> at our index, and we find the <span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> of that index:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">0</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">9</span><span>
+</span><span class="dv">4</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">b0</span><span> </span><span class="op">!</span><span> </span><span class="dv">4</span><span> </span><span class="co">-- collision</span><span>
+</span><span class="dv">0</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">1</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">3</span><span>
+</span><span class="dv">0</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">b1</span><span> </span><span class="op">!</span><span> </span><span class="dv">0</span><span> </span><span class="co">-- collision</span><span>
+</span><span class="dv">0</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">2</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">3</span><span>
+</span><span class="dv">1</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">b2</span><span> </span><span class="op">!</span><span> </span><span class="dv">1</span><span> </span><span class="co">-- hit</span><span>
+</span><span class="dv">1</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b0</span><span> </span><span class="op">+</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b1</span><span> </span><span class="op">+</span><span> </span><span class="va">rank</span><span> </span><span class="va">b2</span><span> </span><span class="dv">1</span><span>
+</span><span class="dv">6</span></code></pre></div>
 
         </div>
         <div id="footer">
