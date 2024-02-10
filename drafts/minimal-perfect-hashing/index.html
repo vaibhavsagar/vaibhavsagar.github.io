@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>The Real Hash Was the Friends We Made along the Way - Vaibhav Sagar</title>
+        <link href="data:," rel="icon">
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../talks/">Talks</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>The Real Hash Was the Friends We Made along the Way</h1>
+
+            <div class="info">
+    Posted on 14 February 2024
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged 'programming'." href="../../blog/tags/programming/" rel="tag">programming</a>
+    
+</div>
+
+<p>When I lived in Singapore, I attended a fascinating talk at FOSSASIA 2018 about
+<a href="https://www.youtube.com/watch?v=8Zu-EVjN24s">Indeed’s fast and compact immutable key-value
+stores</a>. In fact, if you listen
+carefully during the Q&amp;A session at the end, you can hear me ask some
+not-very-good questions in an ill-advised and ultimately futile attempt to
+relate to the speaker.</p>
+<p>This was my first encounter with the concept of minimal perfect hashing.
+Unfortunately for me, I found most of the existing literature so impenetrable
+that I gave up on learning more. <a href="https://cmph.sourceforge.net/papers/esa09.pdf">Hash, displace, and
+compress</a>? <a href="https://cmph.sourceforge.net/papers/wads07.pdf">Hypergraph
+peeling</a>? Eventually I found
+a suitable entry point: <a href="https://arxiv.org/abs/1702.03154">Fast and scalable minimal perfect hashing for massive
+key sets</a>.</p>
+<h2 id="minimal-perfect-hashing">Minimal perfect hashing</h2>
+<p>Let’s start with what minimal perfect hashing is:</p>
+<h3 id="hashing">Hashing</h3>
+<p>One definition of hashing is a process that converts some key to a value of
+some fixed size (e.g. an integer). We can think of this in terms of a hash
+<em>function</em> that takes some input and produces an integer as output.</p>
+<h3 id="perfect">Perfect</h3>
+<p>In practice, sometimes these hash functions produce the same output for
+different inputs, known as a <em>hash collision</em>. This is pretty annoying and
+causes lots of problems, and it would be nice if we could guarantee that
+distinct inputs always hash to different values, i.e. that the function is
+<a href="https://en.wikipedia.org/wiki/Injective_function"><em>injective</em></a>. Hash functions
+with this useful property are known as <em>perfect hash functions</em>. This requires
+all possible inputs to be known in advance.</p>
+<h3 id="minimal-perfect-hashing-1"><em>Minimal</em> perfect hashing</h3>
+<p>Bringing it all together, a <em>minimal perfect hash</em> function is one that has no
+gaps in its outputs, i.e. it maps <span class="math display"><em>n</em></span> different inputs to <span class="math display"><em>n</em></span> consecutive
+integers, e.g. <span class="math inline">[0..<em>n</em>)</span> or <span class="math inline">[1..<em>n</em>]</span>. It’s important to note that <em>minimal</em>
+does not imply anything about the space or time complexity of these functions,
+e.g. it would be totally valid to have an internal hashtable that maps each
+input to a distinct integer without gaps and then use that to implement our
+hash function. In practice, however, we want these functions to be as efficient
+as possible to construct, store, and use, and this is an active area of
+research.</p>
+<p>You’d probably want to use a minimal perfect hash when</p>
+<ul>
+<li>all possible keys are known in advance</li>
+<li>the set of keys doesn’t change</li>
+<li>space is at a premium</li>
+</ul>
+<p>One attractive property of a minimal perfect hash function is that you can use
+it to create a minimal perfect hash <em>table</em> by associating it with an array
+where each value’s index is the hash of the corresponding key.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>The approach used in the paper is based on cascading collisionless bitarrays,
+as illustrated here:</p>
+<figure>
+<img src="../../images/cascading-collisionless-arrays.svg" alt="Cascading Collisionless Bitarrays" />
+<figcaption aria-hidden="true"><em>Cascading Collisionless Bitarrays</em></figcaption>
+</figure>
+<p>In the example, keys <span class="math inline"><em>k</em><sub>1</sub></span> to <span class="math inline"><em>k</em><sub>6</sub></span> are hashed and positions where there are no
+collisions are recorded. The keys that collide at each level are removed and
+retried at the next level until all the keys are used. For the first bitarray
+<span class="math inline"><em>A</em><sub>0</sub></span>, <span class="math inline"><em>k</em><sub>3</sub></span> and <span class="math inline"><em>k</em><sub>6</sub></span> do not collide when using the hash function <span class="math inline"><em>h</em><sub>0</sub></span>. For
+the next bitarray <span class="math inline"><em>A</em><sub>1</sub></span>, <span class="math inline"><em>k</em><sub>1</sub></span> and <span class="math inline"><em>k</em><sub>5</sub></span> do not collide when using <span class="math inline"><em>h</em><sub>1</sub></span>.
+Finally for <span class="math inline"><em>A</em><sub>2</sub></span>, <span class="math inline"><em>k</em><sub>2</sub></span> and <span class="math inline"><em>k</em><sub>4</sub></span> do not collide using <span class="math inline"><em>h</em><sub>2</sub></span> and we have no
+more keys left. To compute the hash for a key, in this example <span class="math inline"><em>k</em><sub>2</sub></span>, we find
+the position where <span class="math inline"><em>A</em><sub><em>n</em></sub>[<em>h</em><sub><em>n</em></sub>(<em>k</em><sub>2</sub>)] ≡ 1</span> and count the number of <code>1</code>s at or
+preceding this position, also known as the <em>rank</em>, which will always give us
+a number <span class="math inline">[1..<em>n</em>]</span>.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>To implement this, we’ll need</p>
+<ul>
+<li>a family of hash functions</li>
+<li>bitvectors supporting <a href="https://en.wikipedia.org/wiki/Succinct_data_structure#Succinct_indexable_dictionaries"><span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> (and
+<span class="math inline"><em>s</em><em>e</em><em>l</em><em>e</em><em>c</em><em>t</em></span>)</a>
+operations</li>
+</ul>
+<p>For the hash functions, I used
+<a href="https://hackage.haskell.org/package/hashable-1.4.3.0/docs/Data-Hashable.html#v:hashWithSalt"><code>hashWithSalt</code></a>
+from the <a href="https://hackage.haskell.org/package/hashable"><code>hashable</code></a> package,
+and for the bitvectors I used the
+<a href="https://hackage.haskell.org/package/bv-little"><code>bv-little</code></a> package because
+<a href="https://github.com/recursion-ninja/bv-little/issues/3">past Vaibhav asked for <code>rank</code> and <code>select</code>
+support</a>.</p>
+<h3 id="pseudocode">Pseudocode</h3>
+<p>At a high level, this is what the construction algorithm looks like:</p>
+<ol type="1">
+<li>Repeat steps 2-4 until the maximum level is reached or we have no more keys</li>
+<li>Hash each key to a number <span class="math inline"><em>i</em> ∈ [0..<em>n</em>)</span></li>
+<li>If <span class="math inline"><em>b</em><em>i</em><em>t</em><em>v</em><em>e</em><em>c</em><em>t</em><em>o</em><em>r</em>[<em>i</em>]</span> has not been set this iteration, set it to <span class="math inline">1</span>, otherwise unset it</li>
+<li>Remove all keys that have been set successfully</li>
+<li>If there are any leftover keys, store them separately</li>
+</ol>
+<h3 id="hashing-1">Hashing</h3>
+<p>As I mentioned previously, I used <code>hashWithSalt</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">value</span><span> </span><span class="ot">=</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="va">currentLevel</span><span> </span><span class="va">key</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="ot">(</span><span class="va">gamma</span><span> </span><span class="ot">*</span><span> </span><span class="va">currentLength</span><span class="ot">)</span></code></pre></div>
+<p>The role of <code>gamma</code> is to control the amount of “slack” in the bitvector, since
+sometimes making it larger than strictly necessary can reduce the probability
+of collisions. More on this later.</p>
+<h3 id="populating-the-bitvector">Populating the bitvector</h3>
+
+        </div>
+        <div id="footer">
+            <div class="rc-webring">
+                <a href="https://webring.recurse.com"><img src="https://webring.recurse.com/icon.svg" /> RC Webring</a>
+            </div>
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    </body>
+</html>
