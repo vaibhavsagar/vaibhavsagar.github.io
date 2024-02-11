@@ -61,6 +61,10 @@ distinct inputs always hash to different values, i.e. that the function is
 <a href="https://en.wikipedia.org/wiki/Injective_function"><em>injective</em></a>. Hash functions
 with this useful property are known as <em>perfect hash functions</em>. This requires
 all possible inputs to be known in advance.</p>
+<figure>
+<img src="//upload.wikimedia.org/wikipedia/commons/5/5c/Gen_injection_not_surjection.svg" alt="Injective function" />
+<figcaption aria-hidden="true">Injective function</figcaption>
+</figure>
 <h3 id="minimal-perfect-hashing-1"><em>Minimal</em> perfect hashing</h3>
 <p>Bringing it all together, a <em>minimal perfect hash</em> function is one that has no
 gaps in its outputs, i.e. it
@@ -72,6 +76,10 @@ internal hashtable that maps each input to a distinct integer without gaps and
 then use that to implement our hash function. In practice, however, we want
 these functions to be as efficient as possible to construct, store, and use,
 and this is an active area of research.</p>
+<figure>
+<img src="//upload.wikimedia.org/wikipedia/commons/a/a5/Bijection.svg" alt="Bijective function" />
+<figcaption aria-hidden="true">Bijective function</figcaption>
+</figure>
 <p>You’d probably want to use a minimal perfect hash when</p>
 <ul>
 <li>all possible keys are known in advance</li>
@@ -83,7 +91,9 @@ it to create a minimal perfect hash <em>table</em> by associating it with an arr
 where each value’s index is the hash of the corresponding key.</p>
 <h2 id="how-it-works">How it works</h2>
 <p>The approach used in the paper is based on cascading collisionless bitarrays,
-as illustrated here:</p>
+as illustrated below. I have a more detailed example later so if you aren’t
+able to follow this one that’s totally okay! It exists to give you a quick
+taste of the algorithm.</p>
 <figure>
 <img src="../../images/cascading-collisionless-arrays.svg" alt="Cascading Collisionless Bitarrays" />
 <figcaption aria-hidden="true"><em>Cascading Collisionless Bitarrays</em></figcaption>
@@ -131,7 +141,8 @@ support</a>.</p>
 sometimes making it larger than strictly necessary can reduce the probability
 of collisions. More on this later.</p>
 <h4 id="populating-the-bitvector">Populating the bitvector</h4>
-<p>The approach is roughly as follows:</p>
+<p>The approach described in the paper involves using an auxiliary bitvector <span class="math inline"><em>C</em></span>
+to keep track of collisions:</p>
 <ol type="1">
 <li>Initialise two bitvectors <span class="math inline"><em>B</em></span> and <span class="math inline"><em>C</em></span> with <span class="math inline">0</span>s</li>
 <li>When setting an index <span class="math inline"><em>i</em></span>:
@@ -141,8 +152,6 @@ of collisions. More on this later.</p>
 <li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 1</span> then do nothing</li>
 </ol></li>
 </ol>
-<p><span class="math inline"><em>B</em></span> is the bitarray we use for the hash function and <span class="math inline"><em>C</em></span> is only used to track
-collisions.</p>
 <h3 id="lookup">Lookup</h3>
 <p>To actually use our hash function, we can do the following:</p>
 <ol type="1">
@@ -313,15 +322,15 @@ Bitarrays
 ┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
 │1│1│0│0│0│0│1│0│1│ b0
 └─┴─┴─┴─┴─┴─┴─┴─┴─┘
-         ^------------ hashWithSalt 0 &quot;Coogee&quot; `mod` 9
+         └──────────── hashWithSalt 0 &quot;Coogee&quot; `mod` 9
 ┌─┬─┬─┐
 │0│0│0│ b1
 └─┴─┴─┘
- ^-------------------- hashWithSalt 1 &quot;Coogee&quot; `mod` 3
+ └──────────────────── hashWithSalt 1 &quot;Coogee&quot; `mod` 3
 ┌─┬─┬─┐
 │1│1│0│ b2
 └─┴─┴─┘
-   ^------------------ hashWithSalt 2 &quot;Coogee&quot; `mod` 3</code></pre>
+   └────────────────── hashWithSalt 2 &quot;Coogee&quot; `mod` 3</code></pre>
 </details>
 <p>We try each bitarray in sequence until we find a <span class="math inline">1</span> at our index, and we find the <span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> of that index:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">0</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">9</span><span>
@@ -338,6 +347,24 @@ Bitarrays
 </span><span class="dv">1</span><span>
 </span><span class="op">&gt;</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b0</span><span> </span><span class="op">+</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b1</span><span> </span><span class="op">+</span><span> </span><span class="va">rank</span><span> </span><span class="va">b2</span><span> </span><span class="dv">1</span><span>
 </span><span class="dv">6</span></code></pre></div>
+<h3 id="minimal-perfect-hash-table">Minimal perfect hash table</h3>
+<p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>)−1] = <em>v</em><sub><em>n</em></sub></span></p>
+<details open>
+<summary style="cursor: pointer">
+Values
+</summary>
+<pre><code> ╭──────────── Bronte
+ │ ╭────────── Gordons Bay
+ │ │ ╭──────── Clovelly
+ │ │ │ ╭────── Bondi
+ │ │ │ │ ╭──── Tamarama
+ │ │ │ │ │ ╭── Coogee
+ ↓ ↓ ↓ ↓ ↓ ↓
+ 0 1 2 3 4 5
+┌─┬─┬─┬─┬─┬─┐
+│ │ │ │ │ │ │
+└─┴─┴─┴─┴─┴─┘</code></pre>
+</details>
 
         </div>
         <div id="footer">
