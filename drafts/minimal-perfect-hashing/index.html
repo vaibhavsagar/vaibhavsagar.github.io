@@ -107,7 +107,7 @@ Finally for <span class="math inline"><em>A</em><sub>2</sub></span>, <span class
 more keys left. To compute the hash for a key, in this example <span class="math inline"><em>k</em><sub>2</sub></span>, we find
 the position where <span class="math inline"><em>A</em><sub><em>n</em></sub>[<em>h</em><sub><em>n</em></sub>(<em>k</em><sub>2</sub>)] ≡ 1</span> and count the number of <code>1</code>s at or
 preceding this position, also known as the <em>rank</em>, which will always give us
-a number <span class="math inline">[1..<em>n</em>]</span>.</p>
+a number <span class="math inline">[1..<em>n</em>]</span>. For <span class="math inline"><em>k</em>2</span>, the hash is <span class="math inline">5</span>.</p>
 <h3 id="prerequisites">Prerequisites</h3>
 <p>To implement this, we’ll need</p>
 <ul>
@@ -347,6 +347,32 @@ Bitarrays
 </span><span class="dv">1</span><span>
 </span><span class="op">&gt;</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b0</span><span> </span><span class="op">+</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b1</span><span> </span><span class="op">+</span><span> </span><span class="va">rank</span><span> </span><span class="va">b2</span><span> </span><span class="dv">1</span><span>
 </span><span class="dv">6</span></code></pre></div>
+<p>Our hash is <span class="math inline">6</span>.</p>
+<p>Unfortunately, we also get seemingly-valid output for a key that wasn’t in our
+input set, e.g.
+<a href="https://www.sydney.com/destinations/sydney/sydney-north/manly/attractions/shelly-beach-manly"><code>Shelly</code></a>:</p>
+<details open>
+<summary style="cursor: pointer">
+Bitarrays
+</summary>
+<pre><code> 0 1 2 3 4 5 6 7 8
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│1│1│0│0│0│0│1│0│1│ b0
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘
+   └─────────────────  hashWithSalt 0 &quot;Shelly&quot; `mod` 9
+┌─┬─┬─┐
+│0│0│0│ b1
+└─┴─┴─┘
+┌─┬─┬─┐
+│1│1│0│ b2
+└─┴─┴─┘</code></pre>
+</details>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">0</span><span> </span><span class="st">&quot;Shelly&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">9</span><span>
+</span><span class="dv">1</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">rank</span><span> </span><span class="va">b0</span><span> </span><span class="dv">1</span><span>
+</span><span class="dv">2</span></code></pre></div>
+<p>This is a limitation of minimal perfect hash functions in general, and
+something to keep in mind while using them.</p>
 <h3 id="minimal-perfect-hash-table">Minimal perfect hash table</h3>
 <p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>)−1] = <em>v</em><sub><em>n</em></sub></span></p>
 <details open>
@@ -359,7 +385,6 @@ Values
  │ │ │ ╭────── Bondi
  │ │ │ │ ╭──── Tamarama
  │ │ │ │ │ ╭── Coogee
- ↓ ↓ ↓ ↓ ↓ ↓
  0 1 2 3 4 5
 ┌─┬─┬─┬─┬─┬─┐
 │ │ │ │ │ │ │
