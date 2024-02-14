@@ -10,8 +10,397 @@
         <email>vaibhavsagar@gmail.com</email>
         
     </author>
-    <updated>2024-02-09T00:00:00Z</updated>
+    <updated>2024-02-14T00:00:00Z</updated>
     <entry>
+    <title>The Real Hash Was the Friends We Made along the Way</title>
+    <link href="https://vaibhavsagar.com/blog/2024/02/14/minimal-perfect-hashing/" />
+    <id>https://vaibhavsagar.com/blog/2024/02/14/minimal-perfect-hashing/index.html</id>
+    <published>2024-02-14</published>
+    <updated>2024-02-14T00:00:00Z</updated>
+    <summary type="html"><div class="info">
+    Posted on 14 February 2024
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged &#39;programming&#39;." href="/blog/tags/programming/index.html" rel="tag">programming</a>
+    
+</div>
+
+<p>When I lived in Singapore, I attended a fascinating talk at FOSSASIA 2018 about
+<a href="https://www.youtube.com/watch?v=8Zu-EVjN24s">Indeed’s fast and compact immutable key-value
+stores</a> that went almost
+completely over my head. In fact, if you listen carefully during the Q&amp;A
+session at the end, you can hear me ask some not-very-good questions in an
+ill-advised and ultimately futile attempt to relate to the speaker.</p>
+<p>This was my first encounter with the concept of minimal perfect hashing.
+Unfortunately for me, I found most of the existing literature so impenetrable
+that I gave up on learning more. <a href="https://cmph.sourceforge.net/papers/esa09.pdf">Hash, displace, and
+compress</a>? <a href="https://cmph.sourceforge.net/papers/wads07.pdf">Hypergraph
+peeling</a>?
+<a href="https://arxiv.org/abs/1910.06416">RecSplit</a>? Eventually I found a suitable
+entry point: <a href="https://arxiv.org/abs/1702.03154">Fast and scalable minimal perfect hashing for massive key
+sets</a>.</p>
+<h2 id="minimal-perfect-hashing">Minimal perfect hashing</h2>
+<p>Let’s start with what minimal perfect hashing is:</p>
+<h3 id="hashing">Hashing</h3>
+<p>One definition of hashing is a process that converts some key to a value of
+some fixed size (e.g. an integer). We can think of this in terms of a hash
+<em>function</em> that takes some input and produces an integer as output.</p>
+<h3 id="perfect">Perfect</h3>
+<p>In practice, sometimes these hash functions produce the same output for
+different inputs, known as a <em>hash collision</em>. This is pretty annoying and
+causes lots of problems, and it would be nice if we could guarantee that
+distinct inputs always hash to different values, i.e. that the function is
+<a href="https://en.wikipedia.org/wiki/Injective_function"><em>injective</em></a>. Hash functions
+with this useful property are known as <em>perfect hash functions</em>. This requires
+all possible inputs to be known in advance.</p>
+<figure>
+<img src="//upload.wikimedia.org/wikipedia/commons/5/5c/Gen_injection_not_surjection.svg" alt="Injective function" />
+<figcaption aria-hidden="true">Injective function</figcaption>
+</figure>
+<h3 id="minimal-perfect-hashing-1"><em>Minimal</em> perfect hashing</h3>
+<p>Bringing it all together, a <em>minimal perfect hash</em> function is one that has no
+gaps in its outputs, i.e. it
+<a href="https://en.wikipedia.org/wiki/Bijection">bijectively</a> maps <span class="math display"><em>n</em></span> different
+inputs to <span class="math display"><em>n</em></span> consecutive integers, e.g. <span class="math inline">[0..<em>n</em>)</span> or <span class="math inline">[1..<em>n</em>]</span>. It’s important
+to note that <em>minimal</em> does not imply anything about the space or time
+complexity of these functions, e.g. it would be totally valid to have an
+internal hashtable that maps each input to a distinct integer without gaps and
+then use that to implement our hash function. In practice, however, we want
+these functions to be as efficient as possible to construct, store, and use,
+and this is an active area of research.</p>
+<figure>
+<img src="//upload.wikimedia.org/wikipedia/commons/a/a5/Bijection.svg" alt="Bijective function" />
+<figcaption aria-hidden="true">Bijective function</figcaption>
+</figure>
+<p>You’d probably want to use a minimal perfect hash when</p>
+<ul>
+<li>all possible keys are known in advance</li>
+<li>the set of keys doesn’t change</li>
+<li>space is at a premium</li>
+</ul>
+<p>One attractive property of a minimal perfect hash function is that you can use
+it to create a minimal perfect hash <em>table</em> by associating it with an array
+where each value’s index is the hash of the corresponding key.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>The approach used in the paper is based on cascading collisionless bitarrays,
+as illustrated below. I have a more detailed example later so if you aren’t
+able to follow this one that’s totally okay! It exists to give you a quick
+taste of the algorithm.</p>
+<figure>
+<img src="/images/cascading-collisionless-arrays.svg" alt="Cascading Collisionless Bitarrays" />
+<figcaption aria-hidden="true"><em>Cascading Collisionless Bitarrays</em></figcaption>
+</figure>
+<p>In the example, keys <span class="math inline"><em>k</em><sub>1</sub></span> to <span class="math inline"><em>k</em><sub>6</sub></span> are hashed and positions where there are no
+collisions are recorded. The keys that collide at each level are removed and
+retried at the next level until all the keys are used. For the first bitarray
+<span class="math inline"><em>A</em><sub>0</sub></span>, <span class="math inline"><em>k</em><sub>3</sub></span> and <span class="math inline"><em>k</em><sub>6</sub></span> do not collide when using the hash function <span class="math inline"><em>h</em><sub>0</sub></span>. For
+the next bitarray <span class="math inline"><em>A</em><sub>1</sub></span>, <span class="math inline"><em>k</em><sub>1</sub></span> and <span class="math inline"><em>k</em><sub>5</sub></span> do not collide when using <span class="math inline"><em>h</em><sub>1</sub></span>.
+Finally for <span class="math inline"><em>A</em><sub>2</sub></span>, <span class="math inline"><em>k</em><sub>2</sub></span> and <span class="math inline"><em>k</em><sub>4</sub></span> do not collide using <span class="math inline"><em>h</em><sub>2</sub></span> and we have no
+more keys left. To compute the hash for a key, in this example <span class="math inline"><em>k</em><sub>2</sub></span>, we find
+the position where <span class="math inline"><em>A</em><sub><em>n</em></sub>[<em>h</em><sub><em>n</em></sub>(<em>k</em><sub>2</sub>)] ≡ 1</span> and count the number of <code>1</code>s at or
+preceding this position, also known as the <em>rank</em>, which will always give us
+a number <span class="math inline">[1..<em>n</em>]</span>. For <span class="math inline"><em>k</em>2</span>, the hash is <span class="math inline">5</span>.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>To implement this, we’ll need</p>
+<ul>
+<li>a family of hash functions</li>
+<li>bitvectors supporting <a href="https://en.wikipedia.org/wiki/Succinct_data_structure#Succinct_indexable_dictionaries"><span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> (and
+<span class="math inline"><em>s</em><em>e</em><em>l</em><em>e</em><em>c</em><em>t</em></span>)</a>
+operations</li>
+</ul>
+<p>For the hash functions, I used
+<a href="https://hackage.haskell.org/package/hashable-1.4.3.0/docs/Data-Hashable.html#v:hashWithSalt"><code>hashWithSalt</code></a>
+from the <a href="https://hackage.haskell.org/package/hashable"><code>hashable</code></a> package,
+and for the bitvectors I used the
+<a href="https://hackage.haskell.org/package/bv-little"><code>bv-little</code></a> package because
+<a href="https://github.com/recursion-ninja/bv-little/issues/3">past Vaibhav asked for <code>rank</code> and <code>select</code>
+support</a>.</p>
+<h3 id="construction">Construction</h3>
+<p>At a high level, this is what the construction algorithm looks like:</p>
+<ol type="1">
+<li>Repeat the following steps until the maximum level is reached or we have no more keys:
+<ol type="1">
+<li>Hash each key to a number <span class="math inline"><em>i</em> ∈ [0..<em>n</em>)</span></li>
+<li>If <span class="math inline"><em>b</em><em>i</em><em>t</em><em>v</em><em>e</em><em>c</em><em>t</em><em>o</em><em>r</em>[<em>i</em>]</span> has not been set this iteration, set it to <span class="math inline">1</span>, otherwise unset it</li>
+<li>Remove all keys that have been set successfully</li>
+</ol></li>
+<li>If there are any leftover keys, store them separately</li>
+</ol>
+<h4 id="hashing-1">Hashing</h4>
+<p>As I mentioned previously, I used <code>hashWithSalt</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">value</span><span> </span><span class="ot">=</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="va">currentLevel</span><span> </span><span class="va">key</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="ot">(</span><span class="va">gamma</span><span> </span><span class="ot">*</span><span> </span><span class="va">currentLength</span><span class="ot">)</span></code></pre></div>
+<p>The role of <code>gamma</code> is to control the amount of “slack” in the bitvector, since
+sometimes making it larger than strictly necessary can reduce the probability
+of collisions. More on this later.</p>
+<h4 id="populating-the-bitvector">Populating the bitvector</h4>
+<p>The approach described in the paper involves using an auxiliary bitvector <span class="math inline"><em>C</em></span>
+to keep track of collisions:</p>
+<ol type="1">
+<li>Initialise two bitvectors <span class="math inline"><em>B</em></span> and <span class="math inline"><em>C</em></span> with <span class="math inline">0</span>s</li>
+<li>When setting an index <span class="math inline"><em>i</em></span>:
+<ol type="1">
+<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 0</span> then set <span class="math inline"><em>B</em>[<em>i</em>] = 1</span></li>
+<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 1</span> then set <span class="math inline"><em>B</em>[<em>i</em>] = 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] = 1</span></li>
+<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 1</span> then do nothing</li>
+</ol></li>
+</ol>
+<h3 id="lookup">Lookup</h3>
+<p>To actually use our hash function, we can do the following:</p>
+<ol type="1">
+<li>For each level:
+<ol type="1">
+<li>Hash the key and check if the corresponding index is set</li>
+<li>If so, find the rank</li>
+<li>If not, increment the level count and repeat</li>
+</ol></li>
+<li>Otherwise check the leftovers</li>
+</ol>
+<h2 id="example">Example</h2>
+<p>Let’s look at a small example. The <a href="https://www.bonditocoogeewalk.com/">Bondi to Coogee
+walk</a> here in Sydney passes through the
+following beaches:</p>
+<ul>
+<li>Bondi</li>
+<li>Tamarama</li>
+<li>Bronte</li>
+<li>Clovelly</li>
+<li>Gordons Bay</li>
+<li>Coogee</li>
+</ul>
+<p>and we can use these as keys for a minimal perfect hash function.</p>
+<h3 id="construction-1">Construction</h3>
+<p>The results of the first iteration are</p>
+<details open>
+<summary style="cursor: pointer">
+Level 0
+</summary>
+<pre><code>┌─┐
+│0│ &lt;- [&quot;Clovelly&quot;,&quot;Bronte&quot;]
+├─┤
+│1│ &lt;- [&quot;Gordons Bay&quot;]
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Tamarama&quot;]
+├─┤
+│1│ &lt;- [&quot;Bondi&quot;]
+└─┘</code></pre>
+</details>
+<p>So far, so good.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 1
+</summary>
+<pre><code>┌─┐
+│0│
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+└─┘</code></pre>
+</details open>
+<p>Hmm, that’s a little concerning.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 2
+</summary>
+<pre><code>┌─┐
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>This is not going well.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 3
+</summary>
+<pre><code>┌─┐
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>It’s like the algorithm is taunting me.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 4
+</summary>
+<pre><code>┌─┐
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>I tried this for another 20 levels, and all 4 keys keep colliding.</p>
+<p>If we take a step back, an easily-identifiable problem is that there are only
+4 possible slots for each key to fit into, which increases the likelihood of
+a collision. This is where the <code>gamma</code> parameter from earlier comes into play.
+We can try again with a <code>gamma</code> of <code>1.5</code>:</p>
+<details open>
+<summary style="cursor: pointer">
+Level 0
+</summary>
+<pre><code>┌─┐
+│1│ &lt;- [&quot;Bronte&quot;]
+├─┤
+│1│ &lt;- [&quot;Gordons Bay&quot;]
+├─┤
+│0│
+├─┤
+│0│
+├─┤
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│1│ &lt;- [&quot;Clovelly&quot;]
+├─┤
+│0│
+├─┤
+│1│ &lt;- [&quot;Bondi&quot;]
+└─┘</code></pre>
+</details>
+<p>Okay, this is already looking better.</p>
+<details open>
+<summary style="cursor: pointer">
+Level 1
+</summary>
+<pre><code>┌─┐
+│0│ &lt;- [&quot;Coogee&quot;,&quot;Tamarama&quot;]
+├─┤
+│0│
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>Maybe I spoke too soon?</p>
+<details open>
+<summary style="cursor: pointer">
+Level 2
+</summary>
+<pre><code>┌─┐
+│1│ &lt;- [&quot;Tamarama&quot;]
+├─┤
+│1│ &lt;- [&quot;Coogee&quot;]
+├─┤
+│0│
+└─┘</code></pre>
+</details>
+<p>Phew.</p>
+<h3 id="lookup-1">Lookup</h3>
+<p>Suppose we wanted to hash <code>Coogee</code>. This is what the final bitarrays look like:</p>
+<details open>
+<summary style="cursor: pointer">
+Bitarrays
+</summary>
+<pre><code> 0 1 2 3 4 5 6 7 8
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│1│1│0│0│0│0│1│0│1│ b0
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘
+         └──────────── hashWithSalt 0 &quot;Coogee&quot; `mod` 9
+┌─┬─┬─┐
+│0│0│0│ b1
+└─┴─┴─┘
+ └──────────────────── hashWithSalt 1 &quot;Coogee&quot; `mod` 3
+┌─┬─┬─┐
+│1│1│0│ b2
+└─┴─┴─┘
+   └────────────────── hashWithSalt 2 &quot;Coogee&quot; `mod` 3</code></pre>
+</details>
+<p>We try each bitarray in sequence until we find a <span class="math inline">1</span> at our index, and we find the <span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> of that index:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">0</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">9</span><span>
+</span><span class="dv">4</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">b0</span><span> </span><span class="op">!</span><span> </span><span class="dv">4</span><span> </span><span class="co">-- collision</span><span>
+</span><span class="dv">0</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">1</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">3</span><span>
+</span><span class="dv">0</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">b1</span><span> </span><span class="op">!</span><span> </span><span class="dv">0</span><span> </span><span class="co">-- collision</span><span>
+</span><span class="dv">0</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">2</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">3</span><span>
+</span><span class="dv">1</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">b2</span><span> </span><span class="op">!</span><span> </span><span class="dv">1</span><span> </span><span class="co">-- hit</span><span>
+</span><span class="dv">1</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b0</span><span> </span><span class="op">+</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b1</span><span> </span><span class="op">+</span><span> </span><span class="va">rank</span><span> </span><span class="va">b2</span><span> </span><span class="dv">1</span><span>
+</span><span class="dv">6</span></code></pre></div>
+<p>Our hash is <span class="math inline">6</span>.</p>
+<h4 id="false-positive">False positive</h4>
+<p>Unfortunately, we also get seemingly-valid output for a key that wasn’t in our
+input set, e.g.
+<a href="https://www.sydney.com/destinations/sydney/sydney-north/manly/attractions/shelly-beach-manly"><code>Shelly</code></a>:</p>
+<details open>
+<summary style="cursor: pointer">
+Bitarrays
+</summary>
+<pre><code> 0 1 2 3 4 5 6 7 8
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│1│1│0│0│0│0│1│0│1│ b0
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘
+   └─────────────────  hashWithSalt 0 &quot;Shelly&quot; `mod` 9
+┌─┬─┬─┐
+│0│0│0│ b1
+└─┴─┴─┘
+┌─┬─┬─┐
+│1│1│0│ b2
+└─┴─┴─┘</code></pre>
+</details>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">0</span><span> </span><span class="st">&quot;Shelly&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">9</span><span>
+</span><span class="dv">1</span><span>
+</span><span class="op">&gt;</span><span> </span><span class="va">rank</span><span> </span><span class="va">b0</span><span> </span><span class="dv">1</span><span>
+</span><span class="dv">2</span></code></pre></div>
+<p>This is a limitation of minimal perfect hash functions in general, and
+something to keep in mind while using them.</p>
+<h3 id="minimal-perfect-hash-table">Minimal perfect hash <em>table</em></h3>
+<p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>)−1] = <em>v</em><sub><em>n</em></sub></span>!</p>
+<details open>
+<summary style="cursor: pointer">
+Values
+</summary>
+<pre><code> ╭──────────── Bronte
+ │ ╭────────── Gordons Bay
+ │ │ ╭──────── Clovelly
+ │ │ │ ╭────── Bondi
+ │ │ │ │ ╭──── Tamarama
+ │ │ │ │ │ ╭── Coogee
+ 0 1 2 3 4 5
+┌─┬─┬─┬─┬─┬─┐
+│ │ │ │ │ │ │
+└─┴─┴─┴─┴─┴─┘</code></pre>
+</details>
+<p>The authors point out that trying to save a few bits per key by tweaking
+<span class="math inline"><em>g</em><em>a</em><em>m</em><em>m</em><em>a</em></span> doesn’t make much sense in this case, since the values account for the
+vast majority of the space usage.</p>
+<h3 id="code">Code</h3>
+<p>The authors provide a library called
+<a href="https://github.com/rizkg/BBHash"><code>BBHash</code></a>, and I have <a href="https://github.com/vaibhavsagar/notebooks/blob/master/mph/MPH.ipynb">a small implementation
+here</a>.</p>
+<h2 id="thats-all">That’s all!</h2>
+<p>An interesting thing I noticed was that after I was able to make sense of this
+implementation of minimal perfect hashing, the other approaches were easier to
+grasp. I wouldn’t go so far as to say I magically <em>understood</em> them when
+I didn’t before, but I definitely feel less lost now. Maybe you’ll have
+a similar experience?</p>
+</summary>
+</entry>
+<entry>
     <title>Low-effort Dependency Pinning with Nix Flakes</title>
     <link href="https://vaibhavsagar.com/blog/2024/02/09/low-effort-dependency-pinning-flakes/" />
     <id>https://vaibhavsagar.com/blog/2024/02/09/low-effort-dependency-pinning-flakes/index.html</id>
@@ -3491,415 +3880,6 @@ widely available, and as a demonstration of using <code>dockerTools</code> to br
 gap between Nix and Docker!</p>
 <p><em>Thanks to <a href="https://grahamc.com">Graham Christensen</a> for improving the Nix
 expression to use <code>buildLayeredImage</code>.</em></p>
-</summary>
-</entry>
-<entry>
-    <title>Functional DevOps in a Dysfunctional World</title>
-    <link href="https://vaibhavsagar.com/blog/2019/07/04/functional-devops/" />
-    <id>https://vaibhavsagar.com/blog/2019/07/04/functional-devops/index.html</id>
-    <published>2019-07-04</published>
-    <updated>2019-07-04T00:00:00Z</updated>
-    <summary type="html"><div class="info">
-    Posted on  4 July 2019
-    
-</div>
-<div class="info">
-    
-        Tags: <a title="All pages tagged &#39;programming&#39;." href="/blog/tags/programming/index.html" rel="tag">programming</a>, <a title="All pages tagged &#39;nix&#39;." href="/blog/tags/nix/index.html" rel="tag">nix</a>, <a title="All pages tagged &#39;devops&#39;." href="/blog/tags/devops/index.html" rel="tag">devops</a>
-    
-</div>
-
-<p><em>This is a pseudo-transcript of <a href="https://www.youtube.com/watch?v=RsSNEkBGmj0">a presentation I gave at the linux.conf.au
-2018 Real World Functional Programming
-Miniconf</a>.</em></p>
-<p>What is DevOps about? For me it’s about my relationship to the phrase</p>
-<blockquote>
-<p>It works on my machine.</p>
-</blockquote>
-<p>I’ve been guilty of saying this in the past, and quite frankly, it isn’t good
-enough. After the development team has written their last line of code, some
-amount of work still needs to happen in order for the software to deliver value.</p>
-<p>A few jobs ago I was at a small web development shop, and my deployment
-workflow was as follows:</p>
-<ol type="1">
-<li>Log on to the development server and take careful notes on how it had diverged from the production server.</li>
-<li>Carefully set aside some time to ‘do the deploy’.</li>
-<li>Log on to the production server and do a <code>git pull</code> to get the latest code changes.</li>
-<li>Perform database migrations according to the notes you made earlier.</li>
-<li>Manually make any other required changes.</li>
-</ol>
-<p>Despite my best efforts, I would inevitably run into issues whenever I did
-this, resulting in site outages and frustrated clients. This was far from
-ideal, but I wasn’t able to articulate why at the time.</p>
-<p>I posit that a better deployment process has the following properties:</p>
-<ul>
-<li><p><strong>Automatic</strong>: instead of a manual multi-step process, it has a single step,
-which can be performed automatically.</p></li>
-<li><p><strong>Repeatable</strong>: instead of only being able to deploy to one lovingly
-hand-maintained server, it can deploy reliably multiple times to multiple
-servers.</p></li>
-<li><p><strong>Idempotent</strong>: if the target is already in the desired state, no extra work
-needs to be done.</p></li>
-<li><p><strong>Reversible</strong>: if it turns out I made a mistake, I can go back to the
-previous state.</p></li>
-<li><p><strong>Atomic</strong>: an external observer can only see the new state or the old state,
-not any intermediate state.</p></li>
-</ul>
-<p>I hope to demonstrate how the Nix suite of tools (Nix, NixOS, and NixOps)
-fulfill these properties and provide a better DevOps experience.</p>
-<p>To make things easier, I’m not assuming that you already run NixOS. Any Linux
-distro should do, as long as you’ve <a href="https://nixos.org/nix/download.html">installed
-Nix</a>. macOS users will be able to follow
-along until I get to the NixOps section.</p>
-<h2 id="shipping-it">Shipping it</h2>
-<h3 id="packaging">Packaging</h3>
-<p>Suppose we have been given a small Haskell app to get up and running:</p>
-<p><em>Main.hs</em></p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="pp">{-# LANGUAGE OverloadedStrings #-}</span><span>
-
-</span><span class="kw">import</span><span> </span><span class="dt">Web.Scotty</span><span>
-
-</span><span class="kw">import</span><span> </span><span class="dt">Data.Monoid</span><span> </span><span class="ot">(</span><span class="va">mconcat</span><span class="ot">)</span><span>
-
-</span><span class="va">main</span><span> </span><span class="ot">=</span><span> </span><span class="va">scotty</span><span> </span><span class="dv">3000</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
-    </span><span class="va">get</span><span> </span><span class="st">&quot;/:word&quot;</span><span> </span><span class="op">$</span><span> </span><span class="kw">do</span><span>
-        </span><span class="va">beam</span><span> </span><span class="ot">&lt;-</span><span> </span><span class="va">param</span><span> </span><span class="st">&quot;word&quot;</span><span>
-        </span><span class="va">html</span><span> </span><span class="op">$</span><span> </span><span class="va">mconcat</span><span> </span><span class="ot">[</span><span class="st">&quot;&lt;h1&gt;Scotty, &quot;</span><span class="ot">,</span><span> </span><span class="va">beam</span><span class="ot">,</span><span> </span><span class="st">&quot; me up!&lt;/h1&gt;&quot;</span><span class="ot">]</span></code></pre></div>
-<p><em>blank-me-up.cabal</em></p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">name</span><span class="ot">:</span><span>                </span><span class="va">blank</span><span class="op">-</span><span class="va">me</span><span class="op">-</span><span class="va">up</span><span>
-</span><span class="va">version</span><span class="ot">:</span><span>             </span><span class="dv">0.1</span><span class="op">.</span><span class="dv">0.0</span><span>
-</span><span class="va">license</span><span class="ot">:</span><span>             </span><span class="dt">BSD3</span><span>
-</span><span class="va">build</span><span class="op">-</span><span class="kw">type</span><span class="ot">:</span><span>          </span><span class="dt">Simple</span><span>
-</span><span class="va">cabal</span><span class="op">-</span><span class="va">version</span><span class="ot">:</span><span>       </span><span class="op">&gt;=</span><span class="dv">1.10</span><span>
-
-</span><span class="va">executable</span><span> </span><span class="va">blank</span><span class="op">-</span><span class="va">me</span><span class="op">-</span><span class="va">up</span><span>
-  </span><span class="va">main</span><span class="op">-</span><span class="va">is</span><span class="ot">:</span><span>             </span><span class="va">Main.hs</span><span>
-  </span><span class="va">build</span><span class="op">-</span><span class="va">depends</span><span class="ot">:</span><span>       </span><span class="va">base</span><span> </span><span class="op">&gt;=</span><span class="dv">4.9</span><span> </span><span class="op">&amp;&amp;</span><span> </span><span class="op">&lt;</span><span class="dv">5</span><span>
-                     </span><span class="ot">,</span><span> </span><span class="va">scotty</span><span>
-  </span><span class="kw">default</span><span class="op">-</span><span class="va">language</span><span class="ot">:</span><span>    </span><span class="dt">Haskell2010</span></code></pre></div>
-<p>(This example is taken straight from <a href="https://github.com/scotty-web/scotty/blob/306fee7121dc41a55bd4e9b785f8366198de7e3c/README.md#scotty-">Scotty’s
-README</a>.)</p>
-<p>Our first step is to build this app and quickly check that it works. We’ll need
-Nix and <code>cabal2nix</code>, which turns <code>.cabal</code> files into configuration for the Nix
-package manager. Assuming we’ve installed <code>cabal2nix</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-env <span class="at">-i</span> cabal2nix</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>a <span class="ex">lot</span> of output<span class="op">&gt;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">created</span> <span class="op">&lt;</span>number<span class="op">&gt;</span> symlinks in user environment</span></code></pre></div>
-<p>How do we know it worked? Try <code>nix-env -q</code> (short for <code>--query</code>):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-env <span class="at">-q</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cabal2nix</span></span></code></pre></div>
-<p>Okay, assuming the app is in the <code>app</code> subdirectory, let’s create a directory
-called <code>nix</code> to store our <code>.nix</code> files and begin:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd nix</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cabal2nix ../app/ <span class="at">--shell</span> <span class="op">&gt;</span> default.nix</span></code></pre></div>
-<p><code>default.nix</code> might look something like</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">nixpkgs</span> <span class="op">?</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{},</span> <span class="va">compiler</span> <span class="op">?</span> <span class="st">&quot;default&quot;</span> <span class="op">}</span>:</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">inherit</span> (<span class="va">nixpkgs</span>) <span class="va">pkgs</span>;</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">f</span> <span class="op">=</span> <span class="op">{</span> <span class="va">mkDerivation</span><span class="op">,</span> <span class="va">base</span><span class="op">,</span> <span class="va">scotty</span><span class="op">,</span> <span class="va">stdenv</span> <span class="op">}</span>:</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>      mkDerivation <span class="op">{</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">pname</span> <span class="op">=</span> <span class="st">&quot;blank-me-up&quot;</span><span class="op">;</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">version</span> <span class="op">=</span> <span class="st">&quot;0.1.0.0&quot;</span><span class="op">;</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">src</span> <span class="op">=</span> <span class="ss">../app</span><span class="op">;</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">isLibrary</span> <span class="op">=</span> <span class="cn">false</span><span class="op">;</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">isExecutable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">executableHaskellDepends</span> <span class="op">=</span> <span class="op">[</span> base scotty <span class="op">];</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">license</span> <span class="op">=</span> stdenv.lib.licenses.bsd3<span class="op">;</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="va">haskellPackages</span> <span class="op">=</span> <span class="kw">if</span> compiler == <span class="st">&quot;default&quot;</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>                       <span class="kw">then</span> pkgs.haskellPackages</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                       <span class="kw">else</span> pkgs.haskell.packages.$<span class="op">{</span><span class="va">compiler</span><span class="op">};</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="va">drv</span> <span class="op">=</span> haskellPackages.callPackage f <span class="op">{};</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">if</span> pkgs.lib.inNixShell <span class="kw">then</span> drv.env <span class="kw">else</span> drv</span></code></pre></div>
-<p>Now we can build our project by running <code>nix-build</code>, which tries to build
-<code>default.nix</code> in the current directory if no arguments are provided:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-build</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>lots <span class="ex">of</span> output<span class="op">&gt;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">/nix/store/</span><span class="op">&lt;</span>hash<span class="op">&gt;</span>-blank-me-up-0.1.0.0</span></code></pre></div>
-<p>There should also be a new <code>result</code> symlink in the current directory, which
-points to the path above:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> readlink result</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/nix/store/</span><span class="op">&lt;</span>hash<span class="op">&gt;</span>-blank-me-up-0.1.0.0</span></code></pre></div>
-<p>Notice that we’ve built a Haskell executable without having to directly deal
-with any Haskell-specific tooling (unless you count <code>cabal2nix</code>). Nix works
-best if you allow it full control over builds, as we do here.</p>
-<p>What happens if we run <code>nix-build</code> again without changing anything?</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-build</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/nix/store/</span><span class="op">&lt;</span>hash<span class="op">&gt;</span>-blank-me-up-0.1.0.0</span></code></pre></div>
-<p>It should be nearly instantaneous and not require rebuilding anything. Nix
-tries to think of build outputs as a pure function of its inputs, and since our
-inputs are unchanged, it is able to give us back the same path that it did
-before. This is what I mean when I say Nix is declarative.</p>
-<p>What if we break our app:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">--- a/functional-devops/app/Main.hs</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">+++ b/functional-devops/app/Main.hs</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -4,6 +4,8 @@ import Web.Scotty</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a> import Data.Monoid (mconcat)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="va">+broken</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="va">+</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a> main = scotty 3000 $ do</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>     get &quot;/:word&quot; $ do</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>         beam &lt;- param &quot;word&quot;</span></code></pre></div>
-<p>and try to build again?</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-build</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>...<span class="op">&gt;</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Building</span> executable <span class="st">&#39;blank-me-up&#39;</span> for blank-me-up-0.1.0.0..</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">[1</span> of 1] Compiling Main             <span class="er">(</span> <span class="ex">Main.hs,</span> dist/build/blank-me-up/blank-me-up-tmp/Main.o <span class="kw">)</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Main.hs:7:1:</span> error:</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="ex">Parse</span> error: module header, import declaration</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="ex">or</span> top-level declaration expected.</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="ex">7</span> <span class="kw">|</span> <span class="ex">broken</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="ex">^^^^^^</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="ex">builder</span> for <span class="st">&#39;/nix/store/&lt;hash&gt;-blank-me-up-0.1.0.0.drv&#39;</span> failed with exit code 1</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="ex">error:</span> build of <span class="st">&#39;/nix/store/&lt;hash&gt;-blank-me-up-0.1.0.0.drv&#39;</span> failed</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>...<span class="op">&gt;</span></span></code></pre></div>
-<p>It fails, as one would hope, but more importantly the previous symlink at
-<code>result</code> is still available! This is because <code>nix-build</code> completes the build
-before atomically updating the symlink at <code>result</code> to point to the new
-artifact. This way, we can move from one known working state to another,
-without exposing our users to any intermediate brokenness.</p>
-<h3 id="service-configuration">Service Configuration</h3>
-<p>Okay, now that we’re able to successfully build the app, let’s configure a
-service file so that <code>systemd</code> can manage our app. I don’t know of any tools
-that automatically generate this so I always find myself copying and pasting
-from an existing service file. Here’s one I prepared earlier.</p>
-<p><em>nix/service.nix</em></p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">lib</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:                                               <span class="co">#1</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span>                                                                       <span class="co">#2</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">blank-me-up</span> <span class="op">=</span> pkgs.callPackage <span class="ss">./default.nix</span> <span class="op">{};</span>                        <span class="co">#3</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">{</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span> <span class="co">#4</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">config</span> <span class="op">=</span> lib.mkIf config.services.blank<span class="op">-</span>me<span class="op">-</span>up.enable <span class="op">{</span>                  <span class="co">#5</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">networking</span>.<span class="va">firewall</span>.<span class="va">allowedTCPPorts</span> <span class="op">=</span> <span class="op">[</span> <span class="dv">3000</span> <span class="op">];</span>                       <span class="co">#6</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="va">systemd</span>.<span class="va">services</span>.<span class="va">blank-me-up</span> <span class="op">=</span> <span class="op">{</span>                                      <span class="co">#7</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">after</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;network.target&quot;</span> <span class="op">];</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">wantedBy</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;multi-user.target&quot;</span> <span class="op">];</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">serviceConfig</span> <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">ExecStart</span> <span class="op">=</span> <span class="st">&quot;</span><span class="sc">${</span>blank<span class="op">-</span>me<span class="op">-</span>up<span class="sc">}</span><span class="st">/bin/blank-me-up&quot;</span><span class="op">;</span></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">Restart</span> <span class="op">=</span> <span class="st">&quot;always&quot;</span><span class="op">;</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">KillMode</span> <span class="op">=</span> <span class="st">&quot;process&quot;</span><span class="op">;</span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>This isn’t intended to be a Nix language tutorial, but there are a few
-interesting things that I want to point out. For a more comprehensive overview
-of the language, see
-<a href="https://medium.com/@MrJamesFisher/nix-by-example-a0063a1a4c55">here</a> or
-<a href="https://nixos.org/nix/manual/#ch-expression-language">here</a>.</p>
-<ol type="1">
-<li>These are the arguments to this expression that the caller will pass.
-Another way to think of this is as a form of dependency injection.</li>
-<li><code>let</code> expressions work similarly to Haskell.</li>
-<li>This is the equivalent of our <code>nix-build</code> from before.</li>
-<li>We define a single option that enables our service.</li>
-<li>The <code>config</code> attribute contains service configuration.</li>
-<li>We expose port 3000.</li>
-<li>If you squint this looks a lot like a regular unit file. More on this below.</li>
-</ol>
-<p>It would be useful to look at the systemd service file that gets generated
-from this configuration. To do this, we’ll need one more file:</p>
-<p><em>ops/webserver.nix</em></p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="op">...</span> <span class="op">}</span>: <span class="op">{</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">imports</span> <span class="op">=</span> <span class="op">[</span> <span class="ss">../nix/service.nix</span> <span class="op">];</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>This is a function that imports the above configuration and enables the
-<code>blank-me-up</code> service. With this in place, we can do</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-instantiate <span class="at">--eval</span> <span class="at">-E</span> <span class="st">&#39;(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text&#39;</span></span></code></pre></div>
-<p>We’re using <code>nix-instantiate</code> to evaluate (<code>--eval</code>) an expression (<code>-E</code>) that
-uses <code>eval-config.nix</code> from the library to import the file we created and
-output the text of the final unit file. The output of this is pretty messy, but
-we can use <code>jq</code> to clean it up:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-instantiate <span class="at">--eval</span> <span class="at">-E</span> <span class="st">&#39;(import &lt;nixpkgs/nixos/lib/eval-config.nix&gt; { modules = [./ops/webserver.nix]; }).config.systemd.units.&quot;blank-me-up.service&quot;.text&#39;</span> <span class="kw">|</span> <span class="ex">jq</span> <span class="at">-r</span></span></code></pre></div>
-<p>Here’s what that looks like on my machine:</p>
-<details>
-<summary style="cursor: pointer;">
-Generated <code>systemd</code> service
-</summary>
-<div class="sourceCode" id="cb14"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>[Unit]</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>After=network.target</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>Description=Blank Me Up</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>[Service]</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>Environment=&quot;LOCALE_ARCHIVE=/nix/store/&lt;hash&gt;-glibc-locales-2.27/lib/locale/locale-archive&quot;</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>Environment=&quot;PATH=/nix/store/&lt;hash&gt;-coreutils-8.30/bin:/nix/store/&lt;hash&gt;-findutils-4.6.0/bin:/nix/store/&lt;hash&gt;-gnugrep-3.3/bin:/nix/store/&lt;hash&gt;-gnused-4.7/bin:/nix/store/&lt;hash&gt;-systemd-239.20190219/bin:/nix/store/&lt;hash&gt;-coreutils-8.30/sbin:/nix/store/&lt;hash&gt;-findutils-4.6.0/sbin:/nix/store/&lt;hash&gt;-gnugrep-3.3/sbin:/nix/store/&lt;hash&gt;-gnused-4.7/sbin:/nix/store/&lt;hash&gt;-systemd-239.20190219/sbin&quot;</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>Environment=&quot;TZDIR=/nix/store/&lt;hash&gt;-tzdata-2019a/share/zoneinfo&quot;</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>ExecStart=/nix/store/&lt;hash&gt;-blank-me-up-0.1.0.0/bin/blank-me-up</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>KillMode=process</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>Restart=always</span></code></pre></div>
-</details>
-<p>Hopefully at this point you’re convinced that Nix can take some quasi-JSON and
-turn it into a binary and a <code>systemd</code> service file. Let’s deploy this!</p>
-<h3 id="deploying">Deploying</h3>
-<p>First, we install NixOps:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-env <span class="at">-i</span> nixops</span></code></pre></div>
-<p>We also have to set up VirtualBox, which I’ll be using as my deploy target. If
-you’re using NixOS this is as simple as adding the following line to
-<code>configuration.nix</code>:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>virtualisation.virtualbox.host.enable = <span class="cn">true</span>;</span></code></pre></div>
-<p>and running <code>sudo nixos-rebuild switch</code>. If you’re using another Linux distro,
-install VirtualBox and set up a host-only network called <code>vboxnet0</code>.</p>
-<p>We’ll be using the <a href="https://nixos.org/nixops/manual/#idm140737318606176">instructions from the
-manual</a> as our starting
-point. Create two files:</p>
-<p><em>ops/trivial.nix</em></p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">network</span>.<span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Web server&quot;</span><span class="op">;</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">network</span>.<span class="va">enableRollback</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">webserver</span> <span class="op">=</span> <span class="bu">import</span> <span class="ss">./webserver.nix</span><span class="op">;</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p><em>ops/trivial-vbox.nix</em></p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">webserver</span> <span class="op">=</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="va">deployment</span>.<span class="va">targetEnv</span> <span class="op">=</span> <span class="st">&quot;virtualbox&quot;</span><span class="op">;</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">deployment</span>.<span class="va">virtualbox</span>.<span class="va">headless</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="co"># don&#39;t show a display</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">deployment</span>.<span class="va">virtualbox</span>.<span class="va">memorySize</span> <span class="op">=</span> <span class="dv">1024</span><span class="op">;</span> <span class="co"># megabytes</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">deployment</span>.<span class="va">virtualbox</span>.<span class="va">vcpu</span> <span class="op">=</span> <span class="dv">2</span><span class="op">;</span> <span class="co"># number of cpus</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>We should now be able to create a new deployment:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd ops</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops create trivial.nix trivial-vbox.nix <span class="at">-d</span> trivial</span></code></pre></div>
-<p>and deploy it:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops deploy <span class="at">-d</span> trivial</span></code></pre></div>
-<p>and assuming that everything goes well, we should see a lot of terminal output
-and at least one mention of <code>ssh://root@&lt;ip&gt;</code>, which is the IP of our target.</p>
-<p>We should then be able to go to <code>http://&lt;ip&gt;:3000</code> and see our web app in
-action!</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl http://<span class="op">&lt;</span>ip<span class="op">&gt;</span>:3000/help</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>h1<span class="op">&gt;</span>Scotty, <span class="bu">help</span> me up!<span class="op">&lt;</span>/h1<span class="op">&gt;</span></span></code></pre></div>
-<p>NixOps also allows us to SSH in for troubleshooting purposes or to view logs:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops ssh <span class="at">-d</span> trivial webserver</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>...<span class="op">&gt;</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="ex">[root@webserver:~]#</span> systemctl status blank-me-up</span></code></pre></div>
-<h2 id="responding-to-change">Responding to change</h2>
-<p>This is fantastic, but deployments are rarely fire-and-forget. What happens
-when our requirements change? In fact, there’s a serious issue with our
-application, which is that it hardcodes the port that it listens on. If we
-wanted it to listen on a different port, or to run more than one instance of it
-on the same machine, we’d need to do something differently.</p>
-<p>The correct solution would be to talk to the developers and have them implement
-support, but in the meantime, how should we proceed?</p>
-<h3 id="patching">Patching</h3>
-<p>Nix gives us full control over each part of the build and deployment process,
-and we can patch the software as a stopgap measure. Although this scenario is
-somewhat contrived, I have in fact had to take matters into my own hands like
-this in the past when the development team hasn’t been able to prioritise
-fixing a production issue.</p>
-<p>Our new expression looks like this:</p>
-<p><em>nix/patched.nix</em></p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>args@<span class="op">{</span> <span class="va">nixpkgs</span> <span class="op">?</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{},</span> <span class="va">compiler</span> <span class="op">?</span> <span class="st">&quot;default&quot;</span> <span class="op">}</span>:</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="op">(</span><span class="bu">import</span> <span class="ss">./default.nix</span> args<span class="op">)</span>.overrideAttrs <span class="op">(</span><span class="va">old</span><span class="op">:</span> <span class="op">{</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">postPatch</span> <span class="op">=</span> <span class="kw">let</span></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">oldImport</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="st">      import Web.Scotty</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">newImport</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="st">      import Web.Scotty</span></span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="st">      import System.Environment (getArgs)</span></span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">oldMain</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="st">      main = scotty 3000 $ do</span></span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    <span class="va">newMain</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="st">      main = getArgs &gt;&gt;= \(port:_) -&gt; scotty (read port) $ do</span></span>
-<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">in</span> <span class="st">&#39;&#39;</span></span>
-<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="st">    substituteInPlace Main.hs --replace &#39;</span><span class="sc">${</span>oldImport<span class="sc">}</span><span class="st">&#39; &#39;</span><span class="sc">${</span>newImport<span class="sc">}</span><span class="st">&#39;</span></span>
-<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="st">    substituteInPlace Main.hs --replace &#39;</span><span class="sc">${</span>oldMain<span class="sc">}</span><span class="st">&#39;   &#39;</span><span class="sc">${</span>newMain<span class="sc">}</span><span class="st">&#39;</span></span>
-<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="st">    cat Main.hs</span></span>
-<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
-<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
-<p>I’ve added that <code>cat Main.hs</code> at the end to</p>
-<ul>
-<li>confirm that the file was correctly patched</li>
-<li>emphasise that arbitrary shell commands can be executed</li>
-</ul>
-<p>We can create a new service definition to use this expression:</p>
-<p><em>nix/service-patched.nix</em></p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">lib</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">blank-me-up</span> <span class="op">=</span> pkgs.callPackage <span class="ss">./patched.nix</span> <span class="op">{</span> <span class="va">nixpkgs</span> <span class="op">=</span> pkgs<span class="op">;</span> <span class="op">};</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">cfg</span> <span class="op">=</span> config.services.blank<span class="op">-</span>me<span class="op">-</span>up<span class="op">;</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">{</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> lib.mkEnableOption <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">options</span>.<span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">port</span> <span class="op">=</span> lib.mkOption <span class="op">{</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">default</span> <span class="op">=</span> <span class="dv">3000</span><span class="op">;</span></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    <span class="va">type</span> <span class="op">=</span> lib.types.int<span class="op">;</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>  <span class="va">config</span> <span class="op">=</span> lib.mkIf cfg.enable <span class="op">{</span></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>    <span class="va">networking</span>.<span class="va">firewall</span>.<span class="va">allowedTCPPorts</span> <span class="op">=</span> <span class="op">[</span> cfg.port <span class="op">];</span></span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">systemd</span>.<span class="va">services</span>.<span class="va">blank-me-up</span> <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">description</span> <span class="op">=</span> <span class="st">&quot;Blank Me Up&quot;</span><span class="op">;</span></span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">after</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;network.target&quot;</span> <span class="op">];</span></span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">wantedBy</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;multi-user.target&quot;</span> <span class="op">];</span></span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">serviceConfig</span> <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">ExecStart</span> <span class="op">=</span> <span class="st">&quot;</span><span class="sc">${</span>blank<span class="op">-</span>me<span class="op">-</span>up<span class="sc">}</span><span class="st">/bin/blank-me-up </span><span class="sc">${</span><span class="bu">toString</span> cfg.port<span class="sc">}</span><span class="st">&quot;</span><span class="op">;</span></span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">Restart</span> <span class="op">=</span> <span class="st">&quot;always&quot;</span><span class="op">;</span></span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">KillMode</span> <span class="op">=</span> <span class="st">&quot;process&quot;</span><span class="op">;</span></span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>We make sure to pass the configured port in on startup and open the firewall
-appropriately.</p>
-<h3 id="deploying-again">Deploying (Again)</h3>
-<p>We update <code>webserver.nix</code> to use the patched service and specify a different
-port:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="op">...</span> <span class="op">}</span>: <span class="op">{</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">imports</span> <span class="op">=</span> <span class="op">[</span> <span class="ss">../nix/service-patched.nix</span> <span class="op">];</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">enable</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">blank-me-up</span>.<span class="va">port</span> <span class="op">=</span> <span class="dv">3001</span><span class="op">;</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>And we can deploy again!</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops deploy <span class="at">-d</span> trivial</span></code></pre></div>
-<p>The service should now be running on <code>http://&lt;ip&gt;:3001</code> instead of
-<code>http://&lt;ip&gt;:3000</code>.</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl http://<span class="op">&lt;</span>ip<span class="op">&gt;</span>:3001/pull</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>h1<span class="op">&gt;</span>Scotty, <span class="ex">pull</span> me up!<span class="op">&lt;</span>/h1<span class="op">&gt;</span></span></code></pre></div>
-<p>If we made a mistake, rolling back is easy:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops list-generations <span class="at">-d</span> trivial</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>   <span class="ex">1</span>   <span class="op">&lt;</span>timestamp<span class="op">&gt;</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>   <span class="ex">2</span>   <span class="op">&lt;</span>timestamp<span class="op">&gt;</span>   <span class="er">(</span><span class="ex">current</span><span class="kw">)</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nixops rollback <span class="at">-d</span> trivial 1</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="ex">switching</span> from generation 2 to 1</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="ex">webserver</span><span class="op">&gt;</span> copying closure...</span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="ex">trivial</span><span class="op">&gt;</span> closures copied successfully</span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>more <span class="ex">output</span><span class="op">&gt;</span></span></code></pre></div>
-<p>and in fact nothing needs to be copied to the target, because the previous
-deployment is still there.</p>
-<h2 id="conclusion">Conclusion</h2>
-<p>As demonstrated, the Nix ecosystem allows us to impose order on the usually
-messy and ad-hoc practice of packaging and deploying software at scale. I’m
-satisfied that this is the way forward and hope that you will consider using
-these tools to tackle problems of your own!</p>
 </summary>
 </entry>
 
