@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Roaring with Haskell's C FFI - Vaibhav Sagar</title>
+        <link href="data:," rel="icon">
+        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../../">Vaibhav Sagar</a>
+            </div>
+            <div id="navigation">
+                <a href="../../about/">About</a>
+                <a href="../../talks/">Talks</a>
+                <a href="../../archive/">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Roaring with Haskell's C FFI</h1>
+
+            <div class="info">
+    Posted on 30 November 2023
+    
+</div>
+<div class="info">
+    
+        Tags: <a title="All pages tagged 'haskell'." href="../../blog/tags/haskell/" rel="tag">haskell</a>, <a title="All pages tagged 'programming'." href="../../blog/tags/programming/" rel="tag">programming</a>
+    
+</div>
+
+<p>Recently I thought it would be fun to try writing Haskell bindings for
+a C library, which for a long time has seemed especially intimidating to me.
+I’ve been intrigued by <a href="https://roaringbitmap.org/">roaring bitmaps</a> since
+I first heard about them and unfortunately there doesn’t seem to be a native
+Haskell implementation, but there is one in C called
+<a href="https://github.com/RoaringBitmap/CRoaring">CRoaring</a> that I decided to bind
+to. The specific library isn’t that important here but it turned out that
+I accidentally made a good choice because CRoaring can be
+<a href="https://github.com/RoaringBitmap/CRoaring#amalgamating">amalgamated</a> into
+a <code>roaring.c</code> and a <code>roaring.h</code> file for easy inclusion in other projects, and
+it’s usable without trying to marshall the data structure itself between
+Haskell and C land so I was able to avoid opening that can of worms.</p>
+<p><a href="https://github.com/vaibhavsagar/experiments/tree/cd99b53874efd8a27e256ff5eb012060277ae473/harimau">Here’s</a>
+what I came up with (“harimau” is Indonesian for “tiger”).</p>
+<h1 id="bad-ideas">Bad ideas</h1>
+<p>While looking for references to FFI best practices and working on my own
+I found myself going against the grain on numerous occasions. I thought it
+might be useful to mention a few of these instances, why I chose to do things
+the way I did, and why I wouldn’t recommend my approach to most people using
+the FFI for Real Work™.</p>
+<h2 id="foreignfunctioninterface-instead-of-capiffi"><code>ForeignFunctionInterface</code> instead of <code>CApiFFI</code></h2>
+<p>A recent post on the <a href="https://www.haskell.org/ghc/blog/20210709-capi-usage.html">GHC developers’
+blog</a> has a simple,
+clear summary:</p>
+<blockquote>
+<p>tl;dr: When importing system libraries we strongly recommend that users use GHC’s <code>capi</code> calling convention.</p>
+</blockquote>
+<p>However, the actual recommendation is a little more nuanced:</p>
+<blockquote>
+<p>It is justifiable to use <code>ccall</code> to avoid this runtime cost in cases where the foreign function is shipped with a package’s <code>cbits</code>, where the calling convention is clear.</p>
+</blockquote>
+<p>(The runtime cost mentioned is because the <code>capi</code> calling convention works by
+constructing a C source file which defines a stub function over the desired
+foreign import.)</p>
+<p>As it happens, I <em>do</em> include the foreign function in my <code>cbits</code>, but in most
+other situations it would make sense to follow this advice.</p>
+<h2 id="unsafe-instead-of-safe-everywhere"><code>unsafe</code> instead of <code>safe</code> everywhere</h2>
+<h2 id="writing-bindings-by-hand-instead-of-using-a-tool">Writing bindings by hand instead of using a tool</h2>
+<h1 id="good-ideas">Good ideas</h1>
+<h2 id="foreign-pointers">Foreign pointers</h2>
+<h2 id="faithful-low-level-bindings">Faithful low-level bindings</h2>
+<h2 id="coerce"><code>coerce</code></h2>
+
+        </div>
+        <div id="footer">
+            <div class="rc-webring">
+                <a href="https://webring.recurse.com"><img src="https://webring.recurse.com/icon.svg" /> RC Webring</a>
+            </div>
+            <div class="rc-scout">
+                <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
+            </div>
+        </div>
+        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    </body>
+</html>
