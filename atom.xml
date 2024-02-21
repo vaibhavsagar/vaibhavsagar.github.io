@@ -172,7 +172,7 @@ following beaches:</p>
 <p>and we can use these as keys for a minimal perfect hash function.</p>
 <h3 id="construction-1">Construction</h3>
 <p>The results of the first iteration are</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 0
 </summary>
@@ -191,7 +191,7 @@ Level 0
 └─┘</code></pre>
 </details>
 <p>So far, so good.</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 1
 </summary>
@@ -204,9 +204,9 @@ Level 1
 ├─┤
 │0│ &lt;- [&quot;Coogee&quot;,&quot;Clovelly&quot;,&quot;Bronte&quot;,&quot;Tamarama&quot;]
 └─┘</code></pre>
-</details open>
+</details>
 <p>Hmm, that’s a little concerning.</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 2
 </summary>
@@ -221,7 +221,7 @@ Level 2
 └─┘</code></pre>
 </details>
 <p>This is not going well.</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 3
 </summary>
@@ -236,7 +236,7 @@ Level 3
 └─┘</code></pre>
 </details>
 <p>It’s like the algorithm is taunting me.</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 4
 </summary>
@@ -255,7 +255,7 @@ Level 4
 4 possible slots for each key to fit into, which increases the likelihood of
 a collision. This is where the <code>gamma</code> parameter from earlier comes into play.
 We can try again with a <code>gamma</code> of <code>1.5</code>:</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 0
 </summary>
@@ -280,7 +280,7 @@ Level 0
 └─┘</code></pre>
 </details>
 <p>Okay, this is already looking better.</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 1
 </summary>
@@ -293,7 +293,7 @@ Level 1
 └─┘</code></pre>
 </details>
 <p>Maybe I spoke too soon?</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Level 2
 </summary>
@@ -308,7 +308,7 @@ Level 2
 <p>Phew.</p>
 <h3 id="lookup-1">Lookup</h3>
 <p>Suppose we wanted to hash <code>Coogee</code>. This is what the final bitarrays look like:</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Bitarrays
 </summary>
@@ -346,7 +346,7 @@ Bitarrays
 <p>Unfortunately, we also get seemingly-valid output for a key that wasn’t in our
 input set, e.g.
 <a href="https://www.sydney.com/destinations/sydney/sydney-north/manly/attractions/shelly-beach-manly"><code>Shelly</code></a>:</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Bitarrays
 </summary>
@@ -370,7 +370,7 @@ Bitarrays
 something to keep in mind while using them.</p>
 <h3 id="minimal-perfect-hash-table">Minimal perfect hash <em>table</em></h3>
 <p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>)−1] = <em>v</em><sub><em>n</em></sub></span>!</p>
-<details open>
+<details open="1">
 <summary style="cursor: pointer">
 Values
 </summary>
@@ -2095,7 +2095,6 @@ Hash Array Mapped Trie
 
 </span><span class="va">dotFromHAMT</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="dt">Show</span><span> </span><span class="va">k</span><span class="ot">,</span><span> </span><span class="dt">Show</span><span> </span><span class="va">v</span><span class="ot">)</span><span> </span><span class="ot">=&gt;</span><span> </span><span class="dt">HashArrayMappedTrie</span><span> </span><span class="va">k</span><span> </span><span class="va">v</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">String</span><span>
 </span><span class="va">dotFromHAMT</span><span> </span><span class="ot">=</span><span> </span><span class="va">makeDot</span><span> </span><span class="op">.</span><span> </span><span class="va">makeDotLines</span><span class="op">.</span><span> </span><span class="va">concatMap</span><span> </span><span class="va">nodeLinesHAMT</span><span> </span><span class="op">.</span><span> </span><span class="va">flip</span><span> </span><span class="va">evalState</span><span> </span><span class="dv">0</span><span> </span><span class="op">.</span><span> </span><span class="va">execWriterT</span><span> </span><span class="op">.</span><span> </span><span class="va">numberHAMT</span></code></pre></div>
-</div>
 </details>
 <details>
 <summary>

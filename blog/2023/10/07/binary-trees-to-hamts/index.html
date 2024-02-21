@@ -1487,7 +1487,6 @@ Hash Array Mapped Trie
 
 </span><span class="va">dotFromHAMT</span><span> </span><span class="ot">::</span><span> </span><span class="ot">(</span><span class="dt">Show</span><span> </span><span class="va">k</span><span class="ot">,</span><span> </span><span class="dt">Show</span><span> </span><span class="va">v</span><span class="ot">)</span><span> </span><span class="ot">=&gt;</span><span> </span><span class="dt">HashArrayMappedTrie</span><span> </span><span class="va">k</span><span> </span><span class="va">v</span><span> </span><span class="ot">-&gt;</span><span> </span><span class="dt">String</span><span>
 </span><span class="va">dotFromHAMT</span><span> </span><span class="ot">=</span><span> </span><span class="va">makeDot</span><span> </span><span class="op">.</span><span> </span><span class="va">makeDotLines</span><span class="op">.</span><span> </span><span class="va">concatMap</span><span> </span><span class="va">nodeLinesHAMT</span><span> </span><span class="op">.</span><span> </span><span class="va">flip</span><span> </span><span class="va">evalState</span><span> </span><span class="dv">0</span><span> </span><span class="op">.</span><span> </span><span class="va">execWriterT</span><span> </span><span class="op">.</span><span> </span><span class="va">numberHAMT</span></code></pre></div>
-</div>
 </details>
 <details>
 <summary>
