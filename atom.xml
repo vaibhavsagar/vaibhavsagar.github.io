@@ -398,6 +398,11 @@ implementation of minimal perfect hashing, the other approaches were easier to
 grasp. I wouldn’t go so far as to say I magically <em>understood</em> them when
 I didn’t before, but I definitely feel less lost now. Maybe you’ll have
 a similar experience?</p>
+<h2 id="more-links">More links</h2>
+<ul>
+<li><a href="http://stevehanov.ca/blog/?id=119">Throw away the keys: Easy, Minimal Perfect Hashing</a></li>
+<li><a href="http://iswsa.acm.org/mphf/index.html">Minimal Perfect Hashing Resources</a></li>
+</ul>
 </summary>
 </entry>
 <entry>
