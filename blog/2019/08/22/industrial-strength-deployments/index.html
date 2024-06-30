@@ -36,7 +36,7 @@
 
 <p>If your deployment target is running NixOS, a full-system deployment is only
 three commands:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-copy-closure <span class="at">--to</span> <span class="at">--use-substitutes</span> <span class="op">&lt;</span>target<span class="op">&gt;</span> <span class="op">&lt;</span>path<span class="op">&gt;</span>                                #1</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-copy-closure <span class="at">--to</span> <span class="at">--use-substitutes</span> <span class="op">&lt;</span>target<span class="op">&gt;</span> <span class="op">&lt;</span>path<span class="op">&gt;</span>                                <span class="co">#1</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ssh <span class="op">&lt;</span>target<span class="op">&gt;</span> -- <span class="st">&quot;sudo nix-env --profile /nix/var/nix/profiles/system --set &lt;path&gt;&quot;</span>     <span class="co">#2</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ssh <span class="op">&lt;</span>target<span class="op">&gt;</span> -- <span class="st">&quot;sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch&quot;</span> <span class="co">#3</span></span></code></pre></div>
 <p>Here’s what each command does:</p>

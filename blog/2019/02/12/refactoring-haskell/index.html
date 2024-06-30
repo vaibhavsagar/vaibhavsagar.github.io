@@ -169,7 +169,7 @@ changing the <code>tarjan</code> function and the functions it depends on
 only linear in the size of the graph when operations, such as checking if <code>w</code> is
 on the stack and looking up indices, happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m
 currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees
-and are <span class="math inline"><em>O</em>(log<em>n</em>)</span> in these operations. A better choice would be
+and are <span class="math inline"><em>O</em>(log <em>n</em>)</span> in these operations. A better choice would be
 <a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a>
 from the <code>vector</code> package, which does have constant-time operations.</p>
 <p>This refactoring mostly consists of initialising vectors with a known length

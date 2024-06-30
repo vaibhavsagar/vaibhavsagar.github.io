@@ -369,7 +369,7 @@ Bitarrays
 <p>This is a limitation of minimal perfect hash functions in general, and
 something to keep in mind while using them.</p>
 <h3 id="minimal-perfect-hash-table">Minimal perfect hash <em>table</em></h3>
-<p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>)−1] = <em>v</em><sub><em>n</em></sub></span>!</p>
+<p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>) − 1] = <em>v</em><sub><em>n</em></sub></span>!</p>
 <details open="1">
 <summary style="cursor: pointer">
 Values
@@ -3162,10 +3162,10 @@ build is unnecessary, and we can simplify it:</p>
 <summary style="cursor: pointer">
 <code>index.html</code>
 </summary>
-<div class="sourceCode" id="cb10"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;!DOCTYPE </span>html<span class="dt">&gt;</span></span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;!DOCTYPE</span> html<span class="dt">&gt;</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">html</span><span class="dt">&gt;</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">head</span><span class="dt">&gt;</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">script</span> <span class="er">language</span><span class="ot">=</span><span class="st">&quot;javascript&quot;</span> <span class="er">src</span><span class="ot">=</span><span class="st">&quot;all.js&quot;</span><span class="dt">&gt;&lt;/</span><span class="kw">script</span><span class="dt">&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">script</span><span class="ot"> language</span><span class="op">=</span><span class="st">&quot;javascript&quot;</span><span class="ot"> src</span><span class="op">=</span><span class="st">&quot;all.js&quot;</span><span class="dt">&gt;&lt;/</span><span class="kw">script</span><span class="dt">&gt;</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;/</span><span class="kw">head</span><span class="dt">&gt;</span></span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">body</span><span class="dt">&gt;</span></span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;/</span><span class="kw">body</span><span class="dt">&gt;</span></span>
@@ -3500,7 +3500,7 @@ instructions are out there. If you have a favourite, I’d love to hear about it
 
 <p>If your deployment target is running NixOS, a full-system deployment is only
 three commands:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-copy-closure <span class="at">--to</span> <span class="at">--use-substitutes</span> <span class="op">&lt;</span>target<span class="op">&gt;</span> <span class="op">&lt;</span>path<span class="op">&gt;</span>                                #1</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nix-copy-closure <span class="at">--to</span> <span class="at">--use-substitutes</span> <span class="op">&lt;</span>target<span class="op">&gt;</span> <span class="op">&lt;</span>path<span class="op">&gt;</span>                                <span class="co">#1</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ssh <span class="op">&lt;</span>target<span class="op">&gt;</span> -- <span class="st">&quot;sudo nix-env --profile /nix/var/nix/profiles/system --set &lt;path&gt;&quot;</span>     <span class="co">#2</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ssh <span class="op">&lt;</span>target<span class="op">&gt;</span> -- <span class="st">&quot;sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch&quot;</span> <span class="co">#3</span></span></code></pre></div>
 <p>Here’s what each command does:</p>
