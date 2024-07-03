@@ -67,8 +67,8 @@ out immediately. Wouldn’t that be amazing?</p>
 <li id="fn1"><p>As long as your browser supports WebAssembly and you are willing to
 download ~700MB of WASM.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>It’s not something I’m working on and I don’t know how to go from this
-giant blob of WASM to a kernel that would work with JupyterLite. If you have
-ideas, please get in touch!<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+Goldbergian blob of WASM to a kernel that would work with JupyterLite. If you
+have ideas, please get in touch!<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </summary>
