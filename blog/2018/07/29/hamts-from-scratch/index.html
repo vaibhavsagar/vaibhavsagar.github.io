@@ -77,10 +77,10 @@
 <p>I’m going to use 32-bit hashes (because they’re more convenient to display than 64-bit ones) and 16-bit bitmaps.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span><span> </span><span class="dt">Hash</span><span> </span><span class="ot">=</span><span> </span><span class="dt">Binary</span><span> </span><span class="dt">Word32</span><span>
 </span><span class="kw">type</span><span> </span><span class="dt">Bitmap</span><span> </span><span class="ot">=</span><span> </span><span class="dt">Binary</span><span> </span><span class="dt">Word16</span></code></pre></div>
-<p>The width of bitmaps is <span class="math inline">2<sup><em>n</em></sup></span> where <span class="math inline"><em>n</em></span> is the number of bits of the hash that we use at each level of the tree (more on this below). I’m setting <span class="math inline"><em>n</em> = 4</span> which is what <code>unordered-containers</code> uses (as of this writing), but we could e.g. set <span class="math inline"><em>n</em> = 5</span> and use 32-bit bitmaps if we wanted.</p>
+<p>The width of bitmaps is <span class="math inline">\(2^n\)</span> where <span class="math inline">\(n\)</span> is the number of bits of the hash that we use at each level of the tree (more on this below). I’m setting <span class="math inline">\(n=4\)</span> which is what <code>unordered-containers</code> uses (as of this writing), but we could e.g. set <span class="math inline">\(n=5\)</span> and use 32-bit bitmaps if we wanted.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">bitsPerSubkey</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Int</span><span>
 </span><span class="va">bitsPerSubkey</span><span> </span><span class="ot">=</span><span> </span><span class="dv">4</span></code></pre></div>
-<p><code>Shift</code> is a multiple of <span class="math inline"><em>n</em></span> that we will use to focus on the correct part of the hash.</p>
+<p><code>Shift</code> is a multiple of <span class="math inline">\(n\)</span> that we will use to focus on the correct part of the hash.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span><span> </span><span class="dt">Shift</span><span> </span><span class="ot">=</span><span> </span><span class="dt">Int</span></code></pre></div>
 <p>I’m also going to define a <code>Hashable</code> class to decouple the choice of a hash function from the implementation of <code>HAMT</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span><span> </span><span class="dt">Hashable</span><span> </span><span class="va">a</span><span> </span><span class="kw">where</span><span>
@@ -144,7 +144,7 @@
 
 </span><span class="va">leaf</span></code></pre></div>
 <pre><code>Leaf 00000101000011000101110100101110 &quot;1&quot; 1</code></pre>
-<p><code>someBitMap</code> is a 16-bit bitmap where the number of bits set (the <code>popCount</code>) is the length of the vector, which in this case is <span class="math inline">1</span>. We want to set one bit, but which bit? We carve off the last <span class="math inline"><em>n</em></span> bits using a mask:</p>
+<p><code>someBitMap</code> is a 16-bit bitmap where the number of bits set (the <code>popCount</code>) is the length of the vector, which in this case is <span class="math inline">\(1\)</span>. We want to set one bit, but which bit? We carve off the last <span class="math inline">\(n\)</span> bits using a mask:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">subkeyMask</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Bitmap</span><span>
 </span><span class="va">subkeyMask</span><span> </span><span class="ot">=</span><span> </span><span class="ot">(</span><span class="va">bit</span><span> </span><span class="va">bitsPerSubkey</span><span class="ot">)</span><span> </span><span class="op">-</span><span> </span><span class="dv">1</span><span>
 
@@ -221,7 +221,7 @@
     </span><span class="kw">where</span><span>
         </span><span class="va">mask</span><span> </span><span class="ot">=</span><span> </span><span class="va">bitMask_</span><span> </span><span class="va">hash</span><span>
         </span><span class="va">index</span><span> </span><span class="ot">=</span><span> </span><span class="va">maskIndex</span><span> </span><span class="va">bitmap</span><span> </span><span class="va">mask</span></code></pre></div>
-<p>But this definition is wrong, because instead of carving off the last <span class="math inline"><em>n</em></span> bits of <code>hash</code>, we want to recursively carve off the next <span class="math inline"><em>n</em></span> bits!</p>
+<p>But this definition is wrong, because instead of carving off the last <span class="math inline">\(n\)</span> bits of <code>hash</code>, we want to recursively carve off the next <span class="math inline">\(n\)</span> bits!</p>
 <h4 id="shifting">Shifting</h4>
 <p>This is what’s missing from our definition, a <code>shift</code> parameter corresponding to how far up the <code>hash</code> we’re looking. This is why we defined <code>Shift</code> above. Taking this extra parameter into account, our bit manipulation functions now become:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="va">subkeyMask</span><span> </span><span class="ot">::</span><span> </span><span class="dt">Bitmap</span><span>
@@ -404,6 +404,14 @@ CPU time:   0.00s</code></pre>
                 <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
             </div>
         </div>
-        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+        <script data-goatcounter="//vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+        <script type="text/javascript" id="MathJax-script" async src="//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+        </script>
+        <script>
+        window.MathJax = {
+            loader: {load: ['[tex]/color', '[tex]/cancel', '[tex]/textmacros']},
+            tex: {packages: {'[+]': ['color', 'cancel', 'textmacros']}}
+        };
+        </script>
     </body>
 </html>

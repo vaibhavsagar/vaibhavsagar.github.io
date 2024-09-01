@@ -167,9 +167,9 @@ changing the <code>tarjan</code> function and the functions it depends on
 (<code>strongConnect</code>, <code>addSCC</code>, <code>push</code>, and <code>pop</code>).</p>
 <p>The first change is using more suitable data structures. Tarjan’s algorithm is
 only linear in the size of the graph when operations, such as checking if <code>w</code> is
-on the stack and looking up indices, happen in constant time (<span class="math inline"><em>O</em>(1)</span>). I’m
+on the stack and looking up indices, happen in constant time (<span class="math inline">\(O(1)\)</span>). I’m
 currently using <code>Data.Map</code> and <code>Data.Set</code> which are both implemented with trees
-and are <span class="math inline"><em>O</em>(log <em>n</em>)</span> in these operations. A better choice would be
+and are <span class="math inline">\(O(\log{}n)\)</span> in these operations. A better choice would be
 <a href="http://hackage.haskell.org/package/vector/docs/Data-Vector-Mutable.html"><code>Data.Vector.Mutable</code></a>
 from the <code>vector</code> package, which does have constant-time operations.</p>
 <p>This refactoring mostly consists of initialising vectors with a known length
@@ -839,6 +839,14 @@ feedback.</em></p>
                 <script async defer src="https://www.recurse-scout.com/loader.js?t=5ac465e5d3396a7e491e42afac4c5c90"></script>
             </div>
         </div>
-        <script data-goatcounter="https://vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+        <script data-goatcounter="//vaibhavsagar.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+        <script type="text/javascript" id="MathJax-script" async src="//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+        </script>
+        <script>
+        window.MathJax = {
+            loader: {load: ['[tex]/color', '[tex]/cancel', '[tex]/textmacros']},
+            tex: {packages: {'[+]': ['color', 'cancel', 'textmacros']}}
+        };
+        </script>
     </body>
 </html>

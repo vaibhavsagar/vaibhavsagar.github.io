@@ -138,8 +138,8 @@ all possible inputs to be known in advance.</p>
 <h3 id="minimal-perfect-hashing-1"><em>Minimal</em> perfect hashing</h3>
 <p>Bringing it all together, a <em>minimal perfect hash</em> function is one that has no
 gaps in its outputs, i.e. it
-<a href="https://en.wikipedia.org/wiki/Bijection">bijectively</a> maps <span class="math display"><em>n</em></span> different
-inputs to <span class="math display"><em>n</em></span> consecutive integers, e.g. <span class="math inline">[0..<em>n</em>)</span> or <span class="math inline">[1..<em>n</em>]</span>. It’s important
+<a href="https://en.wikipedia.org/wiki/Bijection">bijectively</a> maps <span class="math display">\[n\]</span> different
+inputs to <span class="math display">\[n\]</span> consecutive integers, e.g. <span class="math inline">\([0..n)\)</span> or <span class="math inline">\([1..n]\)</span>. It’s important
 to note that <em>minimal</em> does not imply anything about the space or time
 complexity of these functions, e.g. it would be totally valid to have an
 internal hashtable that maps each input to a distinct integer without gaps and
@@ -168,22 +168,22 @@ taste of the algorithm.</p>
 <img src="/images/cascading-collisionless-arrays.svg" alt="Cascading Collisionless Bitarrays" />
 <figcaption aria-hidden="true"><em>Cascading Collisionless Bitarrays</em></figcaption>
 </figure>
-<p>In the example, keys <span class="math inline"><em>k</em><sub>1</sub></span> to <span class="math inline"><em>k</em><sub>6</sub></span> are hashed and positions where there are no
+<p>In the example, keys <span class="math inline">\(k_1\)</span> to <span class="math inline">\(k_6\)</span> are hashed and positions where there are no
 collisions are recorded. The keys that collide at each level are removed and
 retried at the next level until all the keys are used. For the first bitarray
-<span class="math inline"><em>A</em><sub>0</sub></span>, <span class="math inline"><em>k</em><sub>3</sub></span> and <span class="math inline"><em>k</em><sub>6</sub></span> do not collide when using the hash function <span class="math inline"><em>h</em><sub>0</sub></span>. For
-the next bitarray <span class="math inline"><em>A</em><sub>1</sub></span>, <span class="math inline"><em>k</em><sub>1</sub></span> and <span class="math inline"><em>k</em><sub>5</sub></span> do not collide when using <span class="math inline"><em>h</em><sub>1</sub></span>.
-Finally for <span class="math inline"><em>A</em><sub>2</sub></span>, <span class="math inline"><em>k</em><sub>2</sub></span> and <span class="math inline"><em>k</em><sub>4</sub></span> do not collide using <span class="math inline"><em>h</em><sub>2</sub></span> and we have no
-more keys left. To compute the hash for a key, in this example <span class="math inline"><em>k</em><sub>2</sub></span>, we find
-the position where <span class="math inline"><em>A</em><sub><em>n</em></sub>[<em>h</em><sub><em>n</em></sub>(<em>k</em><sub>2</sub>)] ≡ 1</span> and count the number of <code>1</code>s at or
+<span class="math inline">\(A_0\)</span>, <span class="math inline">\(k_3\)</span> and <span class="math inline">\(k_6\)</span> do not collide when using the hash function <span class="math inline">\(h_0\)</span>. For
+the next bitarray <span class="math inline">\(A_1\)</span>, <span class="math inline">\(k_1\)</span> and <span class="math inline">\(k_5\)</span> do not collide when using <span class="math inline">\(h_1\)</span>.
+Finally for <span class="math inline">\(A_2\)</span>, <span class="math inline">\(k_2\)</span> and <span class="math inline">\(k_4\)</span> do not collide using <span class="math inline">\(h_2\)</span> and we have no
+more keys left. To compute the hash for a key, in this example <span class="math inline">\(k_2\)</span>, we find
+the position where <span class="math inline">\(A_n[h_n(k_2)] \equiv 1\)</span> and count the number of <code>1</code>s at or
 preceding this position, also known as the <em>rank</em>, which will always give us
-a number <span class="math inline">[1..<em>n</em>]</span>. For <span class="math inline"><em>k</em>2</span>, the hash is <span class="math inline">5</span>.</p>
+a number <span class="math inline">\([1..n]\)</span>. For <span class="math inline">\(k2\)</span>, the hash is <span class="math inline">\(5\)</span>.</p>
 <h3 id="prerequisites">Prerequisites</h3>
 <p>To implement this, we’ll need</p>
 <ul>
 <li>a family of hash functions</li>
-<li>bitvectors supporting <a href="https://en.wikipedia.org/wiki/Succinct_data_structure#Succinct_indexable_dictionaries"><span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> (and
-<span class="math inline"><em>s</em><em>e</em><em>l</em><em>e</em><em>c</em><em>t</em></span>)</a>
+<li>bitvectors supporting <a href="https://en.wikipedia.org/wiki/Succinct_data_structure#Succinct_indexable_dictionaries"><span class="math inline">\(rank\)</span> (and
+<span class="math inline">\(select\)</span>)</a>
 operations</li>
 </ul>
 <p>For the hash functions, I used
@@ -198,8 +198,8 @@ support</a>.</p>
 <ol type="1">
 <li>Repeat the following steps until the maximum level is reached or we have no more keys:
 <ol type="1">
-<li>Hash each key to a number <span class="math inline"><em>i</em> ∈ [0..<em>n</em>)</span></li>
-<li>If <span class="math inline"><em>b</em><em>i</em><em>t</em><em>v</em><em>e</em><em>c</em><em>t</em><em>o</em><em>r</em>[<em>i</em>]</span> has not been set this iteration, set it to <span class="math inline">1</span>, otherwise unset it</li>
+<li>Hash each key to a number <span class="math inline">\(i \in [0..n)\)</span></li>
+<li>If <span class="math inline">\(bitvector[i]\)</span> has not been set this iteration, set it to <span class="math inline">\(1\)</span>, otherwise unset it</li>
 <li>Remove all keys that have been set successfully</li>
 </ol></li>
 <li>If there are any leftover keys, store them separately</li>
@@ -211,15 +211,15 @@ support</a>.</p>
 sometimes making it larger than strictly necessary can reduce the probability
 of collisions. More on this later.</p>
 <h4 id="populating-the-bitvector">Populating the bitvector</h4>
-<p>The approach described in the paper involves using an auxiliary bitvector <span class="math inline"><em>C</em></span>
+<p>The approach described in the paper involves using an auxiliary bitvector <span class="math inline">\(C\)</span>
 to keep track of collisions:</p>
 <ol type="1">
-<li>Initialise two bitvectors <span class="math inline"><em>B</em></span> and <span class="math inline"><em>C</em></span> with <span class="math inline">0</span>s</li>
-<li>When setting an index <span class="math inline"><em>i</em></span>:
+<li>Initialise two bitvectors <span class="math inline">\(B\)</span> and <span class="math inline">\(C\)</span> with <span class="math inline">\(0\)</span>s</li>
+<li>When setting an index <span class="math inline">\(i\)</span>:
 <ol type="1">
-<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 0</span> then set <span class="math inline"><em>B</em>[<em>i</em>] = 1</span></li>
-<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 1</span> then set <span class="math inline"><em>B</em>[<em>i</em>] = 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] = 1</span></li>
-<li>If <span class="math inline"><em>B</em>[<em>i</em>] ≡ 0</span> and <span class="math inline"><em>C</em>[<em>i</em>] ≡ 1</span> then do nothing</li>
+<li>If <span class="math inline">\(B[i] \equiv 0\)</span> and <span class="math inline">\(C[i] \equiv 0\)</span> then set <span class="math inline">\(B[i] = 1\)</span></li>
+<li>If <span class="math inline">\(B[i] \equiv 1\)</span> then set <span class="math inline">\(B[i] = 0\)</span> and <span class="math inline">\(C[i] = 1\)</span></li>
+<li>If <span class="math inline">\(B[i] \equiv 0\)</span> and <span class="math inline">\(C[i] \equiv 1\)</span> then do nothing</li>
 </ol></li>
 </ol>
 <h3 id="lookup">Lookup</h3>
@@ -402,7 +402,7 @@ Bitarrays
 └─┴─┴─┘
    └────────────────── hashWithSalt 2 &quot;Coogee&quot; `mod` 3</code></pre>
 </details>
-<p>We try each bitarray in sequence until we find a <span class="math inline">1</span> at our index, and we find the <span class="math inline"><em>r</em><em>a</em><em>n</em><em>k</em></span> of that index:</p>
+<p>We try each bitarray in sequence until we find a <span class="math inline">\(1\)</span> at our index, and we find the <span class="math inline">\(rank\)</span> of that index:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="op">&gt;</span><span> </span><span class="va">hashWithSalt</span><span> </span><span class="dv">0</span><span> </span><span class="st">&quot;Coogee&quot;</span><span> </span><span class="ot">`</span><span class="va">mod</span><span class="ot">`</span><span> </span><span class="dv">9</span><span>
 </span><span class="dv">4</span><span>
 </span><span class="op">&gt;</span><span> </span><span class="va">b0</span><span> </span><span class="op">!</span><span> </span><span class="dv">4</span><span> </span><span class="co">-- collision</span><span>
@@ -417,7 +417,7 @@ Bitarrays
 </span><span class="dv">1</span><span>
 </span><span class="op">&gt;</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b0</span><span> </span><span class="op">+</span><span> </span><span class="va">popCount</span><span> </span><span class="va">b1</span><span> </span><span class="op">+</span><span> </span><span class="va">rank</span><span> </span><span class="va">b2</span><span> </span><span class="dv">1</span><span>
 </span><span class="dv">6</span></code></pre></div>
-<p>Our hash is <span class="math inline">6</span>.</p>
+<p>Our hash is <span class="math inline">\(6\)</span>.</p>
 <h4 id="false-positive">False positive</h4>
 <p>Unfortunately, we also get seemingly-valid output for a key that wasn’t in our
 input set, e.g.
@@ -445,7 +445,7 @@ Bitarrays
 <p>This is a limitation of minimal perfect hash functions in general, and
 something to keep in mind while using them.</p>
 <h3 id="minimal-perfect-hash-table">Minimal perfect hash <em>table</em></h3>
-<p>All we have to do is create an array <span class="math inline"><em>A</em></span> such that <span class="math inline"><em>A</em>[<em>h</em><em>a</em><em>s</em><em>h</em>(<em>k</em><sub><em>n</em></sub>) − 1] = <em>v</em><sub><em>n</em></sub></span>!</p>
+<p>All we have to do is create an array <span class="math inline">\(A\)</span> such that <span class="math inline">\(A[hash(k_n)-1] = v_n\)</span>!</p>
 <details open="1">
 <summary style="cursor: pointer">
 Values
@@ -462,7 +462,7 @@ Values
 └─┴─┴─┴─┴─┴─┘</code></pre>
 </details>
 <p>The authors point out that trying to save a few bits per key by tweaking
-<span class="math inline"><em>g</em><em>a</em><em>m</em><em>m</em><em>a</em></span> doesn’t make much sense in this case, since the values account for the
+<span class="math inline">\(gamma\)</span> doesn’t make much sense in this case, since the values account for the
 vast majority of the space usage.</p>
 <h3 id="code">Code</h3>
 <p>The authors provide a library called
