@@ -35,156 +35,192 @@
     
 </div>
 
-<h1 id="sat-solvers">SAT solvers??</h1>
-<h2 id="np-complete-problems">NP-complete problems</h2>
+<p><em>This post covers the same material as <a href="https://www.youtube.com/watch?v=J0ZLCHHku6U">my !!Con 2024
+talk</a>.</em></p>
+<p>What are SAT solvers, and how are they useful? Let’s start by briefly touching on
+<a href="https://en.wikipedia.org/wiki/NP-completeness">NP-complete problems</a>!</p>
+<h1 id="np-complete-problems">NP-complete problems</h1>
+<p>NP-complete problems are <a href="https://en.wikipedia.org/wiki/Decision_problem">decision
+problems</a>, i.e. the solution to
+them is “yes” or “no”. When these solutions exist, they can be verified in
+<a href="https://en.wikipedia.org/wiki/Time_complexity#Polynomial_time">polynomial
+time</a>, but we
+don’t know how to find solutions in polynomial time, or even if this is
+possible at all (this is the <a href="https://en.wikipedia.org/wiki/P_versus_NP_problem">P versus NP
+problem</a>). An important
+characteristic of NP-complete problems is that any NP-complete problem can be
+reduced to any other NP-complete problem. Examples of NP-complete problems include:</p>
 <ul>
-<li>Decision (yes/no) problems</li>
-<li>Can be verified quickly (in polynomial time)</li>
-<li>Currently unknown how to solve quickly (P versus NP problem)</li>
-<li>All equivalent!</li>
+<li><a href="https://en.wikipedia.org/wiki/Knapsack_problem">Knapsack problem</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Travelling_salesman_problem">Travelling salesman problem</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Subset_sum_problem">Subset sum problem</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Graph_coloring">Graph colouring problem</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Sudoku">Sudoku</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Boolean_satisfiability_problem">Boolean satisfiability problem</a></li>
 </ul>
-<h2 id="examples">Examples</h2>
-<ul>
-<li>Knapsack</li>
-<li>Travelling salesman</li>
-<li>Subset sum</li>
-<li>Graph coloring</li>
-<li>Sudoku</li>
-<li>Boolean satisfiability</li>
-</ul>
+<p>We’re specifically interested in the boolean satisfiability problem.</p>
 <h2 id="boolean-satisfiability-problem">Boolean satisfiability problem</h2>
-<p>Can we assign truth values to Boolean variables in propositional logic formulas
-to satisfy the formula?</p>
-<h2 id="boolean-satisfiability-problem-1">Boolean satisfiability problem</h2>
-<ul>
-<li>Commonly expressed like <span class="math inline">\((x \vee y \vee z) \wedge (x \vee \neg y) \wedge (\neg y \vee \neg x) \wedge (\neg z)\)</span> (Conjunctive Normal Form)</li>
-<li>NP-complete (!)</li>
-<li>Can express any other NP-complete problem!</li>
-</ul>
-<h2 id="sat-solvers-1">SAT solvers</h2>
-<p>Programs that solve boolean satisfiability problems and tell you satisfying
-assignments!!</p>
+<p>One definition of the boolean satisfiability problem is</p>
+<blockquote>
+<p>Given a propositional logic formula, can we assign truth values to each
+variable such that the formula is satisfied?</p>
+</blockquote>
+<p>When working with these formulas, we commonly express them in <a href="https://en.wikipedia.org/wiki/Conjunctive_normal_form">Conjunctive
+normal form</a> as
+a conjunction (ANDed together) of clauses that consist of a series of
+disjunctions (ORed together) of literals, e.g.</p>
+<p><span class="math display">\[(x \vee y \vee z) \wedge (x \vee \neg y) \wedge (\neg y \vee \neg x) \wedge (\neg z)\]</span></p>
+<p>With this context, I can finally tell you what SAT solvers are!</p>
+<h1 id="sat-solvers">SAT solvers</h1>
+<p>SAT solvers are programs that solve boolean satisfiability problems by
+providing satisfying assignments (when they exist)! In other words, they are
+programs for solving NP-complete problems expressed as instances of the boolean
+satisfiability problem(!!)</p>
 <h1 id="sudoku">Sudoku</h1>
-<h2 id="example">Example</h2>
-<p><img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Sudoku_Puzzle_by_L2G-20050714_standardized_layout.svg" style="height: 10em" /></p>
-<p><em>Tim Stellmach, CC0, via Wikimedia Commons</em></p>
-<h2 id="rules">Rules</h2>
+<p>To demonstrate how this works in practice, let’s look at how to <em>reduce</em> Sudoku
+to a Boolean satisfiability problem.</p>
+<p>The rules of Sudoku are as follows:</p>
 <ul>
-<li>one digit per cell</li>
-<li>each digit once per row/column</li>
-<li>each digit once per 3x3 sub-grid</li>
-<li>must use filled-in cells</li>
+<li>Each cell contains exactly one digit</li>
+<li>Each digit occurs once per row</li>
+<li>Each digit occurs once per column</li>
+<li>Each digit occurs once per sub-grid</li>
+<li>The solution must use the filled-in cells</li>
 </ul>
-<h2 id="insight">Insight</h2>
-<ul>
-<li>9 boolean variables for each cell!</li>
-<li>only 1 is true, other 8 are false</li>
-<li><span class="math inline">\(x_{r,c,1}\)</span>, <span class="math inline">\(x_{r,c,2}\)</span>,…,<span class="math inline">\(x_{r,c,9}\)</span></li>
-</ul>
+<p>A useful insight is that we can use <span class="math inline">\(n\)</span> boolean variables to represent each
+digit when we add the constraint that at most one of those variables can be
+true.</p>
+<p>Now we can express those rules in propositional logic:</p>
 <h2 id="each-cell-has-at-least-one-value">Each cell has at least one value</h2>
 <p><span class="math display">\[\displaylines{
 \definecolor{comment}{RGB}{161,161,180}
-{\color{comment}\textit{\tiny{row 1, column 1 is one of 1,2,...9}}} \\
+{\color{comment}\textit{\small{row 1, column 1 is one of 1,2,...9}}} \\
 (x_{1,1,1} \vee x_{1,1,2} \vee \dots \vee x_{1,1,9}) \wedge \\
-{\color{comment}\textit{\tiny{row 1, column 2 is one of 1,2,...9}}} \\
+{\color{comment}\textit{\small{row 1, column 2 is one of 1,2,...9}}} \\
 (x_{1,2,1} \vee x_{1,2,2} \vee \dots \vee x_{1,2,9}) \wedge \\
 \dots \\
-{\color{comment}\textit{\tiny{row 9, column 9 is one of 1,2,...9}}} \\
+{\color{comment}\textit{\small{row 9, column 9 is one of 1,2,...9}}} \\
 (x_{9,9,1} \vee x_{9,9,2} \vee \dots \vee x_{9,9,9})
 }\]</span></p>
-<h2 id="each-row-has-all-values">Each row has all values</h2>
-<p><span class="math display">\[\displaylines{
-\definecolor{comment}{RGB}{161,161,180}
-{\color{comment}\textit{\tiny{row 1 has a 1}}} \\
-(x_{1,1,1} \vee x_{1,2,1} \vee \dots \vee x_{1,9,1}) \wedge \\
-{\color{comment}\textit{\tiny{row 1 has a 2}}} \\
-(x_{1,1,2} \vee x_{1,2,2} \vee \dots \vee x_{1,9,9}) \wedge \\
-\dots \\
-{\color{comment}\textit{\tiny{row 9 has a 9}}} \\
-(x_{9,1,9} \vee x_{9,2,9} \vee \dots \vee x_{9,9,9})}\]</span></p>
 <h2 id="each-cell-has-at-most-one-value">Each cell has at most one value</h2>
 <p><span class="math display">\[\displaylines{
 \definecolor{comment}{RGB}{161,161,180}
-{\color{comment}\textit{\tiny{row 1, column 1 is not both 1 and 2}}} \\
+{\color{comment}\textit{\small{row 1, column 1 is not both 1 and 2}}} \\
 (\neg x_{1,1,1} \vee \neg x_{1,1,2}) \wedge \\
-{\color{comment}\textit{\tiny{row 1, column 1 is not both 1 and 3}}} \\
+{\color{comment}\textit{\small{row 1, column 1 is not both 1 and 3}}} \\
 (\neg x_{1,1,1} \vee \neg x_{1,1,3}) \wedge \\
  \dots \\
-{\color{comment}\textit{\tiny{row 9, column 9 is not both 8 and 9}}} \\
+{\color{comment}\textit{\small{row 9, column 9 is not both 8 and 9}}} \\
 (\neg x_{9,9,8} \vee \neg x_{9,9,9})}\]</span></p>
+<h2 id="each-row-has-all-values">Each row has all values</h2>
+<p><span class="math display">\[\displaylines{
+\definecolor{comment}{RGB}{161,161,180}
+{\color{comment}\textit{\small{row 1 has a 1}}} \\
+(x_{1,1,1} \vee x_{1,2,1} \vee \dots \vee x_{1,9,1}) \wedge \\
+{\color{comment}\textit{\small{row 1 has a 2}}} \\
+(x_{1,1,2} \vee x_{1,2,2} \vee \dots \vee x_{1,9,9}) \wedge \\
+\dots \\
+{\color{comment}\textit{\small{row 9 has a 9}}} \\
+(x_{9,1,9} \vee x_{9,2,9} \vee \dots \vee x_{9,9,9})}\]</span></p>
+<h2 id="each-column-has-all-values">Each column has all values</h2>
+<p><span class="math display">\[\displaylines{
+\definecolor{comment}{RGB}{161,161,180}
+{\color{comment}\textit{\small{column 1 has a 1}}} \\
+(x_{1,1,1} \vee x_{2,1,1} \vee \dots \vee x_{9,1,1}) \wedge \\
+{\color{comment}\textit{\small{column 1 has a 2}}} \\
+(x_{1,1,2} \vee x_{2,1,2} \vee \dots \vee x_{9,1,2}) \wedge \\
+\dots \\
+{\color{comment}\textit{\small{column 9 has a 9}}} \\
+(x_{1,9,9} \vee x_{2,9,9} \vee \dots \vee x_{9,9,9})}\]</span></p>
+<h2 id="each-sub-grid-has-all-values">Each sub-grid has all values</h2>
+<p><span class="math display">\[\displaylines{
+\definecolor{comment}{RGB}{161,161,180}
+{\color{comment}\textit{\small{sub-grid 1 has a 1}}} \\
+(x_{1,1,1} \vee x_{1,2,1} \vee \dots \vee x_{3,3,1}) \wedge \\
+{\color{comment}\textit{\small{sub-grid 1 has a 2}}} \\
+(x_{1,1,2} \vee x_{1,2,2} \vee \dots \vee x_{3,3,2}) \wedge \\
+\dots \\
+{\color{comment}\textit{\small{sub-grid 9 has a 9}}} \\
+(x_{7,7,9} \vee x_{7,8,9} \vee \dots \vee x_{9,9,9})}\]</span></p>
+<h2 id="the-solution-must-use-the-filled-in-cells">The solution must use the filled-in cells</h2>
+<p>For a puzzle such as</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Sudoku_Puzzle_by_L2G-20050714_standardized_layout.svg" /></p>
+<p><em>Tim Stellmach, CC0, via Wikimedia Commons</em></p>
+<p>This looks like</p>
+<p><span class="math display">\[\displaylines{
+x_{1,1,5} \wedge x_{1,2,3} \wedge x_{1,5,7} \wedge \\
+x_{2,1,6} \wedge x_{2,4,1} \wedge x_{2,5,9} \wedge x_{2,6,5} \wedge \\
+\dots \\
+x_{9,5,8} \wedge x_{9,8,7} \wedge x_{9,9,9}}\]</span></p>
 <h2 id="solving">Solving</h2>
-<ol type="1">
-<li>Express your problem as a propositional logic formula in CNF</li>
-<li>Feed it to a SAT solver</li>
-<li>????</li>
-<li>PROFIT!!!</li>
-</ol>
+<p>To solve this Sudoku (or indeed any NP-complete problem that we have expressed
+as a Boolean satisfiability problem), all we need to do is provide the
+resulting propositional logic formula as input to a SAT solver!</p>
+<p>How do these marvellous programs work?</p>
 <h1 id="dpll">DPLL</h1>
-<h2 id="example-1">Example</h2>
+<p>One algorithm is known as DPLL. To explain how it works, let’s look at an
+example. Not so coincidentally, this is the same propositional logic formula
+from earlier! At the beginning, we don’t know the values of <span class="math inline">\(x\)</span>, <span class="math inline">\(y\)</span>, or <span class="math inline">\(z\)</span>.</p>
 <p><span class="math display">\[(x \vee y \vee z) \wedge (x \vee \neg y) \wedge (\neg y \vee \neg x) \wedge (\neg z)\]</span></p>
 <p><span class="math inline">\(x\)</span>: 🤷<br>
 <span class="math inline">\(y\)</span>: 🤷<br>
 <span class="math inline">\(z\)</span>: 🤷<br></p>
-<h2 id="pick-a-variable">Pick a variable</h2>
-<p>Let’s set <span class="math inline">\(z\)</span> to False</p>
+<p>We begin by picking a variable and assigning it a truth value, preferring unit
+clauses (clauses with a single literal). In this case, let’s set <span class="math inline">\(z\)</span> to <span class="math inline">\(False\)</span>.
+Now we can perform <a href="https://en.wikipedia.org/wiki/Unit_propagation">unit
+propagation</a>.</p>
 <h2 id="unit-propagation">Unit propagation</h2>
-<ul>
-<li>If there is a unary clause, assign it</li>
-<li>Delete all clauses that are satisfied</li>
-<li>Remove the literal where it is False</li>
-</ul>
-<h2 id="example-2">Example</h2>
+<p>When performing unit propagation, we assign the appropriate truth value to
+a literal, which is obvious when it occurs in a unit clause. Then we remove all
+clauses that are satisfied, since we don’t need to consider them going forward.
+Next we remove the literal where it is <span class="math inline">\(False\)</span>, since it cannot contribute to
+that clause being satisfied.</p>
 <p><span class="math display">\[(x \vee y \vee \cancel{{\color{red} z}}) \wedge (x \vee \neg y) \wedge (\neg y \vee \neg x) \wedge \cancel{{\color{green} (\neg z)}}\]</span></p>
 <p><span class="math inline">\(x\)</span>: 🤷<br>
 <span class="math inline">\(y\)</span>: 🤷<br>
 <span class="math inline">\(z\)</span>: <code>False</code><br></p>
-<h2 id="pick-a-variable-1">Pick a variable</h2>
-<p>Let’s set <span class="math inline">\(y\)</span> to True</p>
-<h2 id="example-3">Example</h2>
+<p>Next we pick another variable and continue. Let’s set <span class="math inline">\(y\)</span> to <span class="math inline">\(True\)</span>.</p>
 <p><span class="math display">\[\cancel{{\color{green}(x \vee y \vee z)}} \wedge (x \vee \cancel{{\color{red} \neg y}}) \wedge (\cancel{{\color{red} \neg y}} \vee \neg x) \wedge \cancel{{\color{green}(\neg z)}}\]</span></p>
 <p><span class="math inline">\(x\)</span>: 🤷<br>
 <span class="math inline">\(y\)</span>: <code>True</code><br>
 <span class="math inline">\(z\)</span>: <code>False</code><br></p>
-<h2 id="conflict">Conflict!</h2>
+<p>Unfortunately, we now have a conflict, since two of the remaining clauses are <span class="math inline">\(x\)</span> and <span class="math inline">\(\neg x\)</span>.</p>
 <p><span class="math display">\[\cancel{{\color{green}(x \vee y \vee z)}} \wedge ({\color{blue} x} \vee \cancel{{\color{red} \neg y}}) \wedge (\cancel{{\color{red} \neg y}} \vee {\color{blue}\neg x}) \wedge \cancel{{\color{green}(\neg z)}}\]</span></p>
 <p><span class="math inline">\(x\)</span>: 🤷<br>
 <span class="math inline">\(y\)</span>: <code>True</code><br>
 <span class="math inline">\(z\)</span>: <code>False</code><br></p>
-<h2 id="backtrack">Backtrack</h2>
-<p>Let’s set <span class="math inline">\(y\)</span> to False</p>
-<h2 id="example-4">Example</h2>
+<p>The only appropriate thing to do here is backtrack, so we undo our previous assignment and try the other truth value, setting <span class="math inline">\(y\)</span> to <span class="math inline">\(False\)</span>.</p>
 <p><span class="math display">\[(x \vee \cancel{{\color{red} y}} \vee \cancel{{\color{red} z}}) \wedge \cancel{{\color{green}(x \vee \neg y)}} \wedge \cancel{{\color{green} (\neg y \vee \neg x)}} \wedge \cancel{{\color{green} (\neg z)}}\]</span></p>
 <p><span class="math inline">\(x\)</span>: 🤷<br>
 <span class="math inline">\(y\)</span>: <code>False</code><br>
 <span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p>Now we can perform <a href="https://en.wikipedia.org/wiki/DPLL_algorithm#The_algorithm">pure literal elimination</a>.</p>
 <h2 id="pure-literal-elimination">Pure literal elimination</h2>
-<p>There is only one possible value for <span class="math inline">\(x\)</span>, so assign it</p>
-<h2 id="solution">Solution</h2>
+<p>When literals involving a variable in a propositional logic formula are either
+always <span class="math inline">\(True\)</span> (<span class="math inline">\(x\)</span>) or always <span class="math inline">\(False\)</span> (<span class="math inline">\(\neg x\)</span>), then these are called <em>pure</em>
+literals, and it’s obvious what truth value to assign to them. In this case we set <span class="math inline">\(x\)</span> to <span class="math inline">\(True\)</span>.</p>
 <p><span class="math display">\[\cancel{{\color{green}(x \vee y \vee z)}} \wedge \cancel{{\color{green}(x \vee \neg y)}} \wedge \cancel{{\color{green} (\neg y \vee \neg x)}} \wedge \cancel{{\color{green} (\neg z)}}\]</span></p>
 <p><span class="math inline">\(x\)</span>: <code>True</code><br>
 <span class="math inline">\(y\)</span>: <code>False</code><br>
 <span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p>And that’s DPLL (Davis-Putnam-Logemann-Loveland)!</p>
 <h2 id="davis-putnam-logemann-loveland">Davis-Putnam-Logemann-Loveland</h2>
-<ul>
-<li>Backtracking search</li>
-<li>Unit propagation</li>
-<li>Pure literal elimination</li>
-</ul>
-<h2 id="downsides">Downsides</h2>
-<ul>
-<li>Often finds the same conflict multiple times</li>
-<li>Backtracks one level at a time (chronologically)</li>
-<li>No memory of past conflicts</li>
-</ul>
-<h2 id="can-we-learn-from-our-mistakes">Can we learn from our mistakes?</h2>
+<p>Davis-Putnam-Logemann-Loveland is exhaustive backtracking search with unit
+propagation and pure literal elimination. Although it works reasonably well for
+small numbers of clauses, it has a tendency to repeatedly run into the same
+conflicts, and when it does it only backtracks one level at a time. It would be
+great to somehow remember and learn from these conflicts when we encounter
+them, so we can scale up to more complex problems. Does such an algorithm
+exist? It does.</p>
 <h1 id="cdcl">CDCL</h1>
-<h2 id="cdcl-1">CDCL</h2>
-<ul>
-<li>Distinguishes between decisions (assignments) and implications (unit
-propagation, pure literal elimination)</li>
-<li>Keeps track of the implication graph</li>
-</ul>
-<h2 id="example-5">Example</h2>
+<p>CDCL starts out very similarly to DPLL in that it still features unit
+propagation and pure literal elimination. However it also involves additional
+bookkeeping, distinguishing between decisions (when we choose a truth value for
+a variable) and implications (truth values determined through unit propagation
+and pure literal elimination). It also keeps track of the <a href="https://en.wikipedia.org/wiki/Implication_graph">implication
+graph</a> created by decisions
+and implications.</p>
+<p>Let’s look at a more complex example.</p>
 <p><span class="math display">\[\begin{align}
 &amp; (a \vee d) \wedge \\
 &amp; (a \vee \neg c \vee \neg f) \wedge \\
@@ -195,7 +231,7 @@ propagation, pure literal elimination)</li>
 &amp; (e \vee f \vee \neg h) \wedge \\
 &amp; (e \vee h \vee \neg j)
 \end{align}\]</span></p>
-<h2 id="a"><span class="math inline">\(a\)</span></h2>
+<p>We start by setting <span class="math inline">\(a\)</span> to <span class="math inline">\(False\)</span>, which implies <span class="math inline">\(d\)</span> through the clause <span class="math inline">\(a \vee d\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
 <img src="../../images/tree1x1.svg">
@@ -216,7 +252,8 @@ propagation, pure literal elimination)</li>
 \end{align}\]</span></p>
 </div>
 </div>
-<h2 id="c"><span class="math inline">\(c\)</span></h2>
+<p>Next we set <span class="math inline">\(c\)</span> to <span class="math inline">\(True\)</span>, which implies <span class="math inline">\(\neg f\)</span> through the clause <span class="math inline">\(a \vee
+\neg c \vee \neg f\)</span> and <span class="math inline">\(j\)</span> through the clause <span class="math inline">\(a \vee f \vee j\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
 <img src="../../images/tree1x3.svg">
@@ -307,7 +344,7 @@ propagation, pure literal elimination)</li>
 &amp; (f \vee \neg c \vee \neg e)
 \end{align}\]</span></p>
 <h2 id="backjumping">Backjumping</h2>
-<p><img src="../../images/tree2.svg" style="max-height: 14em;"></p>
+<p><img src="../../images/tree2.svg"></p>
 <h2 id="conflict-driven-clause-learning">Conflict-driven Clause Learning</h2>
 <ul>
 <li>Learned clauses!</li>
@@ -351,7 +388,7 @@ MONEY
 <li>Z3, CVC, Yices, Boolector</li>
 </ul>
 <h1 id="recap">Recap</h1>
-<h2 id="sat-solvers-2">SAT solvers</h2>
+<h2 id="sat-solvers-1">SAT solvers</h2>
 <p>Solve NP-complete problems expressed as CNF Boolean formulas</p>
 <h2 id="dpll-1">DPLL</h2>
 <ul>
@@ -359,7 +396,7 @@ MONEY
 <li>Unit propagation</li>
 <li>Pure literal elimination</li>
 </ul>
-<h2 id="cdcl-2">CDCL</h2>
+<h2 id="cdcl-1">CDCL</h2>
 <ul>
 <li>DPLL++</li>
 <li>Learned clauses</li>
@@ -386,8 +423,6 @@ Satisfiability</a></li>
 <li><a href="https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/overview.html">CS-E3220: Propositional satisfiability and SAT
 solvers</a></li>
 </ul>
-<h2 id="slides">Slides</h2>
-<p><a href="https://vaibhavsagar.com/presentations/sat-solvers">https://vaibhavsagar.com/presentations/sat-solvers</a></p>
 <h1 id="thank-you">Thank you!!</h1>
 
         </div>
