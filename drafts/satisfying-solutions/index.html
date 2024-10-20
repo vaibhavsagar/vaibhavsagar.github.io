@@ -274,7 +274,8 @@ and implications.</p>
 \end{align}\]</span></p>
 </div>
 </div>
-<h2 id="b"><span class="math inline">\(b\)</span></h2>
+<p>We continue by setting <span class="math inline">\(b\)</span> to <span class="math inline">\(False\)</span>, which implies <span class="math inline">\(i\)</span> through the clause <span class="math inline">\(b
+\vee i\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
 <img src="../../images/tree1x2.svg">
@@ -295,7 +296,9 @@ and implications.</p>
 \end{align}\]</span></p>
 </div>
 </div>
-<h2 id="e"><span class="math inline">\(e\)</span></h2>
+<p>Then we set <span class="math inline">\(e\)</span> to <span class="math inline">\(True\)</span>, which causes a conflict because <span class="math inline">\(g\)</span> is implied to be
+both <span class="math inline">\(True\)</span> (through the clause <span class="math inline">\(\neg e \vee \neg c \vee g\)</span>) and <span class="math inline">\(False\)</span>
+(through the clause <span class="math inline">\(\neg e \vee f \vee \neg g\)</span>).</p>
 <div style="display: flex">
 <div style="flex: 33%">
 <img src="../../images/tree1.svg">
@@ -316,7 +319,15 @@ and implications.</p>
 \end{align}\]</span></p>
 </div>
 </div>
-<h2 id="unique-implication-point">Unique Implication Point</h2>
+<h2 id="clause-learning">Clause learning</h2>
+<p>Fortunately we can analyse the implication graph to determine a <a href="https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/cdcl.html#implication-graphs-learned-clauses-and-backjumping">Unique
+Implication
+Point</a>
+that all edges from the latest decision node to the conflict node pass through,
+and the corresponding <em>UIP cut</em> corresponding to a clause. In this case the
+UIP is the decision node <span class="math inline">\(e\)</span> and the clause is <span class="math inline">\(\neg f \vee c \vee e\)</span>. We want
+to remove the possibility of reaching this state again, so we negate this
+clause (by De Morgan’s theorem).</p>
 <div style="display: flex">
 <div style="flex: 50%">
 <img src="../../images/graph2.svg">
@@ -327,9 +338,9 @@ and implications.</p>
 (f \vee \neg c \vee \neg e)}\]</span></p>
 </div>
 </div>
-<h2 id="learned-clause">Learned clause</h2>
+<p>And this gives us our <em>learned clause</em>!</p>
 <p><span class="math display">\[(f \vee \neg c \vee \neg e)\]</span></p>
-<h2 id="learned-clause-1">Learned clause</h2>
+<p>We can then add it to our formula.</p>
 <p><span class="math display">\[\begin{align}
 \definecolor{comment}{RGB}{161,161,180}
 \definecolor{emphasis}{RGB}{88,110,117}
@@ -343,14 +354,15 @@ and implications.</p>
 &amp; {\color{comment}(e \vee h \vee \neg j) \wedge} \\\
 &amp; (f \vee \neg c \vee \neg e)
 \end{align}\]</span></p>
-<h2 id="backjumping">Backjumping</h2>
+<h2 id="non-chronological-backjumping">Non-chronological backjumping</h2>
+<p>Next we <em>backjump non-chronologically</em> to the second-highest decision level of
+the literals in our clause, which in this case is <span class="math inline">\(2\)</span>, and repeat.</p>
 <p><img src="../../images/tree2.svg"></p>
+<p>That’s CDCL (Conflict-driven clause learning)!</p>
 <h2 id="conflict-driven-clause-learning">Conflict-driven Clause Learning</h2>
-<ul>
-<li>Learned clauses!</li>
-<li>Non-chronological backtracking!</li>
-<li>Basis of most modern SAT solvers</li>
-</ul>
+<p>Conflict-driven clause learning is an extension of DPLL with learned clauses
+and non-chronological backtracking, effectively addressing most of DPLL’s
+downsides. It forms the basis of most modern SAT solvers.</p>
 <h2 id="okay-now-lets-do-a-silly-one">Okay now let’s do a silly one</h2>
 <h1 id="sls">SLS</h1>
 <h2 id="what-if-we-just-guessed">What if we just guessed?</h2>
