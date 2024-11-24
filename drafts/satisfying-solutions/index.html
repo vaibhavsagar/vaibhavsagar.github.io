@@ -363,26 +363,30 @@ the literals in our clause, which in this case is <span class="math inline">\(2\
 <p>Conflict-driven clause learning is an extension of DPLL with learned clauses
 and non-chronological backtracking, effectively addressing most of DPLL’s
 downsides. It forms the basis of most modern SAT solvers.</p>
-<h2 id="okay-now-lets-do-a-silly-one">Okay now let’s do a silly one</h2>
 <h1 id="sls">SLS</h1>
-<h2 id="what-if-we-just-guessed">What if we just guessed?</h2>
-<ol type="1">
-<li>Generate a random assignment</li>
-<li>Pick a random clause</li>
-<li>Probabilistically flip a variable in the clause</li>
-<li>Repeat until you solve it or get tired!</li>
-</ol>
+<p>In contrast to the rigorous and structured approaches we’ve seen already, what
+if we tried something more ad-hoc? We could generate a random assignment of
+<span class="math inline">\(True\)</span> and <span class="math inline">\(False\)</span> values for each of our variables, pick a clause at random,
+and flip either the “best” variable (whose negation causes the fewest
+conflicts) or some other variable. We could loop this selection and flipping
+a number of times, and restart the whole assignment upon getting stuck,
+finishing after either finding a solution or after a predetermined number of
+tries.</p>
 <h2 id="stochastic-local-search">Stochastic Local Search</h2>
-<ul>
-<li>Surprisingly effective!</li>
-<li>WalkSAT</li>
-<li>Can be done in parallel</li>
-<li>Can use a form of clause learning</li>
-<li>Can’t conclusively determine unsatisfiability(!)</li>
-<li>Reminds me of simulated annealing in some ways</li>
-</ul>
+<p>This is known as stochastic local search and it’s surprisingly effective! The
+specific algorithm I described above is called
+<a href="https://en.wikipedia.org/wiki/WalkSAT">WalkSAT</a> and it’s possible to <a href="https://www.ml.cmu.edu/research/dap-papers/dap_mcdonald.pdf">do it in
+parallel and use a form of clause
+learning</a>.
+Unfortunately, this approach cannot conclusively determine unsatisfiability
+because an inconclusive result might be due to the solver running out of
+attempts. A more general technique that this family of algorithms reminds me of
+is called <a href="https://en.wikipedia.org/wiki/Simulated_annealing">simulated
+annealing</a>.</p>
 <h1 id="smt">SMT</h1>
-<h2 id="problem">Problem</h2>
+<p>SAT solvers are great when it’s straightforward to express your problem as
+a boolean satisfiability problem, but what if we want to solve more complex
+problems where we might not have the ability or desire to do so?</p>
 <p><span class="math display">\[
 \begin{align}
   SEND &amp;\\
@@ -391,36 +395,23 @@ downsides. It forms the basis of most modern SAT solvers.</p>
 MONEY
 \end{align}
 \]</span></p>
-<h2 id="how">How?</h2>
-<p>We’d have to teach the SAT solver arithmetic!</p>
+<p>To solve this puzzle, we need to assign digit values to each of the letters
+such that the sum of the 4-digit number represented by <span class="math inline">\(SEND\)</span> and the 4-digit
+number represented by <span class="math inline">\(MORE\)</span> equals the 5-digit number <span class="math inline">\(MONEY\)</span>.</p>
+<p>We’d have to essentially teach our SAT solver how to do enough arithmetic for
+it to solve the equation</p>
+<p><span class="math display">\[
+\begin{align}
+  (1000 \cdot (S+M)) + (100 \cdot (E+O)) + (10 \cdot (N+R)) + (D+E) &amp;\\
+= (10000 \cdot M) + (1000 \cdot O) + (100 \cdot N) + (10 \cdot E) + Y
+\end{align}
+\]</span></p>
 <h2 id="satisfiability-modulo-theories">Satisfiability Modulo Theories</h2>
 <ul>
 <li>SAT solvers extended</li>
 <li>bitvectors, arrays, algebraic datatypes, etc.</li>
 <li>Z3, CVC, Yices, Boolector</li>
 </ul>
-<h1 id="recap">Recap</h1>
-<h2 id="sat-solvers-1">SAT solvers</h2>
-<p>Solve NP-complete problems expressed as CNF Boolean formulas</p>
-<h2 id="dpll-1">DPLL</h2>
-<ul>
-<li>Backtracking search</li>
-<li>Unit propagation</li>
-<li>Pure literal elimination</li>
-</ul>
-<h2 id="cdcl-1">CDCL</h2>
-<ul>
-<li>DPLL++</li>
-<li>Learned clauses</li>
-<li>Non-chronological backtracking</li>
-</ul>
-<h2 id="sls-1">SLS</h2>
-<ul>
-<li>Random guessing</li>
-<li>Probabilistic variable flipping</li>
-</ul>
-<h2 id="smt-solvers">SMT solvers</h2>
-<p>SAT extended with theories</p>
 <h1 id="thats-all">That’s all!</h1>
 <h2 id="resources">Resources</h2>
 <ul>
