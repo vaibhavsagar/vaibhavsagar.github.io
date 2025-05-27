@@ -88,14 +88,14 @@ hatch called <code>buildFHSUserEnv</code> that we can use to simulate an environ
 <p><em>static.nix</em></p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{};</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs.buildFHSUserEnv <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> pkgs<span class="op">.</span>buildFHSUserEnv <span class="op">{</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;fhs&quot;</span><span class="op">;</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">targetPkgs</span> <span class="op">=</span> <span class="va">pkgs</span><span class="op">:</span> <span class="op">[</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.haskellPackages.ghcWithPackages <span class="op">(</span><span class="va">p</span><span class="op">:</span> <span class="kw">with</span> p<span class="op">;</span> <span class="op">[</span> cabal-install <span class="op">]))</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    pkgs.gmp5.static</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    pkgs.glibc.static</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.static</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    pkgs.zlib.dev</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs<span class="op">.</span>haskellPackages<span class="op">.</span>ghcWithPackages <span class="op">(</span><span class="va">p</span><span class="op">:</span> <span class="kw">with</span> p<span class="op">;</span> <span class="op">[</span> cabal-install <span class="op">]))</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    pkgs<span class="op">.</span>gmp5<span class="op">.</span>static</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    pkgs<span class="op">.</span>glibc<span class="op">.</span>static</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    pkgs<span class="op">.</span>zlib<span class="op">.</span>static</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    pkgs<span class="op">.</span>zlib<span class="op">.</span>dev</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">];</span></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This defines a chroot where statically linked versions of <code>gmp</code>, <code>glibc</code>, and
@@ -131,9 +131,9 @@ that next.</p>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>configureFlags = <span class="op">[</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-static&quot;</span></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-pthread&quot;</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.gmp6.override <span class="op">{</span> <span class="va">withStatic</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="op">}</span><span class="sc">}</span><span class="st">/lib&quot;</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.zlib.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs.glibc.static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs<span class="op">.</span>gmp6<span class="op">.</span>override <span class="op">{</span> <span class="va">withStatic</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span> <span class="op">}</span><span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs<span class="op">.</span>zlib<span class="op">.</span>static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;--ghc-option=-optl=-L</span><span class="sc">${</span>pkgs<span class="op">.</span>glibc<span class="op">.</span>static<span class="sc">}</span><span class="st">/lib&quot;</span></span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">]</span>;</span></code></pre></div>
 <p>This is also available in the linked repository, and you can pin <code>nixpkgs</code> as
 follows to get my exact build:</p>
