@@ -26,7 +26,7 @@
             <h1>SATisfying Solutions to Difficult Problems!</h1>
 
             <div class="info">
-    Posted on 10 September 2024
+    Posted on 22 October 2025
     
 </div>
 <div class="info">
@@ -36,7 +36,8 @@
 </div>
 
 <p><em>This post covers the same material as <a href="https://www.youtube.com/watch?v=J0ZLCHHku6U">my !!Con 2024
-talk</a>.</em></p>
+talk</a>, for which the slides are
+<a href="https://vaibhavsagar.com/presentations/sat-solvers/">here</a>.</em></p>
 <p>What are SAT solvers, and how are they useful? Let’s start by briefly touching on
 <a href="https://en.wikipedia.org/wiki/NP-completeness">NP-complete problems</a>!</p>
 <h1 id="np-complete-problems">NP-complete problems</h1>
@@ -407,12 +408,19 @@ it to solve the equation</p>
 \end{align}
 \]</span></p>
 <h2 id="satisfiability-modulo-theories">Satisfiability Modulo Theories</h2>
-<ul>
-<li>SAT solvers extended</li>
-<li>bitvectors, arrays, algebraic datatypes, etc.</li>
-<li>Z3, CVC, Yices, Boolector</li>
-</ul>
+<p>This is what an SMT (Satisfiability Modulo Theories) solver is! A SAT solver
+can be extended to reason over bitvectors, fixed-length arrays, Presburger
+arithmetic, algebraic datatypes, and more. One way of doing this would be to
+pre-process a problem into a series of CNF clauses that can be fed to a normal
+SAT solver; this is known as
+<a href="https://www.cs.cmu.edu/~15414/s23/lectures/21-bitblasting.pdf">bit-blasting</a>,
+but deeper integrations are often more practical. Examples of SMT solvers
+include <a href="https://github.com/Z3Prover/z3">Z3</a>, <a href="https://cvc5.github.io/">CVC5</a>,
+<a href="https://yices.csl.sri.com/">Yices</a>, and
+<a href="https://bitwuzla.github.io/">Bitwuzla</a>.</p>
 <h1 id="thats-all">That’s all!</h1>
+<p>I hope you have a basic understanding of what a SAT/SMT solver is, how they
+(broadly) work, and when it might be a good idea to use them!</p>
 <h2 id="resources">Resources</h2>
 <ul>
 <li><a href="https://www.youtube.com/watch?v=6K6HFl7UhQk">Lindsey Kuper - Reasoning Under Uncertainty in SMT Solving, Research, and
@@ -426,7 +434,8 @@ Satisfiability</a></li>
 <li><a href="https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/overview.html">CS-E3220: Propositional satisfiability and SAT
 solvers</a></li>
 </ul>
-<h1 id="thank-you">Thank you!!</h1>
+<p><em>Thanks to <a href="https://gitlab.com/awjchen">Alex Chen</a> for multiple rounds of
+excellent feedback on my presentation.</em></p>
 
         </div>
         <div id="footer">
