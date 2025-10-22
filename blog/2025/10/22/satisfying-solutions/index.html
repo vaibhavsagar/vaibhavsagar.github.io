@@ -6,19 +6,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>SATisfying Solutions to Difficult Problems! - Vaibhav Sagar</title>
         <link href="data:," rel="icon">
-        <link rel="stylesheet" type="text/css" href="../../css/default.css" />
-        <link rel="stylesheet" type="text/css" href="../../css/syntax.css" />
-        <link rel="alternate" type="application/atom+xml" title="RSS feed for vaibhavsagar.com" href="../../atom.xml" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../../../../../css/syntax.css" />
+        <link rel="alternate" type="application/atom+xml" title="RSS feed for vaibhavsagar.com" href="../../../../../atom.xml" />
     </head>
     <body>
         <div id="header">
             <div id="logo">
-                <a href="../../">Vaibhav Sagar</a>
+                <a href="../../../../../">Vaibhav Sagar</a>
             </div>
             <div id="navigation">
-                <a href="../../about/">About</a>
-                <a href="../../talks/">Talks</a>
-                <a href="../../archive/">Archive</a>
+                <a href="../../../../../about/">About</a>
+                <a href="../../../../../talks/">Talks</a>
+                <a href="../../../../../archive/">Archive</a>
             </div>
         </div>
 
@@ -31,7 +31,7 @@
 </div>
 <div class="info">
     
-        Tags: <a title="All pages tagged 'programming'." href="../../blog/tags/programming/" rel="tag">programming</a>
+        Tags: <a title="All pages tagged 'programming'." href="../../../../../blog/tags/programming/" rel="tag">programming</a>
     
 </div>
 
@@ -235,10 +235,10 @@ and implications.</p>
 <p>We start by setting <span class="math inline">\(a\)</span> to <span class="math inline">\(False\)</span>, which implies <span class="math inline">\(d\)</span> through the clause <span class="math inline">\(a \vee d\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="../../images/tree1x1.svg">
+<img src="../../../../../images/tree1x1.svg">
 </div>
 <div style="flex: 33%">
-<img src="../../images/graph1x1.svg">
+<img src="../../../../../images/graph1x1.svg">
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -257,10 +257,10 @@ and implications.</p>
 \neg c \vee \neg f\)</span> and <span class="math inline">\(j\)</span> through the clause <span class="math inline">\(a \vee f \vee j\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="../../images/tree1x3.svg">
+<img src="../../../../../images/tree1x3.svg">
 </div>
 <div style="flex: 33%">
-<img src="../../images/graph1x3.svg">
+<img src="../../../../../images/graph1x3.svg">
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -279,10 +279,10 @@ and implications.</p>
 \vee i\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="../../images/tree1x2.svg">
+<img src="../../../../../images/tree1x2.svg">
 </div>
 <div style="flex: 33%">
-<img src="../../images/graph1x2.svg">
+<img src="../../../../../images/graph1x2.svg">
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -302,10 +302,10 @@ both <span class="math inline">\(True\)</span> (through the clause <span class="
 (through the clause <span class="math inline">\(\neg e \vee f \vee \neg g\)</span>).</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="../../images/tree1.svg">
+<img src="../../../../../images/tree1.svg">
 </div>
 <div style="flex: 33%">
-<img src="../../images/graph1.svg">
+<img src="../../../../../images/graph1.svg">
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -331,7 +331,7 @@ to remove the possibility of reaching this state again, so we negate this
 clause (by De Morgan’s theorem).</p>
 <div style="display: flex">
 <div style="flex: 50%">
-<img src="../../images/graph2.svg">
+<img src="../../../../../images/graph2.svg">
 </div>
 <div style="flex: 50%">
 <p><span class="math display">\[\displaylines{\neg (\neg f \wedge c \wedge e) \\
@@ -358,7 +358,7 @@ clause (by De Morgan’s theorem).</p>
 <h2 id="non-chronological-backjumping">Non-chronological backjumping</h2>
 <p>Next we <em>backjump non-chronologically</em> to the second-highest decision level of
 the literals in our clause, which in this case is <span class="math inline">\(2\)</span>, and repeat.</p>
-<p><img src="../../images/tree2.svg"></p>
+<p><img src="../../../../../images/tree2.svg"></p>
 <p>That’s CDCL (Conflict-driven clause learning)!</p>
 <h2 id="conflict-driven-clause-learning">Conflict-driven Clause Learning</h2>
 <p>Conflict-driven clause learning is an extension of DPLL with learned clauses
