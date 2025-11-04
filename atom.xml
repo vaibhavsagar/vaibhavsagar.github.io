@@ -425,6 +425,7 @@ Satisfiability</a></li>
 <li><a href="http://minisat.se/downloads/MiniSat.pdf">An Extensible SAT-solver (2003)</a></li>
 <li><a href="https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/overview.html">CS-E3220: Propositional satisfiability and SAT
 solvers</a></li>
+<li><a href="https://codingnest.com/tag/sat/">Modern SAT solvers: fast, neat and underused</a></li>
 </ul>
 <p><em>Thanks to <a href="https://gitlab.com/awjchen">Alex Chen</a> for multiple rounds of
 excellent feedback on my presentation.</em></p>
