@@ -155,9 +155,9 @@ resulting propositional logic formula as input to a SAT solver!</p>
 example. Not so coincidentally, this is the same propositional logic formula
 from earlier! At the beginning, we don’t know the values of <span class="math inline">\(x\)</span>, <span class="math inline">\(y\)</span>, or <span class="math inline">\(z\)</span>.</p>
 <p><span class="math display">\[(x \vee y \vee z) \wedge (x \vee \neg y) \wedge (\neg y \vee \neg x) \wedge (\neg z)\]</span></p>
-<p><span class="math inline">\(x\)</span>: 🤷<br>
-<span class="math inline">\(y\)</span>: 🤷<br>
-<span class="math inline">\(z\)</span>: 🤷<br></p>
+<p><span class="math inline">\(x\)</span>: 🤷<br/>
+<span class="math inline">\(y\)</span>: 🤷<br/>
+<span class="math inline">\(z\)</span>: 🤷<br/></p>
 <p>We begin by picking a variable and assigning it a truth value, preferring unit
 clauses (clauses with a single literal). In this case, let’s set <span class="math inline">\(z\)</span> to <span class="math inline">\(False\)</span>.
 Now we can perform <a href="https://en.wikipedia.org/wiki/Unit_propagation">unit
@@ -169,33 +169,33 @@ clauses that are satisfied, since we don’t need to consider them going forward
 Next we remove the literal where it is <span class="math inline">\(False\)</span>, since it cannot contribute to
 that clause being satisfied.</p>
 <p><span class="math display">\[(x \vee y \vee \cancel{{\color{red} z}}) \wedge (x \vee \neg y) \wedge (\neg y \vee \neg x) \wedge \cancel{{\color{green} (\neg z)}}\]</span></p>
-<p><span class="math inline">\(x\)</span>: 🤷<br>
-<span class="math inline">\(y\)</span>: 🤷<br>
-<span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p><span class="math inline">\(x\)</span>: 🤷<br/>
+<span class="math inline">\(y\)</span>: 🤷<br/>
+<span class="math inline">\(z\)</span>: <code>False</code><br/></p>
 <p>Next we pick another variable and continue. Let’s set <span class="math inline">\(y\)</span> to <span class="math inline">\(True\)</span>.</p>
 <p><span class="math display">\[\cancel{{\color{green}(x \vee y \vee z)}} \wedge (x \vee \cancel{{\color{red} \neg y}}) \wedge (\cancel{{\color{red} \neg y}} \vee \neg x) \wedge \cancel{{\color{green}(\neg z)}}\]</span></p>
-<p><span class="math inline">\(x\)</span>: 🤷<br>
-<span class="math inline">\(y\)</span>: <code>True</code><br>
-<span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p><span class="math inline">\(x\)</span>: 🤷<br/>
+<span class="math inline">\(y\)</span>: <code>True</code><br/>
+<span class="math inline">\(z\)</span>: <code>False</code><br/></p>
 <p>Unfortunately, we now have a conflict, since two of the remaining clauses are <span class="math inline">\(x\)</span> and <span class="math inline">\(\neg x\)</span>.</p>
 <p><span class="math display">\[\cancel{{\color{green}(x \vee y \vee z)}} \wedge ({\color{blue} x} \vee \cancel{{\color{red} \neg y}}) \wedge (\cancel{{\color{red} \neg y}} \vee {\color{blue}\neg x}) \wedge \cancel{{\color{green}(\neg z)}}\]</span></p>
-<p><span class="math inline">\(x\)</span>: 🤷<br>
-<span class="math inline">\(y\)</span>: <code>True</code><br>
-<span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p><span class="math inline">\(x\)</span>: 🤷<br/>
+<span class="math inline">\(y\)</span>: <code>True</code><br/>
+<span class="math inline">\(z\)</span>: <code>False</code><br/></p>
 <p>The only appropriate thing to do here is backtrack, so we undo our previous assignment and try the other truth value, setting <span class="math inline">\(y\)</span> to <span class="math inline">\(False\)</span>.</p>
 <p><span class="math display">\[(x \vee \cancel{{\color{red} y}} \vee \cancel{{\color{red} z}}) \wedge \cancel{{\color{green}(x \vee \neg y)}} \wedge \cancel{{\color{green} (\neg y \vee \neg x)}} \wedge \cancel{{\color{green} (\neg z)}}\]</span></p>
-<p><span class="math inline">\(x\)</span>: 🤷<br>
-<span class="math inline">\(y\)</span>: <code>False</code><br>
-<span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p><span class="math inline">\(x\)</span>: 🤷<br/>
+<span class="math inline">\(y\)</span>: <code>False</code><br/>
+<span class="math inline">\(z\)</span>: <code>False</code><br/></p>
 <p>Now we can perform <a href="https://en.wikipedia.org/wiki/DPLL_algorithm#The_algorithm">pure literal elimination</a>.</p>
 <h2 id="pure-literal-elimination">Pure literal elimination</h2>
 <p>When literals involving a variable in a propositional logic formula are either
 always <span class="math inline">\(True\)</span> (<span class="math inline">\(x\)</span>) or always <span class="math inline">\(False\)</span> (<span class="math inline">\(\neg x\)</span>), then these are called <em>pure</em>
 literals, and it’s obvious what truth value to assign to them. In this case we set <span class="math inline">\(x\)</span> to <span class="math inline">\(True\)</span>.</p>
 <p><span class="math display">\[\cancel{{\color{green}(x \vee y \vee z)}} \wedge \cancel{{\color{green}(x \vee \neg y)}} \wedge \cancel{{\color{green} (\neg y \vee \neg x)}} \wedge \cancel{{\color{green} (\neg z)}}\]</span></p>
-<p><span class="math inline">\(x\)</span>: <code>True</code><br>
-<span class="math inline">\(y\)</span>: <code>False</code><br>
-<span class="math inline">\(z\)</span>: <code>False</code><br></p>
+<p><span class="math inline">\(x\)</span>: <code>True</code><br/>
+<span class="math inline">\(y\)</span>: <code>False</code><br/>
+<span class="math inline">\(z\)</span>: <code>False</code><br/></p>
 <p>And that’s DPLL (Davis-Putnam-Logemann-Loveland)!</p>
 <h2 id="davis-putnam-logemann-loveland">Davis-Putnam-Logemann-Loveland</h2>
 <p>Davis-Putnam-Logemann-Loveland is exhaustive backtracking search with unit
@@ -227,10 +227,10 @@ and implications.</p>
 <p>We start by setting <span class="math inline">\(a\)</span> to <span class="math inline">\(False\)</span>, which implies <span class="math inline">\(d\)</span> through the clause <span class="math inline">\(a \vee d\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="/images/tree1x1.svg">
+<img src="/images/tree1x1.svg" />
 </div>
 <div style="flex: 33%">
-<img src="/images/graph1x1.svg">
+<img src="/images/graph1x1.svg" />
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -249,10 +249,10 @@ and implications.</p>
 \neg c \vee \neg f\)</span> and <span class="math inline">\(j\)</span> through the clause <span class="math inline">\(a \vee f \vee j\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="/images/tree1x3.svg">
+<img src="/images/tree1x3.svg" />
 </div>
 <div style="flex: 33%">
-<img src="/images/graph1x3.svg">
+<img src="/images/graph1x3.svg" />
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -271,10 +271,10 @@ and implications.</p>
 \vee i\)</span>.</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="/images/tree1x2.svg">
+<img src="/images/tree1x2.svg" />
 </div>
 <div style="flex: 33%">
-<img src="/images/graph1x2.svg">
+<img src="/images/graph1x2.svg" />
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -294,10 +294,10 @@ both <span class="math inline">\(True\)</span> (through the clause <span class="
 (through the clause <span class="math inline">\(\neg e \vee f \vee \neg g\)</span>).</p>
 <div style="display: flex">
 <div style="flex: 33%">
-<img src="/images/tree1.svg">
+<img src="/images/tree1.svg" />
 </div>
 <div style="flex: 33%">
-<img src="/images/graph1.svg">
+<img src="/images/graph1.svg" />
 </div>
 <div style="flex: 33%">
 <p><span class="math display">\[\begin{align}
@@ -323,7 +323,7 @@ to remove the possibility of reaching this state again, so we negate this
 clause (by De Morgan’s theorem).</p>
 <div style="display: flex">
 <div style="flex: 50%">
-<img src="/images/graph2.svg">
+<img src="/images/graph2.svg" />
 </div>
 <div style="flex: 50%">
 <p><span class="math display">\[\displaylines{\neg (\neg f \wedge c \wedge e) \\
@@ -350,7 +350,7 @@ clause (by De Morgan’s theorem).</p>
 <h2 id="non-chronological-backjumping">Non-chronological backjumping</h2>
 <p>Next we <em>backjump non-chronologically</em> to the second-highest decision level of
 the literals in our clause, which in this case is <span class="math inline">\(2\)</span>, and repeat.</p>
-<p><img src="/images/tree2.svg"></p>
+<p><img src="/images/tree2.svg" /></p>
 <p>That’s CDCL (Conflict-driven clause learning)!</p>
 <h2 id="conflict-driven-clause-learning">Conflict-driven Clause Learning</h2>
 <p>Conflict-driven clause learning is an extension of DPLL with learned clauses
