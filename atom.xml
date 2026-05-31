@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Vaibhav Sagar's blog</title>
+    <subtitle>A blog with posts in it.</subtitle>
     <link href="https://vaibhavsagar.com/atom.xml" rel="self" />
     <link href="https://vaibhavsagar.com" />
     <id>https://vaibhavsagar.com/atom.xml</id>
